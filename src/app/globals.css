@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  --ivory: #f6f1e7;
+  --ink: #141f30;
+  --gold: #ad8a50;
+  --burgundy: #661e29;
+}
+
+@theme inline {
+  --color-ivory: var(--ivory);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-burgundy: var(--burgundy);
+
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-inter), Arial, sans-serif;
+}
+
+body {
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+}
