@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { getCategories, getProducts } from "@/lib/api";
+import { getBanners, getCategories, getProducts } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
-import type { Category, Product } from "@/lib/types";
+import HeroCarousel from "@/components/HeroCarousel";
+import type { Banner, Category, Product } from "@/lib/types";
 
 export default async function Home() {
   let categories: Category[] = [];
@@ -23,28 +24,34 @@ export default async function Home() {
     apiUnreachable = true;
   }
 
+  const banners: Banner[] = await getBanners().catch(() => []);
+
   return (
     <div>
-      <section className="border-b border-ink/10 bg-ivory">
-        <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-6 py-24 sm:py-32">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">
-            The current collection
-          </p>
-          <h1 className="max-w-2xl font-serif text-4xl leading-tight text-ink sm:text-6xl">
-            Considered pieces, quietly made.
-          </h1>
-          <p className="max-w-lg text-base leading-relaxed text-ink/70">
-            Anaiza is a small studio making ceramics and gifting sets meant to
-            outlast trends — sourced with care, finished by hand.
-          </p>
-          <Link
-            href="/shop"
-            className="mt-4 inline-flex items-center justify-center bg-ink px-8 py-3.5 text-sm font-semibold uppercase tracking-widest text-ivory transition-colors hover:bg-burgundy"
-          >
-            Shop the collection
-          </Link>
-        </div>
-      </section>
+      {banners.length > 0 ? (
+        <HeroCarousel banners={banners} />
+      ) : (
+        <section className="border-b border-ink/10 bg-ivory">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-6 py-24 sm:py-32">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">
+              The current collection
+            </p>
+            <h1 className="max-w-2xl font-serif text-4xl leading-tight text-ink sm:text-6xl">
+              Considered pieces, quietly made.
+            </h1>
+            <p className="max-w-lg text-base leading-relaxed text-ink/70">
+              Anaiza is a small studio making ceramics and gifting sets meant to
+              outlast trends — sourced with care, finished by hand.
+            </p>
+            <Link
+              href="/shop"
+              className="mt-4 inline-flex items-center justify-center bg-ink px-8 py-3.5 text-sm font-semibold uppercase tracking-widest text-ivory transition-colors hover:bg-burgundy"
+            >
+              Shop the collection
+            </Link>
+          </div>
+        </section>
+      )}
 
       {apiUnreachable ? (
         <div className="mx-auto max-w-6xl px-6 py-20 text-center">

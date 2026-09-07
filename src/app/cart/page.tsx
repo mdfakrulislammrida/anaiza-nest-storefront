@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
-import { FLAT_DELIVERY_FEE } from "@/lib/config";
 import CartLineItem from "@/components/CartLineItem";
 
 export default function CartPage() {
@@ -50,15 +49,13 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between">
                 <span>Delivery</span>
-                <span className="font-medium text-ink">
-                  {formatPrice(FLAT_DELIVERY_FEE)}
-                </span>
+                <span className="text-ink/50">Calculated at checkout</span>
               </div>
             </div>
 
             <div className="mt-4 flex justify-between border-t border-ink/10 pt-4 text-base font-semibold text-ink">
-              <span>Total</span>
-              <span>{formatPrice(subtotal + FLAT_DELIVERY_FEE)}</span>
+              <span>Subtotal</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
 
             <Link

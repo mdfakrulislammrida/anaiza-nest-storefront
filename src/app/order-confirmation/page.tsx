@@ -99,6 +99,14 @@ export default function OrderConfirmationPage() {
         </p>
         <p className="mt-2">{order.customer.email}</p>
         <p>{order.customer.phone}</p>
+        {order.shipping_zone && (
+          <p className="mt-2">
+            {order.shipping_zone.name}
+            {order.shipping_zone.estimated_days
+              ? ` · Est. ${order.shipping_zone.estimated_days}`
+              : ""}
+          </p>
+        )}
       </div>
 
       <Link

@@ -106,7 +106,7 @@ export default async function ShopPage({
               {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((p) => (
                 <Link
                   key={p}
-                  href={buildHref({ page: p })}
+                  href={buildHref({ page: String(p) })}
                   className={`flex h-9 w-9 items-center justify-center text-sm font-medium transition-colors ${
                     p === meta.current_page
                       ? "bg-ink text-ivory"

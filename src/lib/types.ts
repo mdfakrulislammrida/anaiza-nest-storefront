@@ -76,7 +76,7 @@ export interface CreateOrderPayload {
   customer_city: string;
   customer_postal_code: string;
   payment_method: PaymentMethod;
-  delivery_fee: number;
+  shipping_zone_id: number;
   gift_note?: string | null;
   items: OrderItemPayload[];
 }
@@ -101,6 +101,12 @@ export interface OrderItem {
   variant_value: string | null;
 }
 
+export interface OrderShippingZone {
+  id: number;
+  name: string;
+  estimated_days: string | null;
+}
+
 export interface Order {
   id: number;
   status: string;
@@ -112,9 +118,57 @@ export interface Order {
   created_at: string;
   customer: OrderCustomer;
   items: OrderItem[];
+  shipping_zone?: OrderShippingZone | null;
 }
 
 export interface ApiValidationError {
   message: string;
   errors: Record<string, string[]>;
+}
+
+export interface Page {
+  id: number;
+  title: string;
+  slug: string;
+  content: string | null;
+}
+
+export interface Banner {
+  id: number;
+  image_url: string;
+  headline: string | null;
+  subtext: string | null;
+  link: string | null;
+  sort_order: number;
+}
+
+export interface Faq {
+  id: number;
+  question: string;
+  answer: string;
+  sort_order: number;
+}
+
+export interface ShippingZone {
+  id: number;
+  name: string;
+  delivery_fee: number;
+  estimated_days: string | null;
+}
+
+export interface SiteSetting {
+  site_name: string;
+  logo_url: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  facebook_url: string | null;
+  instagram_url: string | null;
+  youtube_url: string | null;
+  tiktok_url: string | null;
+}
+
+export interface PaymentSetting {
+  bkash_number: string | null;
+  nagad_number: string | null;
+  cod_enabled: boolean;
 }

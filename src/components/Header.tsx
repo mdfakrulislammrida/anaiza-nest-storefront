@@ -2,24 +2,32 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import type { SiteSetting } from "@/lib/types";
 
 const NAV_LINKS = [
   { href: "/shop", label: "Shop" },
   { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
 ];
 
-export default function Header() {
+export default function Header({ siteSettings }: { siteSettings: SiteSetting | null }) {
   const { itemCount } = useCart();
+  const siteName = siteSettings?.site_name ?? "Anaiza";
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-ivory/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link
           href="/"
-          className="font-serif text-2xl tracking-wide text-ink"
-          aria-label="Anaiza home"
+          className="flex items-center gap-2 font-serif text-2xl tracking-wide text-ink"
+          aria-label={`${siteName} home`}
         >
-          Anaiza
+          {siteSettings?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL, not in next/image's allowed hosts
+            <img src={siteSettings.logo_url} alt={siteName} className="h-8 w-auto" />
+          ) : (
+            siteName
+          )}
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm font-medium tracking-wide text-ink/80 sm:flex">
