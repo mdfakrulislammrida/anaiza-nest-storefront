@@ -1,21 +1,15 @@
-import { getPaymentSettings, getShippingZones } from "@/lib/api";
+import { getPaymentSettings } from "@/lib/api";
 import CheckoutForm from "@/components/CheckoutForm";
-import type { PaymentSetting, ShippingZone } from "@/lib/types";
+import type { PaymentSetting } from "@/lib/types";
 
 export default async function CheckoutPage() {
-  let shippingZones: ShippingZone[] = [];
   let paymentSettings: PaymentSetting | null = null;
 
   try {
-    [shippingZones, paymentSettings] = await Promise.all([
-      getShippingZones(),
-      getPaymentSettings(),
-    ]);
+    paymentSettings = await getPaymentSettings();
   } catch {
-    // CheckoutForm handles an empty zones list with its own message.
+    // CheckoutForm falls back to showing every payment method.
   }
 
-  return (
-    <CheckoutForm shippingZones={shippingZones} paymentSettings={paymentSettings} />
-  );
+  return <CheckoutForm paymentSettings={paymentSettings} />;
 }

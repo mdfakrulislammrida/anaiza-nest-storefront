@@ -1,52 +1,49 @@
 import Link from "next/link";
-import NewsletterForm from "./NewsletterForm";
-import type { Page, SiteSetting } from "@/lib/types";
+import type { SiteSetting } from "@/lib/types";
 
-const SOCIAL_LINKS: { key: keyof SiteSetting; label: string }[] = [
-  { key: "facebook_url", label: "Facebook" },
-  { key: "instagram_url", label: "Instagram" },
-  { key: "youtube_url", label: "YouTube" },
-  { key: "tiktok_url", label: "TikTok" },
+const CUSTOMER_CARE_LINKS = [
+  { href: "/track-order", label: "Track Order" },
+  { href: "/pages/shipping", label: "Shipping Policy" },
+  { href: "/pages/returns", label: "Returns & Refunds" },
+  { href: "/faq", label: "FAQs" },
+  { href: "/contact", label: "Contact Us" },
 ];
 
-export default function Footer({
-  siteSettings,
-  pages,
-}: {
-  siteSettings: SiteSetting | null;
-  pages: Page[];
-}) {
-  const siteName = siteSettings?.site_name ?? "Anaiza";
+const PAYMENT_METHODS = ["bKash", "Nagad", "Rocket", "COD"];
+
+const SOCIAL_LINKS: { key: keyof SiteSetting }[] = [
+  { key: "facebook_url" },
+  { key: "instagram_url" },
+  { key: "youtube_url" },
+  { key: "tiktok_url" },
+];
+
+export default function Footer({ siteSettings }: { siteSettings: SiteSetting | null }) {
+  const siteName = siteSettings?.site_name ?? "Anaiza Nest";
   const socials = SOCIAL_LINKS.filter((social) => siteSettings?.[social.key]);
 
   return (
-    <footer className="mt-24 border-t border-ink/10 bg-ink text-ivory">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="border-t border-line bg-cream text-ink">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-3 sm:px-6">
         <div>
-          <p className="font-serif text-xl tracking-wide">{siteName}</p>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-ivory/70">
-            Considered pieces, quietly made. Shop the current collection or
-            learn about our approach.
+          <p className="font-serif text-xl">{siteName}</p>
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
+            Bangladesh&rsquo;s #1 gift shop — handcrafted ceramic tea sets, porcelain
+            collections, and premium gift boxes, delivered across Bangladesh with
+            cash-on-delivery and mobile-wallet checkout.
           </p>
-
-          {(siteSettings?.contact_phone || siteSettings?.contact_email) && (
-            <div className="mt-4 space-y-1 text-sm text-ivory/70">
-              {siteSettings?.contact_phone && <p>{siteSettings.contact_phone}</p>}
-              {siteSettings?.contact_email && <p>{siteSettings.contact_email}</p>}
-            </div>
-          )}
-
           {socials.length > 0 && (
-            <div className="mt-4 flex gap-4 text-xs font-semibold uppercase tracking-widest text-ivory/70">
+            <div className="mt-4 flex gap-3">
               {socials.map((social) => (
                 <a
                   key={social.key}
                   href={siteSettings?.[social.key] ?? undefined}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="transition-colors hover:text-gold"
+                  aria-label="Social link"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-xs text-ink transition-colors hover:border-navy hover:text-navy"
                 >
-                  {social.label}
+                  •
                 </a>
               ))}
             </div>
@@ -54,45 +51,14 @@ export default function Footer({
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-            Shop
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+            Customer Care
           </p>
-          <ul className="mt-4 space-y-2 text-sm text-ivory/80">
-            <li>
-              <Link href="/shop" className="transition-colors hover:text-gold">
-                All products
-              </Link>
-            </li>
-            <li>
-              <Link href="/cart" className="transition-colors hover:text-gold">
-                Your cart
-              </Link>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-            Studio
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-ivory/80">
-            <li>
-              <Link href="/about" className="transition-colors hover:text-gold">
-                About {siteName}
-              </Link>
-            </li>
-            <li>
-              <Link href="/faq" className="transition-colors hover:text-gold">
-                FAQ
-              </Link>
-            </li>
-            {pages.map((page) => (
-              <li key={page.id}>
-                <Link
-                  href={`/pages/${page.slug}`}
-                  className="transition-colors hover:text-gold"
-                >
-                  {page.title}
+          <ul className="mt-4 space-y-2 text-sm text-ink/80">
+            {CUSTOMER_CARE_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="transition-colors hover:text-navy">
+                  {link.label}
                 </Link>
               </li>
             ))}
@@ -100,17 +66,28 @@ export default function Footer({
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-            Stay in touch
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+            Get in Touch
           </p>
-          <p className="mt-4 max-w-xs text-sm text-ivory/70">
-            New arrivals and studio notes, occasionally.
-          </p>
-          <NewsletterForm />
+          <div className="mt-4 space-y-1 text-sm text-ink/80">
+            <p>{siteSettings?.address ?? "Dhaka, Bangladesh"}</p>
+            {siteSettings?.contact_phone && <p>{siteSettings.contact_phone}</p>}
+            {siteSettings?.contact_email && <p>{siteSettings.contact_email}</p>}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {PAYMENT_METHODS.map((method) => (
+              <span
+                key={method}
+                className="rounded border border-line px-2.5 py-1 text-xs font-medium text-ink/70"
+              >
+                {method}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-ivory/10 px-6 py-6 text-center text-xs text-ivory/50">
+      <div className="border-t border-line px-4 py-6 text-center text-xs text-muted sm:px-6">
         © {new Date().getFullYear()} {siteName}. All rights reserved.
       </div>
     </footer>

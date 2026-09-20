@@ -9,7 +9,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Product, ProductVariant } from "@/lib/types";
+import type { ProductVariant } from "@/lib/types";
+
+// Only the fields addItem actually reads — lets callers that don't have a
+// full Product (e.g. the wishlist page's cached snapshot) add to cart too.
+export interface CartAddableProduct {
+  id: number;
+  slug: string;
+  name: string;
+  effective_price: number;
+  stock_quantity: number;
+  images?: { url: string }[];
+}
 
 export interface CartItem {
   key: string;
@@ -28,7 +39,10 @@ interface CartContextValue {
   items: CartItem[];
   itemCount: number;
   subtotal: number;
-  addItem: (product: Product, variant: ProductVariant | null, quantity: number) => void;
+  isDrawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  addItem: (product: CartAddableProduct, variant: ProductVariant | null, quantity: number) => void;
   updateQuantity: (key: string, quantity: number) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
@@ -44,10 +58,14 @@ function cartKey(productId: number, variantId: number | null) {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
+      // One-time sync from localStorage on mount — window is unavailable
+      // during SSR, so this can't be a lazy useState initializer instead.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setItems(JSON.parse(raw) as CartItem[]);
     } catch {
       // ignore malformed storage
@@ -60,8 +78,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, hydrated]);
 
+  const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+
   const addItem = useCallback(
-    (product: Product, variant: ProductVariant | null, quantity: number) => {
+    (product: CartAddableProduct, variant: ProductVariant | null, quantity: number) => {
       const key = cartKey(product.id, variant?.id ?? null);
       setItems((prev) => {
         const existing = prev.find((item) => item.key === key);
@@ -82,7 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             productId: product.id,
             slug: product.slug,
             name: product.name,
-            price: product.price,
+            price: product.effective_price,
             image: product.images?.[0]?.url ?? null,
             variantId: variant?.id ?? null,
             variantLabel: variant ? `${variant.name}: ${variant.value}` : null,
@@ -91,6 +112,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ];
       });
+      setIsDrawerOpen(true);
     },
     [],
   );
@@ -122,8 +144,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ items, itemCount, subtotal, addItem, updateQuantity, removeItem, clearCart }),
-    [items, itemCount, subtotal, addItem, updateQuantity, removeItem, clearCart],
+    () => ({
+      items,
+      itemCount,
+      subtotal,
+      isDrawerOpen,
+      openDrawer,
+      closeDrawer,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+    }),
+    [
+      items,
+      itemCount,
+      subtotal,
+      isDrawerOpen,
+      openDrawer,
+      closeDrawer,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

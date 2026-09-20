@@ -1,17 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --ivory: #f6f1e7;
-  --ink: #141f30;
-  --gold: #ad8a50;
-  --burgundy: #661e29;
+  --ivory: #fffdfb;
+  --cream: #f7f4f1;
+  --ink: #16161a;
+  --navy: #223967;
+  --muted: #8b8b97;
+  --line: #ece7e1;
+  --pill: #f5f7f9;
 }
 
 @theme inline {
   --color-ivory: var(--ivory);
+  --color-cream: var(--cream);
   --color-ink: var(--ink);
-  --color-gold: var(--gold);
-  --color-burgundy: var(--burgundy);
+  --color-navy: var(--navy);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-pill: var(--pill);
 
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-sans: var(--font-inter), Arial, sans-serif;
@@ -28,4 +34,5 @@ h2,
 h3,
 h4 {
   font-family: var(--font-serif);
+  font-weight: 400;
 }

@@ -16,7 +16,7 @@ export default function ProductGallery({
 
   return (
     <div>
-      <div className="relative aspect-square overflow-hidden bg-ink/5">
+      <div className="relative aspect-square overflow-hidden rounded-xl bg-pill">
         {active ? (
           <Image
             src={active.url}
@@ -27,8 +27,8 @@ export default function ProductGallery({
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-ivory to-ink/10">
-            <span className="font-serif text-2xl text-ink/30">Anaiza</span>
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cream to-pill">
+            <span className="font-serif text-2xl text-ink/20">Anaiza Nest</span>
           </div>
         )}
       </div>
@@ -40,8 +40,8 @@ export default function ProductGallery({
               key={image.id}
               type="button"
               onClick={() => setActiveIndex(index)}
-              className={`relative aspect-square overflow-hidden border ${
-                index === activeIndex ? "border-gold" : "border-transparent"
+              className={`relative aspect-square overflow-hidden rounded-lg border ${
+                index === activeIndex ? "border-navy" : "border-transparent"
               }`}
             >
               <Image
