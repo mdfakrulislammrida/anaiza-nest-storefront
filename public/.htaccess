@@ -1,0 +1,21 @@
+DirectoryIndex index.html
+
+Options -Indexes
+
+RewriteEngine On
+
+# 1. Requests that map directly to a real file (assets, or an explicit
+#    .html/.txt hit) pass through untouched.
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# 2. Clean URL -> matching .html file, e.g. /account -> account.html
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+)$ $1.html [L]
+
+# 3. Same, but for a trailing-slash request, e.g. /account/ -> account.html
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^(.+)/$ /$1.html [L]
+
+# 4. Custom 404 page
+ErrorDocument 404 /404.html
