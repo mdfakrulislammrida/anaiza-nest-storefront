@@ -1,12 +1,20 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ApiError, getProduct, getProducts } from "@/lib/api";
+import { ApiError, getAllProducts, getProduct, getProducts } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
 import Accordion from "@/components/Accordion";
 import type { Metadata } from "next";
+
+// Static export needs every product slug enumerated at build time — there's
+// no server to render an unknown slug on demand. A product added after the
+// build won't have a page until the next rebuild.
+export async function generateStaticParams() {
+  const products = await getAllProducts();
+  return products.map((product) => ({ slug: product.slug }));
+}
 
 export async function generateMetadata({
   params,

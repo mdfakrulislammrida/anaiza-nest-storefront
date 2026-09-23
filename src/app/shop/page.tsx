@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import ProductListing, { type ListingSearchParams } from "@/components/ProductListing";
+import { Suspense } from "react";
+import ProductListing from "@/components/ProductListing";
 
 export const metadata: Metadata = {
   title: "Shop All Gifts",
   description: "Browse the full Anaiza Nest gift catalog — Bangladesh's #1 gift shop.",
 };
 
-export default async function ShopPage({
-  searchParams,
-}: {
-  searchParams: Promise<ListingSearchParams>;
-}) {
-  const resolvedSearchParams = await searchParams;
-
+export default function ShopPage() {
   return (
     <div>
       <div className="border-b border-line bg-cream">
@@ -24,7 +19,9 @@ export default async function ShopPage({
         </div>
       </div>
 
-      <ProductListing searchParams={resolvedSearchParams} breadcrumbLabel="Shop" />
+      <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
+        <ProductListing breadcrumbLabel="Shop" />
+      </Suspense>
     </div>
   );
 }

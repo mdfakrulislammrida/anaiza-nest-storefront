@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ApiError, getPage } from "@/lib/api";
+import { ApiError, getPage, getPages } from "@/lib/api";
+
+// Static export needs every CMS page slug enumerated at build time — there's
+// no server to render an unknown slug on demand.
+export async function generateStaticParams() {
+  const pages = await getPages();
+  return pages.map((page) => ({ slug: page.slug }));
+}
 
 export async function generateMetadata({
   params,

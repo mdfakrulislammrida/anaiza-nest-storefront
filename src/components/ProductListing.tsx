@@ -1,53 +1,77 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api";
 import ProductCard from "./ProductCard";
 import PriceFilterPanel from "./PriceFilterPanel";
 import SortDropdown from "./SortDropdown";
-import type { ProductListParams, ProductSort } from "@/lib/types";
-
-export interface ListingSearchParams {
-  search?: string;
-  min_price?: string;
-  max_price?: string;
-  sort?: string;
-  page?: string;
-}
+import type { ProductListParams, ProductListResponse, ProductSort } from "@/lib/types";
 
 const VALID_SORTS: ProductSort[] = ["newest", "price_asc", "price_desc"];
 
-export default async function ProductListing({
-  searchParams,
+export default function ProductListing({
   fixedParams,
   breadcrumbLabel,
 }: {
-  searchParams: ListingSearchParams;
   fixedParams?: Partial<ProductListParams>;
   breadcrumbLabel: string;
 }) {
-  const currentPage = Number(searchParams.page ?? "1") || 1;
-  const minPrice = searchParams.min_price ? Number(searchParams.min_price) : undefined;
-  const maxPrice = searchParams.max_price ? Number(searchParams.max_price) : undefined;
-  const sort = VALID_SORTS.includes(searchParams.sort as ProductSort)
-    ? (searchParams.sort as ProductSort)
-    : undefined;
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const { data: products, meta } = await getProducts({
-    ...fixedParams,
-    search: searchParams.search,
-    min_price: minPrice,
-    max_price: maxPrice,
-    sort,
-    page: currentPage,
-    per_page: 24,
-  });
+  // fixedParams is a fresh object literal from the caller on every render
+  // (e.g. {on_sale: true}), but its actual content never changes for a
+  // given page — freeze it at first render so it's a stable effect input.
+  const fixedParamsRef = useRef(fixedParams);
+
+  const search = searchParams.get("search") ?? undefined;
+  const minPrice = searchParams.get("min_price") ? Number(searchParams.get("min_price")) : undefined;
+  const maxPrice = searchParams.get("max_price") ? Number(searchParams.get("max_price")) : undefined;
+  const sortParam = searchParams.get("sort");
+  const sort = VALID_SORTS.includes(sortParam as ProductSort) ? (sortParam as ProductSort) : undefined;
+  const currentPage = Number(searchParams.get("page") ?? "1") || 1;
+
+  const [result, setResult] = useState<ProductListResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Flip the loading flag before kicking off the fetch below — standard
+    // "start of an async effect" pattern, not a case the lint rule's
+    // cascading-render concern actually applies to.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+
+    getProducts({
+      ...fixedParamsRef.current,
+      search,
+      min_price: minPrice,
+      max_price: maxPrice,
+      sort,
+      page: currentPage,
+      per_page: 24,
+    })
+      .then((res) => {
+        if (!cancelled) setResult(res);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [search, minPrice, maxPrice, sort, currentPage]);
 
   const buildHref = (overrides: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();
     const next: Record<string, string | number | undefined> = {
-      search: searchParams.search,
+      search,
       min_price: minPrice,
       max_price: maxPrice,
-      sort: searchParams.sort,
+      sort: sortParam ?? undefined,
       page: undefined,
       ...overrides,
     };
@@ -55,8 +79,12 @@ export default async function ProductListing({
       if (value !== undefined && value !== "") params.set(key, String(value));
     }
     const qs = params.toString();
-    return qs ? `?${qs}` : "";
+    return qs ? `${pathname}?${qs}` : pathname;
   };
+
+  const products = result?.data ?? [];
+  const meta = result?.meta;
+  const showSkeleton = loading && !result;
 
   return (
     <div>
@@ -76,12 +104,20 @@ export default async function ProductListing({
 
           <div className="flex-1">
             <div className="mb-6 flex items-center justify-between">
-              <p className="text-sm text-muted">{meta.total} products</p>
+              <p className="text-sm text-muted">
+                {showSkeleton ? "Loading…" : `${meta?.total ?? 0} products`}
+              </p>
               <SortDropdown />
             </div>
 
-            {products.length > 0 ? (
-              <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
+            {showSkeleton ? (
+              <p className="py-20 text-center text-muted">Loading products…</p>
+            ) : products.length > 0 ? (
+              <div
+                className={`grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 transition-opacity ${
+                  loading ? "opacity-60" : "opacity-100"
+                }`}
+              >
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -90,7 +126,7 @@ export default async function ProductListing({
               <p className="py-20 text-center text-muted">No products match these filters.</p>
             )}
 
-            {meta.last_page > 1 && (
+            {meta && meta.last_page > 1 && (
               <div className="mt-14 flex items-center justify-center gap-2">
                 {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((page) => (
                   <Link

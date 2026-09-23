@@ -19,6 +19,7 @@
 
 # production
 /build
+*-deploy.zip
 
 # misc
 .DS_Store
@@ -33,6 +34,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+# .env.production holds only the public production API URL (baked into the
+# client bundle regardless), not a secret — committed so static-export
+# builds have a correct default without relying on a local override.
+!.env.production
 
 # vercel
 .vercel

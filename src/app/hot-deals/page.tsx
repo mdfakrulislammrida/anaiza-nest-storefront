@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import ProductListing, { type ListingSearchParams } from "@/components/ProductListing";
+import { Suspense } from "react";
+import ProductListing from "@/components/ProductListing";
 import CountdownTimer from "@/components/CountdownTimer";
 
 export const metadata: Metadata = {
@@ -7,13 +8,7 @@ export const metadata: Metadata = {
   description: "Limited-time prices on Anaiza Nest gifts, while stock lasts.",
 };
 
-export default async function HotDealsPage({
-  searchParams,
-}: {
-  searchParams: Promise<ListingSearchParams>;
-}) {
-  const resolvedSearchParams = await searchParams;
-
+export default function HotDealsPage() {
   return (
     <div>
       <div className="relative flex min-h-[220px] flex-col justify-end bg-gradient-to-br from-gray-500 to-black p-8 text-white sm:p-12">
@@ -29,11 +24,9 @@ export default async function HotDealsPage({
         </div>
       </div>
 
-      <ProductListing
-        searchParams={resolvedSearchParams}
-        fixedParams={{ on_sale: true }}
-        breadcrumbLabel="Hot Deals"
-      />
+      <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
+        <ProductListing fixedParams={{ on_sale: true }} breadcrumbLabel="Hot Deals" />
+      </Suspense>
     </div>
   );
 }
