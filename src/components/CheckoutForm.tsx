@@ -337,13 +337,13 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
             <p className="mt-3 text-center text-xs text-muted">
               By placing this order you agree to our{" "}
-              <a href="/pages/terms" className="underline hover:text-navy">
+              <Link href="/pages/terms" className="underline hover:text-navy">
                 Terms
-              </a>{" "}
+              </Link>{" "}
               and{" "}
-              <a href="/pages/returns" className="underline hover:text-navy">
+              <Link href="/pages/returns" className="underline hover:text-navy">
                 Return Policy
-              </a>
+              </Link>
               .
             </p>
           </div>

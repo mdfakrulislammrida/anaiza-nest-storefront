@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFaqs } from "@/lib/api";
+import { faqPageJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   title: "FAQs",
   description: "Answers to common questions about ordering, shipping, and returns.",
+  alternates: { canonical: "/faq" },
 };
 
 export default async function FaqPage() {
@@ -12,6 +14,12 @@ export default async function FaqPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      {faqs.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(faqs)) }}
+        />
+      )}
       <nav className="mb-6 text-xs text-muted">
         <Link href="/" className="hover:text-navy">
           Home

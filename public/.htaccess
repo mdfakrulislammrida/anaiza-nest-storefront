@@ -9,19 +9,25 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# 2. Product & CMS-page detail shells: content is fetched client-side from
-#    the API, so any slug -- including ones added after this build -- is
-#    served by the same static shell, which reads the real slug from the URL.
-RewriteRule ^product/.+$ /product.html [L]
-RewriteRule ^pages/.+$ /pages.html [L]
-
-# 3. Clean URL -> matching .html file, e.g. /account -> account.html
+# 2. Clean URL -> matching .html file, e.g. /account -> account.html, or
+#    /product/<slug> -> product/<slug>.html for a product that existed at
+#    build time (generateStaticParams generated that file).
 RewriteCond %{REQUEST_FILENAME}.html -f
 RewriteRule ^(.+)$ $1.html [L]
 
-# 4. Same, but for a trailing-slash request, e.g. /account/ -> account.html
+# 3. Same, but for a trailing-slash request, e.g. /account/ -> account.html
 RewriteCond %{DOCUMENT_ROOT}/$1.html -f
 RewriteRule ^(.+)/$ /$1.html [L]
+
+# 4. Fallback for a product/page slug that didn't match a file in step 2 --
+#    i.e. one added after the last build, so generateStaticParams didn't
+#    know about it yet. Serves the client-only shell (product.html /
+#    pages.html), which reads the real slug from the URL and fetches it
+#    from the API directly, so brand new content still shows up without
+#    waiting for the next rebuild (just without the static SEO benefits
+#    until then).
+RewriteRule ^product/.+$ /product.html [L]
+RewriteRule ^pages/.+$ /pages.html [L]
 
 # 5. Custom 404 page
 ErrorDocument 404 /404.html

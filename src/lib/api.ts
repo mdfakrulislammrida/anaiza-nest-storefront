@@ -91,6 +91,52 @@ export async function getProducts(
   return apiFetch<ProductListResponse>(`/products${qs ? `?${qs}` : ""}`);
 }
 
+/**
+ * Fetches every active product across all pages. Used by generateStaticParams
+ * (product pages) and the sitemap, which both need the full slug list up
+ * front rather than one page at a time.
+ */
+export async function getAllProducts(): Promise<Product[]> {
+  const all: Product[] = [];
+  let page = 1;
+  let lastPage = 1;
+
+  do {
+    const res = await getProducts({ page, per_page: 100 });
+    all.push(...res.data);
+    lastPage = res.meta.last_page;
+    page += 1;
+  } while (page <= lastPage);
+
+  return all;
+}
+
+export interface HomeCatalog {
+  hotDeals: Product[];
+  bestsellers: Product[];
+  newArrivals: Product[];
+}
+
+/**
+ * The three product lists the home page shows. Shared between the
+ * build-time server fetch and the client's background refresh so both stay
+ * in sync about what "home page content" means.
+ */
+export async function getHomeCatalog(): Promise<HomeCatalog> {
+  const [hotDealsRes, featuredRes, newArrivalsRes] = await Promise.all([
+    getProducts({ on_sale: true, per_page: 5 }),
+    getProducts({ is_featured: true, per_page: 8 }),
+    getProducts({ is_new: true, sort: "newest", per_page: 9 }),
+  ]);
+
+  let bestsellers = featuredRes.data;
+  if (bestsellers.length === 0) {
+    bestsellers = (await getProducts({ sort: "newest", per_page: 8 })).data;
+  }
+
+  return { hotDeals: hotDealsRes.data, bestsellers, newArrivals: newArrivalsRes.data };
+}
+
 export async function getProduct(slug: string): Promise<Product> {
   const { data } = await apiFetch<{ data: Product }>(
     `/products/${encodeURIComponent(slug)}`,
@@ -109,6 +155,11 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
 export async function lookupOrder(orderId: string, phone: string): Promise<Order> {
   const query = new URLSearchParams({ order_id: orderId, phone });
   const { data } = await apiFetch<{ data: Order }>(`/orders/lookup?${query.toString()}`);
+  return data;
+}
+
+export async function getPages(): Promise<Page[]> {
+  const { data } = await apiFetch<{ data: Page[] }>("/pages");
   return data;
 }
 

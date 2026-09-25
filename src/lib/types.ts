@@ -175,6 +175,7 @@ export interface Page {
   title: string;
   slug: string;
   content: string | null;
+  seo?: ProductSeo;
 }
 
 export interface Banner {

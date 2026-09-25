@@ -6,9 +6,11 @@ import Link from "next/link";
 import { ApiError, getPage } from "@/lib/api";
 import type { Page } from "@/lib/types";
 
-// Same single-shell pattern as /product: Apache rewrites any /pages/<slug>
-// request to this one static file (see public/.htaccess), and we read the
-// real slug from the URL client-side to fetch the matching CMS page.
+// Same fallback pattern as /product: /pages/[slug] statically generates a
+// real page for every CMS page known at build time, and public/.htaccess
+// rewrites an unmatched /pages/<slug> request (one added after the last
+// build) to this flat shell, which reads the real slug from the URL
+// client-side and fetches the matching CMS page directly.
 function slugFromPathname(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length < 2 || segments[0] !== "pages") return null;
@@ -20,15 +22,13 @@ export default function CmsPage() {
   const slug = slugFromPathname(pathname);
 
   const [page, setPage] = useState<Page | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  // Lazy-initialized from `slug` rather than set inside the effect below,
+  // so the no-slug case never needs a synchronous setState-in-effect.
+  const [loading, setLoading] = useState(() => !!slug);
+  const [notFound, setNotFound] = useState(() => !slug);
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      setNotFound(true);
-      return;
-    }
+    if (!slug) return;
 
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect

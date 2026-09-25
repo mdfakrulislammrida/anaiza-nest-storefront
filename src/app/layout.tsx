@@ -10,6 +10,9 @@ import Footer from "@/components/Footer";
 import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { getSiteSettings } from "@/lib/api";
+import { SITE_URL } from "@/lib/config";
+import { organizationJsonLd } from "@/lib/jsonld";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -23,21 +26,50 @@ const inter = Inter({
   display: "swap",
 });
 
+const SITE_NAME = "Anaiza Nest";
+const SITE_DESCRIPTION =
+  "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Anaiza Nest — Bangladesh's #1 Gift Shop",
-    template: "%s | Anaiza Nest",
+    default: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    siteName: SITE_NAME,
+    type: "website",
+    locale: "en_US",
+    title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
+    description: SITE_DESCRIPTION,
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Fetched once at build time purely to emit static, crawlable Organization
+  // JSON-LD below. The live header/footer intentionally keep fetching
+  // site-settings again client-side (SiteSettingsProvider) so a name/logo/
+  // contact-info change in the admin still shows up without a rebuild --
+  // this build-time copy only needs to be roughly right, not live.
+  const siteSettings = await getSiteSettings().catch(() => null);
+
   return (
     <html
       lang="en"
       className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(siteSettings)) }}
+        />
+      </head>
       <body className="flex min-h-full flex-col bg-ivory text-ink">
         <SiteSettingsProvider>
           <AuthProvider>
