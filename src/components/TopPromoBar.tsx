@@ -1,7 +1,10 @@
-import Link from "next/link";
-import type { SiteSetting } from "@/lib/types";
+"use client";
 
-export default function TopPromoBar({ siteSettings }: { siteSettings: SiteSetting | null }) {
+import Link from "next/link";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
+
+export default function TopPromoBar() {
+  const { siteSettings } = useSiteSettings();
   const phone = siteSettings?.contact_phone;
 
   return (

@@ -1,9 +1,14 @@
+"use client";
+
+import { useSiteSettings } from "@/context/SiteSettingsContext";
+
 function digitsOnly(value: string) {
   return value.replace(/[^\d]/g, "");
 }
 
-export default function WhatsAppButton({ phone }: { phone: string | null }) {
-  const number = digitsOnly(phone ?? "+8801886004421");
+export default function WhatsAppButton() {
+  const { siteSettings } = useSiteSettings();
+  const number = digitsOnly(siteSettings?.contact_phone ?? "+8801886004421");
 
   return (
     <a

@@ -91,26 +91,6 @@ export async function getProducts(
   return apiFetch<ProductListResponse>(`/products${qs ? `?${qs}` : ""}`);
 }
 
-/**
- * Fetches every active product across all pages. Used by
- * generateStaticParams for the static export build, which needs the full
- * slug list up front rather than one page at a time.
- */
-export async function getAllProducts(): Promise<Product[]> {
-  const all: Product[] = [];
-  let page = 1;
-  let lastPage = 1;
-
-  do {
-    const res = await getProducts({ page, per_page: 100 });
-    all.push(...res.data);
-    lastPage = res.meta.last_page;
-    page += 1;
-  } while (page <= lastPage);
-
-  return all;
-}
-
 export async function getProduct(slug: string): Promise<Product> {
   const { data } = await apiFetch<{ data: Product }>(
     `/products/${encodeURIComponent(slug)}`,
@@ -129,11 +109,6 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
 export async function lookupOrder(orderId: string, phone: string): Promise<Order> {
   const query = new URLSearchParams({ order_id: orderId, phone });
   const { data } = await apiFetch<{ data: Order }>(`/orders/lookup?${query.toString()}`);
-  return data;
-}
-
-export async function getPages(): Promise<Page[]> {
-  const { data } = await apiFetch<{ data: Page[] }>("/pages");
   return data;
 }
 

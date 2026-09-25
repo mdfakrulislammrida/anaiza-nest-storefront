@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import SearchBar from "./SearchBar";
 import ThemeToggle from "./ThemeToggle";
-import type { SiteSetting } from "@/lib/types";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -15,9 +15,10 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-export default function Header({ siteSettings }: { siteSettings: SiteSetting | null }) {
+export default function Header() {
   const { itemCount, openDrawer } = useCart();
   const { items: wishlistItems } = useWishlist();
+  const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
 
   return (

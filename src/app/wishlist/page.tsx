@@ -53,13 +53,15 @@ function WishlistRow({
 
   return (
     <div className="flex items-center gap-4 py-5">
-      <Link href={`/product/${item.slug}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-pill">
+      {/* Plain <a>: /product/<slug> is a single static shell that needs a
+          real navigation, not next/link's client-side routing. */}
+      <a href={`/product/${item.slug}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-pill">
         {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" />}
-      </Link>
+      </a>
       <div className="flex-1">
-        <Link href={`/product/${item.slug}`} className="text-sm font-medium text-ink hover:text-navy">
+        <a href={`/product/${item.slug}`} className="text-sm font-medium text-ink hover:text-navy">
           {item.name}
-        </Link>
+        </a>
         <p className="mt-1 text-sm text-ink/70">{formatPrice(item.price)}</p>
       </div>
       <button

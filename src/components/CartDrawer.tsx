@@ -41,7 +41,10 @@ export default function CartDrawer() {
             <ul className="space-y-4">
               {items.map((item) => (
                 <li key={item.key} className="flex gap-3">
-                  <Link
+                  {/* Plain <a>: /product/<slug> is a single static shell
+                      that needs a real navigation, not next/link's
+                      client-side routing. */}
+                  <a
                     href={`/product/${item.slug}`}
                     onClick={closeDrawer}
                     className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-pill"
@@ -49,16 +52,16 @@ export default function CartDrawer() {
                     {item.image && (
                       <Image src={item.image} alt={item.name} fill className="object-cover" />
                     )}
-                  </Link>
+                  </a>
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <Link
+                      <a
                         href={`/product/${item.slug}`}
                         onClick={closeDrawer}
                         className="text-sm font-medium text-ink hover:text-navy"
                       >
                         {item.name}
-                      </Link>
+                      </a>
                       <button
                         type="button"
                         onClick={() => removeItem(item.key)}

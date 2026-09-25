@@ -4,13 +4,12 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { SiteSettingsProvider } from "@/context/SiteSettingsContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { getSiteSettings } from "@/lib/api";
-import type { SiteSetting } from "@/lib/types";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -33,33 +32,27 @@ export const metadata: Metadata = {
     "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh.",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  let siteSettings: SiteSetting | null = null;
-
-  try {
-    siteSettings = await getSiteSettings();
-  } catch {
-    // Header/Footer fall back to defaults when the API is unreachable.
-  }
-
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-ivory text-ink">
-        <AuthProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <TopPromoBar siteSettings={siteSettings} />
-              <Header siteSettings={siteSettings} />
-              <main className="flex-1">{children}</main>
-              <Footer siteSettings={siteSettings} />
-              <CartDrawer />
-              <WhatsAppButton phone={siteSettings?.contact_phone ?? null} />
-            </WishlistProvider>
-          </CartProvider>
-        </AuthProvider>
+        <SiteSettingsProvider>
+          <AuthProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <TopPromoBar />
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <CartDrawer />
+                <WhatsAppButton />
+              </WishlistProvider>
+            </CartProvider>
+          </AuthProvider>
+        </SiteSettingsProvider>
       </body>
     </html>
   );

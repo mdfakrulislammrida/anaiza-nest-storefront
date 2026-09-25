@@ -1,12 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import type { SiteSetting } from "@/lib/types";
 
+// CMS pages (/pages/*) are served by a single static shell that reads the
+// slug from the URL client-side, so those links need a real browser
+// navigation rather than Next's client-side router -- hence plain <a>.
 const CUSTOMER_CARE_LINKS = [
-  { href: "/track-order", label: "Track Order" },
-  { href: "/pages/shipping", label: "Shipping Policy" },
-  { href: "/pages/returns", label: "Returns & Refunds" },
-  { href: "/faq", label: "FAQs" },
-  { href: "/contact", label: "Contact Us" },
+  { href: "/track-order", label: "Track Order", hardNav: false },
+  { href: "/pages/shipping", label: "Shipping Policy", hardNav: true },
+  { href: "/pages/returns", label: "Returns & Refunds", hardNav: true },
+  { href: "/faq", label: "FAQs", hardNav: false },
+  { href: "/contact", label: "Contact Us", hardNav: false },
 ];
 
 const PAYMENT_METHODS = ["bKash", "Nagad", "Rocket", "COD"];
@@ -18,7 +24,8 @@ const SOCIAL_LINKS: { key: keyof SiteSetting }[] = [
   { key: "tiktok_url" },
 ];
 
-export default function Footer({ siteSettings }: { siteSettings: SiteSetting | null }) {
+export default function Footer() {
+  const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
   const socials = SOCIAL_LINKS.filter((social) => siteSettings?.[social.key]);
 
@@ -55,13 +62,21 @@ export default function Footer({ siteSettings }: { siteSettings: SiteSetting | n
             Customer Care
           </p>
           <ul className="mt-4 space-y-2 text-sm text-ink/80">
-            {CUSTOMER_CARE_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="transition-colors hover:text-navy">
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+            {CUSTOMER_CARE_LINKS.map((link) =>
+              link.hardNav ? (
+                <li key={link.href}>
+                  <a href={link.href} className="transition-colors hover:text-navy">
+                    {link.label}
+                  </a>
+                </li>
+              ) : (
+                <li key={link.href}>
+                  <Link href={link.href} className="transition-colors hover:text-navy">
+                    {link.label}
+                  </Link>
+                </li>
+              ),
+            )}
           </ul>
         </div>
 

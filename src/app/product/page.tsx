@@ -1,52 +1,97 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ApiError, getAllProducts, getProduct, getProducts } from "@/lib/api";
+import { ApiError, getProduct, getProducts } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
 import Accordion from "@/components/Accordion";
-import type { Metadata } from "next";
+import type { Product } from "@/lib/types";
 
-// Static export needs every product slug enumerated at build time — there's
-// no server to render an unknown slug on demand. A product added after the
-// build won't have a page until the next rebuild.
-export async function generateStaticParams() {
-  const products = await getAllProducts();
-  return products.map((product) => ({ slug: product.slug }));
+// Static export can't enumerate every product slug at build time (new
+// products wouldn't have a page until the next rebuild), so this single
+// flat route acts as a shell for ANY /product/<slug> request -- Apache
+// rewrites that request here (see public/.htaccess) while the browser's
+// URL bar keeps showing the real slug, which we read via usePathname()
+// and use to fetch the actual product from the API client-side.
+function slugFromPathname(pathname: string) {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length < 2 || segments[0] !== "product") return null;
+  return segments[segments.length - 1];
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const product = await getProduct(slug).catch(() => null);
-  if (!product) return {};
-  return {
-    title: product.seo?.meta_title || product.name,
-    description: product.seo?.meta_description || product.description || undefined,
-  };
-}
+export default function ProductPage() {
+  const pathname = usePathname();
+  const slug = slugFromPathname(pathname);
 
-export default async function ProductPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+  const [product, setProduct] = useState<Product | null>(null);
+  const [related, setRelated] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  const product = await getProduct(slug).catch((error: unknown) => {
-    if (error instanceof ApiError && error.status === 404) {
-      notFound();
+  useEffect(() => {
+    if (!slug) {
+      setLoading(false);
+      setNotFound(true);
+      return;
     }
-    throw error;
-  });
 
-  const related = await getProducts({ category: product.category.slug, per_page: 5 })
-    .then((res) => res.data.filter((p) => p.id !== product.id).slice(0, 4))
-    .catch(() => []);
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setNotFound(false);
+    setProduct(null);
+    setRelated([]);
+
+    getProduct(slug)
+      .then(async (fetched) => {
+        if (cancelled) return;
+        setProduct(fetched);
+        document.title = fetched.seo?.meta_title || fetched.name;
+
+        const relatedRes = await getProducts({ category: fetched.category.slug, per_page: 5 }).catch(
+          () => null,
+        );
+        if (!cancelled && relatedRes) {
+          setRelated(relatedRes.data.filter((p) => p.id !== fetched.id).slice(0, 4));
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error instanceof ApiError && error.status === 404) {
+          setNotFound(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
+        <p className="text-muted">Loading product…</p>
+      </div>
+    );
+  }
+
+  if (notFound || !product) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
+        <p className="text-muted">We couldn&apos;t find that product.</p>
+        <Link href="/shop" className="mt-4 inline-block text-sm text-navy underline">
+          Back to shop
+        </Link>
+      </div>
+    );
+  }
 
   const onSale = product.discount_percent !== null;
 

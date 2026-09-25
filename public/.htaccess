@@ -9,13 +9,19 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# 2. Clean URL -> matching .html file, e.g. /account -> account.html
+# 2. Product & CMS-page detail shells: content is fetched client-side from
+#    the API, so any slug -- including ones added after this build -- is
+#    served by the same static shell, which reads the real slug from the URL.
+RewriteRule ^product/.+$ /product.html [L]
+RewriteRule ^pages/.+$ /pages.html [L]
+
+# 3. Clean URL -> matching .html file, e.g. /account -> account.html
 RewriteCond %{REQUEST_FILENAME}.html -f
 RewriteRule ^(.+)$ $1.html [L]
 
-# 3. Same, but for a trailing-slash request, e.g. /account/ -> account.html
+# 4. Same, but for a trailing-slash request, e.g. /account/ -> account.html
 RewriteCond %{DOCUMENT_ROOT}/$1.html -f
 RewriteRule ^(.+)/$ /$1.html [L]
 
-# 4. Custom 404 page
+# 5. Custom 404 page
 ErrorDocument 404 /404.html

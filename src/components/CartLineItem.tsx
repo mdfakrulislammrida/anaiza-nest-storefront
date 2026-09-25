@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCart, type CartItem } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 
@@ -10,7 +9,9 @@ export default function CartLineItem({ item }: { item: CartItem }) {
 
   return (
     <div className="flex gap-4 border-b border-line py-6">
-      <Link
+      {/* Plain <a>: /product/<slug> is a single static shell that needs a
+          real navigation, not next/link's client-side routing. */}
+      <a
         href={`/product/${item.slug}`}
         className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-pill"
       >
@@ -21,14 +22,14 @@ export default function CartLineItem({ item }: { item: CartItem }) {
             <span className="font-serif text-xs text-ink/30">Anaiza Nest</span>
           </div>
         )}
-      </Link>
+      </a>
 
       <div className="flex flex-1 flex-col justify-between">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <Link href={`/product/${item.slug}`} className="text-sm font-medium text-ink hover:text-navy">
+            <a href={`/product/${item.slug}`} className="text-sm font-medium text-ink hover:text-navy">
               {item.name}
-            </Link>
+            </a>
             {item.variantLabel && <p className="text-xs text-muted">{item.variantLabel}</p>}
           </div>
           <p className="whitespace-nowrap font-medium text-ink">

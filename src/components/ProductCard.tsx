@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import type { Product } from "@/lib/types";
@@ -23,7 +22,10 @@ export default function ProductCard({
 
   return (
     <div className="group relative">
-      <Link href={`/product/${product.slug}`} className="block">
+      {/* Plain <a>, not next/link: /product/<slug> is served by a single
+          static shell (see src/app/product/page.tsx) that only resolves
+          correctly on a real browser navigation, not a client-side one. */}
+      <a href={`/product/${product.slug}`} className="block">
         <div className={`relative aspect-square overflow-hidden ${dark ? "bg-white/10" : "bg-pill"}`}>
           {image ? (
             <Image
@@ -81,7 +83,7 @@ export default function ProductCard({
             )}
           </div>
         </div>
-      </Link>
+      </a>
 
       <button
         type="button"
