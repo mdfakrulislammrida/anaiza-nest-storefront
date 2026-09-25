@@ -42,16 +42,16 @@ export default function CartLineItem({ item }: { item: CartItem }) {
             <button
               type="button"
               onClick={() => updateQuantity(item.key, item.quantity - 1)}
-              className="flex h-8 w-8 items-center justify-center text-ink transition-colors hover:bg-pill"
+              className="flex h-10 w-10 items-center justify-center text-ink transition-colors hover:bg-pill"
               aria-label="Decrease quantity"
             >
               −
             </button>
-            <span className="flex h-8 w-10 items-center justify-center text-sm">{item.quantity}</span>
+            <span className="flex h-10 w-10 items-center justify-center text-sm">{item.quantity}</span>
             <button
               type="button"
               onClick={() => updateQuantity(item.key, item.quantity + 1)}
-              className="flex h-8 w-8 items-center justify-center text-ink transition-colors hover:bg-pill"
+              className="flex h-10 w-10 items-center justify-center text-ink transition-colors hover:bg-pill"
               aria-label="Increase quantity"
             >
               +
@@ -61,7 +61,7 @@ export default function CartLineItem({ item }: { item: CartItem }) {
           <button
             type="button"
             onClick={() => removeItem(item.key)}
-            className="text-sm text-muted underline-offset-2 transition-colors hover:text-red-600 hover:underline"
+            className="py-2.5 text-sm text-muted underline-offset-2 transition-colors hover:text-red-600 hover:underline"
           >
             Remove
           </button>

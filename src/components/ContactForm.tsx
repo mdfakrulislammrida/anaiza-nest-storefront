@@ -3,8 +3,10 @@
 import { useState, type FormEvent } from "react";
 import { ApiError, submitContactForm } from "@/lib/api";
 
+// text-base (not text-sm): iOS Safari auto-zooms the page when a focused
+// input's font is under 16px, which text-sm's 14px would trigger.
 const inputClass =
-  "mt-1 w-full rounded-lg border border-line bg-ivory px-3 py-2.5 text-sm text-ink focus:border-navy focus:outline-none";
+  "mt-1 w-full rounded-lg border border-line bg-ivory px-3 py-2.5 text-base text-ink focus:border-navy focus:outline-none";
 const labelClass = "text-xs font-semibold uppercase tracking-widest text-muted";
 
 export default function ContactForm() {

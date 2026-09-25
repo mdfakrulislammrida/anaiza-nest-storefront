@@ -118,8 +118,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
     return message ? <p className="mt-1 text-xs text-red-600">{message}</p> : null;
   }
 
+  // text-base (not text-sm): iOS Safari auto-zooms the page when a focused
+  // input's font is under 16px, which text-sm's 14px would trigger.
   const inputClass =
-    "mt-1 w-full rounded-lg border border-line bg-ivory px-3 py-2.5 text-sm text-ink focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-pill disabled:text-muted";
+    "mt-1 w-full rounded-lg border border-line bg-ivory px-3 py-2.5 text-base text-ink focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-pill disabled:text-muted";
   const labelClass = "text-xs font-semibold uppercase tracking-widest text-muted";
 
   return (

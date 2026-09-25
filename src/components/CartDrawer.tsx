@@ -66,9 +66,9 @@ export default function CartDrawer() {
                         type="button"
                         onClick={() => removeItem(item.key)}
                         aria-label="Remove item"
-                        className="shrink-0 text-muted hover:text-red-600"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center text-muted hover:text-red-600"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
                           <path d="M18 6 6 18M6 6l12 12" />
                         </svg>
                       </button>
@@ -80,7 +80,7 @@ export default function CartDrawer() {
                           type="button"
                           aria-label="Decrease quantity"
                           onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded border border-line text-ink"
+                          className="flex h-9 w-9 items-center justify-center rounded border border-line text-ink"
                         >
                           −
                         </button>
@@ -89,7 +89,7 @@ export default function CartDrawer() {
                           type="button"
                           aria-label="Increase quantity"
                           onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded border border-line text-ink"
+                          className="flex h-9 w-9 items-center justify-center rounded border border-line text-ink"
                         >
                           +
                         </button>
