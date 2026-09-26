@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ApiError, getProduct, getProducts } from "@/lib/api";
+import { trackViewItem } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
@@ -50,6 +51,7 @@ export default function ProductPage() {
         if (cancelled) return;
         setProduct(fetched);
         document.title = fetched.seo?.meta_title || fetched.name;
+        trackViewItem(fetched);
 
         const relatedRes = await getProducts({ category: fetched.category.slug, per_page: 5 }).catch(
           () => null,

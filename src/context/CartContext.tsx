@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { trackAddToCart, trackRemoveFromCart } from "@/lib/tracking";
 import type { ProductVariant } from "@/lib/types";
 
 // Only the fields addItem actually reads — lets callers that don't have a
@@ -83,6 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback(
     (product: CartAddableProduct, variant: ProductVariant | null, quantity: number) => {
+      trackAddToCart(product, quantity);
       const key = cartKey(product.id, variant?.id ?? null);
       setItems((prev) => {
         const existing = prev.find((item) => item.key === key);
@@ -127,9 +129,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const removeItem = useCallback((key: string) => {
-    setItems((prev) => prev.filter((item) => item.key !== key));
-  }, []);
+  const removeItem = useCallback(
+    (key: string) => {
+      const removed = items.find((item) => item.key === key);
+      if (removed) trackRemoveFromCart(removed);
+      setItems((prev) => prev.filter((item) => item.key !== key));
+    },
+    [items],
+  );
 
   const clearCart = useCallback(() => setItems([]), []);
 

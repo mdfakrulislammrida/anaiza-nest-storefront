@@ -3,7 +3,24 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
+import { trackPurchase } from "@/lib/tracking";
 import type { Order } from "@/lib/types";
+
+const TRACKED_ORDERS_KEY = "anaiza-purchase-tracked";
+
+// A page refresh (or back/forward) would re-run this effect against the
+// same order still sitting in sessionStorage -- this guard makes sure the
+// purchase event only ever fires once per order.
+function alreadyTrackedPurchase(orderId: number): boolean {
+  try {
+    const tracked = JSON.parse(window.sessionStorage.getItem(TRACKED_ORDERS_KEY) ?? "[]") as number[];
+    if (tracked.includes(orderId)) return true;
+    window.sessionStorage.setItem(TRACKED_ORDERS_KEY, JSON.stringify([...tracked, orderId]));
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export default function OrderConfirmationPage() {
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
@@ -11,9 +28,13 @@ export default function OrderConfirmationPage() {
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem("anaiza-last-order");
+      const parsed = raw ? (JSON.parse(raw) as Order) : null;
       // One-time sync from sessionStorage on mount — see CartContext.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setOrder(raw ? (JSON.parse(raw) as Order) : null);
+      setOrder(parsed);
+      if (parsed && !alreadyTrackedPurchase(parsed.id)) {
+        trackPurchase(parsed);
+      }
     } catch {
       setOrder(null);
     }

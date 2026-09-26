@@ -9,6 +9,7 @@ import type {
   CreateOrderPayload,
   Faq,
   LoginPayload,
+  MarketingSetting,
   Order,
   Page,
   PaymentSetting,
@@ -180,6 +181,11 @@ export async function getFaqs(): Promise<Faq[]> {
 
 export async function getSiteSettings(): Promise<SiteSetting> {
   const { data } = await apiFetch<{ data: SiteSetting }>("/site-settings");
+  return data;
+}
+
+export async function getMarketingSettings(): Promise<MarketingSetting> {
+  const { data } = await apiFetch<{ data: MarketingSetting }>("/marketing-settings");
   return data;
 }
 

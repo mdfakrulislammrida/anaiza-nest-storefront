@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { ApiError, createOrder } from "@/lib/api";
+import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
 import { BD_DISTRICTS_BY_DIVISION, BD_DIVISIONS, type BdDivision } from "@/lib/bangladesh-geography";
 import type { CreateOrderPayload, PaymentMethod, PaymentSetting } from "@/lib/types";
@@ -47,6 +48,11 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
   const districts = division ? BD_DISTRICTS_BY_DIVISION[division] : [];
   const deliveryFee = division ? estimateDeliveryFee(division, subtotal) : null;
+
+  useEffect(() => {
+    if (items.length > 0) trackBeginCheckout(items, subtotal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once when the checkout page is first reached with items in the cart, not on every subtotal change
+  }, []);
 
   if (items.length === 0 && !orderPlaced) {
     return (
@@ -170,8 +176,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                 <select
                   value={division}
                   onChange={(event) => {
-                    setDivision(event.target.value as BdDivision);
+                    const nextDivision = event.target.value as BdDivision;
+                    setDivision(nextDivision);
                     setDistrict("");
+                    if (nextDivision) trackAddShippingInfo(items, subtotal, nextDivision);
                   }}
                   required
                   className={inputClass}
@@ -253,7 +261,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                     name="payment_method"
                     value={method.value}
                     checked={paymentMethod === method.value}
-                    onChange={() => setPaymentMethod(method.value)}
+                    onChange={() => {
+                      setPaymentMethod(method.value);
+                      trackAddPaymentInfo(items, subtotal, method.value);
+                    }}
                     className="sr-only"
                   />
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-xs font-semibold text-white">

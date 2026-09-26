@@ -10,9 +10,11 @@ import Footer from "@/components/Footer";
 import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { getSiteSettings } from "@/lib/api";
+import { getMarketingSettings, getSiteSettings } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 import { organizationJsonLd } from "@/lib/jsonld";
+import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
+import RouteChangeTracker from "@/components/RouteChangeTracker";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -58,6 +60,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // contact-info change in the admin still shows up without a rebuild --
   // this build-time copy only needs to be roughly right, not live.
   const siteSettings = await getSiteSettings().catch(() => null);
+  const marketing = await getMarketingSettings().catch(() => null);
 
   return (
     <html
@@ -69,8 +72,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(siteSettings)) }}
         />
+        <MarketingHeadScripts marketing={marketing} />
       </head>
       <body className="flex min-h-full flex-col bg-ivory text-ink">
+        <MarketingBodyNoscript marketing={marketing} />
+        <RouteChangeTracker />
         <SiteSettingsProvider>
           <AuthProvider>
             <CartProvider>

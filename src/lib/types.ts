@@ -206,6 +206,13 @@ export interface SiteSetting {
   tiktok_url: string | null;
 }
 
+export interface MarketingSetting {
+  gtm_container_id: string | null;
+  meta_pixel_id: string | null;
+  ga4_id: string | null;
+  tiktok_pixel_id: string | null;
+}
+
 export interface PaymentSetting {
   bkash_number: string | null;
   nagad_number: string | null;

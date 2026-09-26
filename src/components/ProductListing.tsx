@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api";
+import { trackViewItemList } from "@/lib/tracking";
 import ProductCard from "./ProductCard";
 import PriceFilterPanel from "./PriceFilterPanel";
 import SortDropdown from "./SortDropdown";
@@ -54,7 +55,10 @@ export default function ProductListing({
       per_page: 24,
     })
       .then((res) => {
-        if (!cancelled) setResult(res);
+        if (!cancelled) {
+          setResult(res);
+          trackViewItemList(res.data, breadcrumbLabel);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -63,7 +67,7 @@ export default function ProductListing({
     return () => {
       cancelled = true;
     };
-  }, [search, minPrice, maxPrice, sort, currentPage]);
+  }, [search, minPrice, maxPrice, sort, currentPage, breadcrumbLabel]);
 
   const buildHref = (overrides: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();

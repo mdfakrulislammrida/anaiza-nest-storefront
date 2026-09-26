@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getProduct, getProducts } from "@/lib/api";
+import { trackViewItem } from "@/lib/tracking";
 import ProductDetail from "./ProductDetail";
 import type { Product } from "@/lib/types";
 
@@ -18,6 +19,11 @@ export default function ProductDetailClient({
 }) {
   const [product, setProduct] = useState(initialProduct);
   const [related, setRelated] = useState(initialRelated);
+
+  useEffect(() => {
+    trackViewItem(initialProduct);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once for the product this page loaded with, not again after the background refresh below
+  }, [initialProduct.slug]);
 
   useEffect(() => {
     let cancelled = false;
