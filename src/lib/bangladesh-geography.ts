@@ -84,6 +84,35 @@ export const BD_DISTRICTS_BY_DIVISION: Record<BdDivision, string[]> = {
 // Bazar, Barisal/Barishal, Jhalakathi/Jhalokati -- official Bangladeshi
 // renamings) -- the upazilas below are keyed by this app's existing names
 // so they join directly against BD_DISTRICTS_BY_DIVISION.
+//
+// Dhaka district is a special case: most of it is Dhaka City, which isn't
+// subdivided into upazilas at all -- residents identify by police-station
+// "thana" (Gulshan, Banani, Dhanmondi, Mirpur, Uttara, etc.), a completely
+// different naming system than the rest of the country's rural upazilas.
+// The generic upazila dataset above only has Dhaka district's 5 genuinely
+// rural upazilas (Dhamrai, Dohar, Keraniganj, Nawabganj, Savar) and knows
+// nothing about the city thanas most customers actually need. Those 50
+// thanas below are Dhaka Metropolitan Police's official current list
+// (en.wikipedia.org/wiki/Dhaka_Metropolitan_Police, cross-checked against
+// Bangladesh Post Office's postal-thana data, which independently confirms
+// the same names, e.g. "Tejgaon Industrial Area"). Two edits from the
+// source list: "Jattrabari" -> "Jatrabari" (typo, per the postal data) and
+// dropped the bureaucratic "Model" qualifier from three thana names
+// (Mirpur, Ramna, Paltan) where nothing else collides with the shorter
+// form; kept "Tejgaon Industrial Area" distinct from "Tejgaon" since both
+// are real, separate thanas.
+const DHAKA_METRO_THANAS = [
+  "Adabor", "Airport", "Badda", "Banani", "Bangshal", "Bhashantek", "Cantonment",
+  "Chackbazar", "Dakshin Khan", "Darus-Salam", "Demra", "Dhanmondi", "Gandaria",
+  "Gulshan", "Hatirjheel", "Hazaribagh", "Jatrabari", "Kadamtoli", "Kafrul",
+  "Kalabagan", "Kamrangirchar", "Khilgaon", "Khilkhet", "Kotwali", "Lalbagh",
+  "Mirpur", "Mohammadpur", "Motijheel", "Mugda", "New Market", "Pallabi",
+  "Paltan", "Ramna", "Rampura", "Rupnagar", "Sabujbag", "Shah Ali", "Shahbag",
+  "Shahjahanpur", "Sher-e-Bangla Nagar", "Shyampur", "Sutrapur", "Tejgaon",
+  "Tejgaon Industrial Area", "Turag", "Uttar Khan", "Uttara East",
+  "Uttara West", "Vatara", "Wari",
+];
+
 export const BD_UPAZILAS_BY_DISTRICT: Record<string, string[]> = {
   "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
   "Bandarban": ["Alikadam", "Bandarban Sadar", "Lama", "Naikhongchhari", "Rowangchhari", "Ruma", "Thanchi"],
@@ -98,7 +127,9 @@ export const BD_UPAZILAS_BY_DISTRICT: Record<string, string[]> = {
   "Chuadanga": ["Alamdanga", "Chuadanga Sadar", "Damurhuda", "Jibannagar"],
   "Cox's Bazar": ["Chakaria", "Coxsbazar Sadar", "Eidgaon", "Kutubdia", "Moheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhiya"],
   "Cumilla": ["Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Comilla Sadar", "Daudkandi", "Debidwar", "Homna", "Laksam", "Lalmai", "Meghna", "Monohargonj", "Muradnagar", "Nangalkot", "Sadarsouth", "Titas"],
-  "Dhaka": ["Dhamrai", "Dohar", "Keraniganj", "Nawabganj", "Savar"],
+  // City thanas plus the district's genuinely rural upazilas -- see
+  // DHAKA_METRO_THANAS above for why Dhaka needs both.
+  "Dhaka": [...DHAKA_METRO_THANAS, "Dhamrai", "Dohar", "Keraniganj", "Nawabganj", "Savar"].sort(),
   "Dinajpur": ["Birampur", "Birganj", "Birol", "Bochaganj", "Chirirbandar", "Dinajpur Sadar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharol", "Khansama", "Nawabganj", "Parbatipur"],
   "Faridpur": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
   "Feni": ["Chhagalnaiya", "Daganbhuiyan", "Feni Sadar", "Fulgazi", "Parshuram", "Sonagazi"],
