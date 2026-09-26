@@ -83,7 +83,12 @@ export default function AddToCartForm({ product }: { product: Product }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      {/* Fixed to the viewport bottom on mobile (below the sticky header,
+          which is a different corner of the screen, and below the cart
+          drawer's z-50) so the primary actions stay reachable without
+          scrolling back up; reverts to normal in-flow placement at sm and
+          up, where there's no need for it. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 flex gap-3 border-t border-line bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:shadow-none sm:flex-row">
         <button
           type="button"
           onClick={handleAddToCart}
@@ -96,7 +101,7 @@ export default function AddToCartForm({ product }: { product: Product }) {
           type="button"
           onClick={handleBuyNow}
           disabled={!inStock}
-          className="flex-1 rounded-full border border-navy px-8 py-3.5 text-sm font-medium text-navy transition-colors hover:bg-pill disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-full border border-navy bg-ivory px-8 py-3.5 text-sm font-medium text-navy transition-colors hover:bg-pill disabled:cursor-not-allowed disabled:opacity-40"
         >
           Buy Now
         </button>

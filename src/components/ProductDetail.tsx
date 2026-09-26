@@ -13,7 +13,10 @@ export default function ProductDetail({ product, related }: { product: Product; 
   const onSale = product.discount_percent !== null;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    // Extra bottom padding on mobile clears the fixed Add to Cart / Buy Now
+    // bar (see AddToCartForm) so it doesn't cover the last section of
+    // content; not needed at sm and up, where those buttons are in-flow.
+    <div className="mx-auto max-w-7xl px-4 pt-10 pb-32 sm:px-6 sm:pb-10">
       <nav className="mb-6 text-xs text-muted">
         <Link href="/" className="hover:text-navy">
           Home

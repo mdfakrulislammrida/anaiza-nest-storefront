@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
@@ -51,6 +51,16 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
     description: SITE_DESCRIPTION,
   },
+};
+
+// viewportFit: "cover" lets content draw under the home-indicator area on
+// notched phones, which is what makes env(safe-area-inset-bottom) resolve
+// to a real value instead of 0 -- needed for the sticky mobile CTA bar on
+// the product page.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

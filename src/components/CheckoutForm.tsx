@@ -7,7 +7,12 @@ import { useCart } from "@/context/CartContext";
 import { ApiError, createOrder } from "@/lib/api";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
-import { BD_DISTRICTS_BY_DIVISION, BD_DIVISIONS, type BdDivision } from "@/lib/bangladesh-geography";
+import {
+  BD_DISTRICTS_BY_DIVISION,
+  BD_DIVISIONS,
+  BD_UPAZILAS_BY_DISTRICT,
+  type BdDivision,
+} from "@/lib/bangladesh-geography";
 import type { CreateOrderPayload, PaymentMethod, PaymentSetting } from "@/lib/types";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; initial: string }[] = [
@@ -40,6 +45,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
   const [division, setDivision] = useState<BdDivision | "">("");
   const [district, setDistrict] = useState("");
+  const [thana, setThana] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(paymentMethods[0]?.value ?? "cod");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -47,6 +53,9 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   const districts = division ? BD_DISTRICTS_BY_DIVISION[division] : [];
+  // Falls back to free-text whenever a district's upazila list is missing or
+  // empty, so a data gap never blocks checkout.
+  const upazilas = district ? (BD_UPAZILAS_BY_DISTRICT[district] ?? []) : [];
   const deliveryFee = division ? estimateDeliveryFee(division, subtotal) : null;
 
   useEffect(() => {
@@ -198,7 +207,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                 <label className={labelClass}>District</label>
                 <select
                   value={district}
-                  onChange={(event) => setDistrict(event.target.value)}
+                  onChange={(event) => {
+                    setDistrict(event.target.value);
+                    setThana("");
+                  }}
                   disabled={!division}
                   required
                   className={inputClass}
@@ -215,13 +227,33 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
               <div>
                 <label className={labelClass}>Thana / Area</label>
-                <input
-                  name="thana"
-                  disabled={!district}
-                  required
-                  placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
-                  className={inputClass}
-                />
+                {upazilas.length > 0 ? (
+                  <select
+                    name="thana"
+                    value={thana}
+                    onChange={(event) => setThana(event.target.value)}
+                    disabled={!district}
+                    required
+                    className={inputClass}
+                  >
+                    <option value="">{district ? "Select thana / area" : "Select district first"}</option>
+                    {upazilas.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    name="thana"
+                    value={thana}
+                    onChange={(event) => setThana(event.target.value)}
+                    disabled={!district}
+                    required
+                    placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
+                    className={inputClass}
+                  />
+                )}
                 {errorFor("thana")}
               </div>
             </div>
