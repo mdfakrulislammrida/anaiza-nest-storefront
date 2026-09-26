@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/config";
 
 // text-base (not text-sm): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-sm's 14px would trigger.
@@ -93,11 +94,62 @@ export default function AccountPage() {
         <span className="text-ink">Account</span>
       </nav>
 
+      <h1 className="font-serif text-3xl text-ink">
+        {mode === "login" ? "Welcome back" : "Create your account"}
+      </h1>
+      <p className="mt-2 text-sm text-muted">
+        {mode === "login"
+          ? "Login to view your orders and saved addresses."
+          : "Save your addresses and track orders faster."}
+      </p>
+
+      <div className="mt-6 space-y-3">
+        <a
+          href={`${API_BASE_URL}/auth/google/redirect`}
+          className="flex w-full items-center justify-center gap-2.5 rounded-full border border-line px-8 py-3 text-sm font-medium text-ink hover:bg-pill"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"
+            />
+            <path
+              fill="#34A853"
+              d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.87-3.04.87-2.34 0-4.32-1.58-5.03-3.7H.94v2.33A9 9 0 0 0 9 18Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M3.97 10.73A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.19.29-1.73V4.94H.94A9 9 0 0 0 0 9c0 1.45.35 2.83.94 4.06l3.03-2.33Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .94 4.94l3.03 2.33C4.68 5.16 6.66 3.58 9 3.58Z"
+            />
+          </svg>
+          Continue with Google
+        </a>
+        <a
+          href={`${API_BASE_URL}/auth/facebook/redirect`}
+          className="flex w-full items-center justify-center gap-2.5 rounded-full border border-line px-8 py-3 text-sm font-medium text-ink hover:bg-pill"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path
+              fill="#1877F2"
+              d="M18 9a9 9 0 1 0-10.41 8.89v-6.29H5.31V9h2.28V7.02c0-2.25 1.34-3.49 3.39-3.49.98 0 2.01.18 2.01.18v2.21h-1.13c-1.11 0-1.46.69-1.46 1.4V9h2.49l-.4 2.6h-2.09v6.29A9 9 0 0 0 18 9Z"
+            />
+          </svg>
+          Continue with Facebook
+        </a>
+      </div>
+
+      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted">
+        <span className="h-px flex-1 bg-line" />
+        or
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
       {mode === "login" ? (
         <>
-          <h1 className="font-serif text-3xl text-ink">Welcome back</h1>
-          <p className="mt-2 text-sm text-muted">Login to view your orders and saved addresses.</p>
-
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div>
               <label className={labelClass}>Email or Phone</label>
@@ -126,9 +178,6 @@ export default function AccountPage() {
         </>
       ) : (
         <>
-          <h1 className="font-serif text-3xl text-ink">Create your account</h1>
-          <p className="mt-2 text-sm text-muted">Save your addresses and track orders faster.</p>
-
           <form onSubmit={handleRegister} className="mt-6 space-y-4">
             <div>
               <label className={labelClass}>Full name</label>

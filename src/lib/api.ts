@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "./config";
 import type {
   ApiValidationError,
+  AuthCustomer,
   AuthResponse,
   Banner,
   Brand,
@@ -225,6 +226,14 @@ export async function loginCustomer(payload: LoginPayload): Promise<AuthResponse
   return apiFetch<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+// Used to hydrate the customer profile after a social login redirect hands
+// back only a bearer token (see /auth/callback).
+export async function getCustomer(token: string): Promise<AuthCustomer> {
+  return apiFetch<AuthCustomer>("/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 

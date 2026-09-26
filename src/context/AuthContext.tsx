@@ -9,13 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { loginCustomer, registerCustomer } from "@/lib/api";
+import { getCustomer, loginCustomer, registerCustomer } from "@/lib/api";
 import type { AuthCustomer, LoginPayload, RegisterPayload } from "@/lib/types";
 
 interface AuthContextValue {
   customer: AuthCustomer | null;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -48,14 +49,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCustomer(res.customer);
   }, []);
 
+  // Social login: the OAuth callback redirect only hands back a bearer
+  // token, so the customer profile has to be fetched separately here.
+  const loginWithToken = useCallback(async (token: string) => {
+    const customer = await getCustomer(token);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ customer, token }));
+    setCustomer(customer);
+  }, []);
+
   const logout = useCallback(() => {
     window.localStorage.removeItem(STORAGE_KEY);
     setCustomer(null);
   }, []);
 
   const value = useMemo(
-    () => ({ customer, login, register, logout }),
-    [customer, login, register, logout],
+    () => ({ customer, login, register, loginWithToken, logout }),
+    [customer, login, register, loginWithToken, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
