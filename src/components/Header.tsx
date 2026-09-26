@@ -8,12 +8,12 @@ import { useSiteSettings } from "@/context/SiteSettingsContext";
 import SearchBar from "./SearchBar";
 import ThemeToggle from "./ThemeToggle";
 
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/shop", label: "Shop" },
-  { href: "/hot-deals", label: "Hot Deals" },
-  { href: "/gift-finder", label: "Gift Finder" },
-  { href: "/contact", label: "Contact" },
+const FALLBACK_NAV_LINKS = [
+  { label: "Home", url: "/" },
+  { label: "Shop", url: "/shop" },
+  { label: "Hot Deals", url: "/hot-deals" },
+  { label: "Gift Finder", url: "/gift-finder" },
+  { label: "Contact", url: "/contact" },
 ];
 
 const ICON_BUTTON_CLASS =
@@ -24,6 +24,7 @@ export default function Header() {
   const { items: wishlistItems } = useWishlist();
   const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
+  const navLinks = siteSettings?.nav_links?.length ? siteSettings.nav_links : FALLBACK_NAV_LINKS;
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
@@ -120,10 +121,13 @@ export default function Header() {
 
       <nav className="border-b border-t border-line bg-ivory">
         <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-4 py-2.5 text-sm font-medium text-ink sm:px-6">
-          {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="whitespace-nowrap py-1 transition-colors hover:text-navy">
+          {navLinks.map((link) => (
+            // A plain <a>, not next/link: these URLs are admin-editable
+            // (site-settings) rather than known at build time, and may be
+            // relative paths or full external URLs.
+            <a key={link.url} href={link.url} className="whitespace-nowrap py-1 transition-colors hover:text-navy">
               {link.label}
-            </Link>
+            </a>
           ))}
         </div>
       </nav>

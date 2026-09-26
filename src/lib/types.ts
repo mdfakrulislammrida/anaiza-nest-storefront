@@ -194,16 +194,28 @@ export interface Faq {
   sort_order: number;
 }
 
+export interface NavLink {
+  label: string;
+  url: string;
+}
+
+export interface SocialLink {
+  platform: string;
+  url: string;
+}
+
 export interface SiteSetting {
   site_name: string;
   logo_url: string | null;
   contact_phone: string | null;
   contact_email: string | null;
   address: string | null;
-  facebook_url: string | null;
-  instagram_url: string | null;
-  youtube_url: string | null;
-  tiktok_url: string | null;
+  promo_text: string;
+  nav_links: NavLink[];
+  footer_about: string;
+  footer_links: NavLink[];
+  social_links: SocialLink[];
+  footer_copyright_text: string;
 }
 
 export interface MarketingSetting {
