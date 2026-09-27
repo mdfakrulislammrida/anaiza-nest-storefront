@@ -1,6 +1,8 @@
 import { API_BASE_URL } from "./config";
 import type {
   ApiValidationError,
+  Article,
+  ArticleListResponse,
   AuthCustomer,
   AuthResponse,
   Banner,
@@ -106,6 +108,40 @@ export async function getAllProducts(): Promise<Product[]> {
 
   do {
     const res = await getProducts({ page, per_page: 100 });
+    all.push(...res.data);
+    lastPage = res.meta.last_page;
+    page += 1;
+  } while (page <= lastPage);
+
+  return all;
+}
+
+export async function getArticles(params: { page?: number; per_page?: number } = {}): Promise<ArticleListResponse> {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.per_page) query.set("per_page", String(params.per_page));
+
+  const qs = query.toString();
+  return apiFetch<ArticleListResponse>(`/articles${qs ? `?${qs}` : ""}`);
+}
+
+export async function getArticle(slug: string): Promise<Article> {
+  const { data } = await apiFetch<{ data: Article }>(`/articles/${encodeURIComponent(slug)}`);
+  return data;
+}
+
+/**
+ * Fetches every published article across all pages. Used by
+ * generateStaticParams (article pages) and the sitemap, which both need the
+ * full slug list up front rather than one page at a time.
+ */
+export async function getAllArticles(): Promise<Article[]> {
+  const all: Article[] = [];
+  let page = 1;
+  let lastPage = 1;
+
+  do {
+    const res = await getArticles({ page, per_page: 100 });
     all.push(...res.data);
     lastPage = res.meta.last_page;
     page += 1;

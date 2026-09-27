@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllProducts, getPages } from "@/lib/api";
+import { getAllArticles, getAllProducts, getPages } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 
 // Required for output: "export" -- there's no server to compute this
@@ -8,12 +8,13 @@ export const dynamic = "force-static";
 
 // Static-export compatible: this runs once at build time, same as
 // generateStaticParams, and Next writes the result to sitemap.xml.
-const STATIC_ROUTES = ["/", "/shop", "/hot-deals", "/gift-finder", "/contact", "/faq", "/track-order"];
+const STATIC_ROUTES = ["/", "/shop", "/hot-deals", "/gift-finder", "/contact", "/faq", "/track-order", "/blog"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, pages] = await Promise.all([
+  const [products, pages, articles] = await Promise.all([
     getAllProducts().catch(() => []),
     getPages().catch(() => []),
+    getAllArticles().catch(() => []),
   ]);
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((path) => ({
@@ -34,5 +35,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  return [...staticEntries, ...productEntries, ...pageEntries];
+  const articleEntries: MetadataRoute.Sitemap = articles.map((article) => ({
+    url: new URL(`/blog/${article.slug}`, SITE_URL).toString(),
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
+  return [...staticEntries, ...productEntries, ...pageEntries, ...articleEntries];
 }

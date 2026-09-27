@@ -183,6 +183,22 @@ export interface Page {
   seo?: ProductSeo;
 }
 
+export interface Article {
+  id: number;
+  title: string;
+  slug: string;
+  content: string | null;
+  featured_image: string | null;
+  published_at: string | null;
+  seo?: ProductSeo;
+}
+
+export interface ArticleListResponse {
+  data: Article[];
+  links: PaginationLinks;
+  meta: PaginationMeta;
+}
+
 export interface Banner {
   id: number;
   image_url: string;

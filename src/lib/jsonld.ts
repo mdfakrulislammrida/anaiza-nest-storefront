@@ -1,4 +1,4 @@
-import type { Faq, Page, Product, SiteSetting } from "./types";
+import type { Article, Faq, Page, Product, SiteSetting } from "./types";
 import { SITE_URL } from "./config";
 
 export function absoluteUrl(path: string): string {
@@ -47,6 +47,18 @@ export function productJsonLd(product: Product) {
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
     },
+  };
+}
+
+export function articleJsonLd(article: Article) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: article.title,
+    url: absoluteUrl(`/blog/${article.slug}`),
+    ...(article.featured_image ? { image: article.featured_image } : {}),
+    ...(article.published_at ? { datePublished: article.published_at } : {}),
+    ...(article.seo?.meta_description ? { description: article.seo.meta_description } : {}),
   };
 }
 
