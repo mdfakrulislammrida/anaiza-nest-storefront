@@ -15,6 +15,7 @@ import { SITE_URL } from "@/lib/config";
 import { organizationJsonLd } from "@/lib/jsonld";
 import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
 import RouteChangeTracker from "@/components/RouteChangeTracker";
+import UtmCapture from "@/components/UtmCapture";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -87,6 +88,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-ivory text-ink">
         <MarketingBodyNoscript marketing={marketing} />
         <RouteChangeTracker />
+        <UtmCapture />
         <SiteSettingsProvider>
           <AuthProvider>
             <CartProvider>

@@ -129,6 +129,11 @@ export interface CreateOrderPayload {
   payment_method: PaymentMethod;
   gift_note?: string | null;
   items: OrderItemPayload[];
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
 }
 
 export interface OrderCustomer {

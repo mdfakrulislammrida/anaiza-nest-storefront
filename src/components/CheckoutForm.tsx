@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { ApiError, createOrder } from "@/lib/api";
+import { getStoredUtmParams } from "@/lib/attribution";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
 import {
@@ -108,6 +109,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
         quantity: item.quantity,
         variant_id: item.variantId,
       })),
+      ...getStoredUtmParams(),
     };
 
     try {
