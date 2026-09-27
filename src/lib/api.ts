@@ -9,6 +9,7 @@ import type {
   ContactSubmissionPayload,
   CreateOrderPayload,
   Faq,
+  HomepageSection,
   LoginPayload,
   MarketingSetting,
   Order,
@@ -177,6 +178,11 @@ export async function getBanners(): Promise<Banner[]> {
 
 export async function getFaqs(): Promise<Faq[]> {
   const { data } = await apiFetch<{ data: Faq[] }>("/faqs");
+  return data;
+}
+
+export async function getHomepageSections(): Promise<HomepageSection[]> {
+  const { data } = await apiFetch<{ data: HomepageSection[] }>("/homepage-sections");
   return data;
 }
 

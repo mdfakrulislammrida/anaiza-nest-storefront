@@ -1,19 +1,18 @@
-import { getHomeCatalog } from "@/lib/api";
-import Hero from "@/components/Hero";
-import TrustBadges from "@/components/TrustBadges";
-import NewsletterBanner from "@/components/NewsletterBanner";
+import { getHomeCatalog, getHomepageSections } from "@/lib/api";
+import { DEFAULT_HOMEPAGE_SECTIONS } from "@/lib/defaultHomepageSections";
 import HomeClient from "@/components/HomeClient";
 
 export default async function Home() {
   const catalog = await getHomeCatalog().catch(() => null);
+  const sections = await getHomepageSections().catch(() => null);
 
   return (
     <div>
-      <Hero />
-      <TrustBadges />
-
       {catalog ? (
-        <HomeClient initialCatalog={catalog} />
+        <HomeClient
+          initialCatalog={catalog}
+          initialSections={sections && sections.length > 0 ? sections : DEFAULT_HOMEPAGE_SECTIONS}
+        />
       ) : (
         <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
           <p className="text-muted">
@@ -22,8 +21,6 @@ export default async function Home() {
           </p>
         </div>
       )}
-
-      <NewsletterBanner />
     </div>
   );
 }

@@ -192,6 +192,22 @@ export interface Banner {
   sort_order: number;
 }
 
+export type HomepageSectionType =
+  | "hero_banner"
+  | "hot_deals"
+  | "bestsellers"
+  | "new_arrivals"
+  | "newsletter"
+  | "custom_html";
+
+export interface HomepageSection {
+  id: number;
+  type: HomepageSectionType;
+  position: number;
+  custom_title: string | null;
+  custom_html: string | null;
+}
+
 export interface Faq {
   id: number;
   question: string;
