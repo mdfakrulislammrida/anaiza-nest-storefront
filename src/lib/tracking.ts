@@ -13,7 +13,7 @@ declare global {
     dataLayer?: unknown[];
     fbq?: ((...args: unknown[]) => void) & { queue?: unknown[] };
     ttq?: {
-      track: (event: string, params?: Record<string, unknown>) => void;
+      track: (event: string, params?: Record<string, unknown>, options?: { event_id?: string }) => void;
       page: () => void;
     };
   }
@@ -30,14 +30,22 @@ function pushDataLayer(event: Record<string, unknown>) {
   window.dataLayer.push(event);
 }
 
-function fbqTrack(event: string, params?: Record<string, unknown>) {
+// eventId, when passed, lets Meta/TikTok deduplicate this client-side pixel
+// event against the matching server-side Conversions/Events API call for
+// the same action (see SendMetaConversionEvent/SendTikTokConversionEvent on
+// the backend, which must be sent the identical id).
+function fbqTrack(event: string, params?: Record<string, unknown>, eventId?: string) {
   if (typeof window === "undefined" || typeof window.fbq !== "function") return;
-  window.fbq("track", event, params);
+  if (eventId) {
+    window.fbq("track", event, params, { eventID: eventId });
+  } else {
+    window.fbq("track", event, params);
+  }
 }
 
-function ttqTrack(event: string, params?: Record<string, unknown>) {
+function ttqTrack(event: string, params?: Record<string, unknown>, eventId?: string) {
   if (typeof window === "undefined" || typeof window.ttq === "undefined") return;
-  window.ttq.track(event, params);
+  window.ttq.track(event, params, eventId ? { event_id: eventId } : undefined);
 }
 
 /** Fires fbq PageView / ttq.page() on a client-side route change. The base
@@ -208,6 +216,12 @@ export function trackPurchase(order: Order) {
     quantity: item.quantity,
   }));
 
+  // Must match the event_id the backend sends for this order's server-side
+  // Meta Conversions API / TikTok Events API call (see
+  // SendMetaConversionEvent/SendTikTokConversionEvent), so the platforms
+  // dedupe the client and server events instead of double-counting the sale.
+  const eventId = `order-${order.id}`;
+
   pushDataLayer({
     event: "purchase",
     ecommerce: {
@@ -218,18 +232,26 @@ export function trackPurchase(order: Order) {
       items: ga4Items,
     },
   });
-  fbqTrack("Purchase", {
-    content_ids: ga4Items.map((item) => item.item_id),
-    contents: ga4Items.map((item) => ({ id: item.item_id, quantity: item.quantity })),
-    currency: CURRENCY,
-    value: order.total,
-  });
+  fbqTrack(
+    "Purchase",
+    {
+      content_ids: ga4Items.map((item) => item.item_id),
+      contents: ga4Items.map((item) => ({ id: item.item_id, quantity: item.quantity })),
+      currency: CURRENCY,
+      value: order.total,
+    },
+    eventId,
+  );
   // CompletePayment is TikTok's standard event for a completed transaction
   // -- the closest analog to GA4's purchase / Meta's Purchase here.
-  ttqTrack("CompletePayment", {
-    content_id: String(order.id),
-    contents: ga4Items.map((item) => ({ content_id: item.item_id, quantity: item.quantity, price: item.price })),
-    currency: CURRENCY,
-    value: order.total,
-  });
+  ttqTrack(
+    "CompletePayment",
+    {
+      content_id: String(order.id),
+      contents: ga4Items.map((item) => ({ content_id: item.item_id, quantity: item.quantity, price: item.price })),
+      currency: CURRENCY,
+      value: order.total,
+    },
+    eventId,
+  );
 }
