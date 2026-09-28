@@ -14,6 +14,7 @@ import {
   BD_UPAZILAS_BY_DISTRICT,
   type BdDivision,
 } from "@/lib/bangladesh-geography";
+import SearchableSelect from "./SearchableSelect";
 import type { CreateOrderPayload, PaymentMethod, PaymentSetting } from "@/lib/types";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; initial: string }[] = [
@@ -44,8 +45,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
     [paymentSettings],
   );
 
-  const [division, setDivision] = useState<BdDivision | "">("");
-  const [district, setDistrict] = useState("");
+  // Dhaka is by far the most common destination -- preselected as a
+  // convenience, but both stay one tap away from changing.
+  const [division, setDivision] = useState<BdDivision | "">("Dhaka");
+  const [district, setDistrict] = useState("Dhaka");
   const [thana, setThana] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(paymentMethods[0]?.value ?? "cod");
   const [submitting, setSubmitting] = useState(false);
@@ -84,8 +87,8 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
     setFormError(null);
     setFieldErrors({});
 
-    if (!division || !district) {
-      setFormError("Please select your division and district.");
+    if (!division || !district || !thana) {
+      setFormError("Please select your division, district and thana/area.");
       return;
     }
 
@@ -101,7 +104,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
       customer_address: String(form.get("customer_address") ?? ""),
       division,
       district,
-      thana: String(form.get("thana") ?? ""),
+      thana,
       payment_method: paymentMethod,
       gift_note: String(form.get("gift_note") ?? "") || null,
       items: items.map((item) => ({
@@ -182,81 +185,62 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label className={labelClass}>Division</label>
-                <select
-                  value={division}
-                  onChange={(event) => {
-                    const nextDivision = event.target.value as BdDivision;
-                    setDivision(nextDivision);
-                    setDistrict("");
-                    if (nextDivision) trackAddShippingInfo(items, subtotal, nextDivision);
-                  }}
-                  required
-                  className={inputClass}
-                >
-                  <option value="">Select division</option>
-                  {BD_DIVISIONS.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-                {errorFor("division")}
-              </div>
+              <SearchableSelect
+                label="Division"
+                value={division}
+                options={[...BD_DIVISIONS]}
+                placeholder="Select division"
+                error={errorFor("division") ? fieldErrors.division?.[0] : null}
+                onChange={(next) => {
+                  const nextDivision = next as BdDivision;
+                  setDivision(nextDivision);
+                  setDistrict("");
+                  setThana("");
+                  if (nextDivision) trackAddShippingInfo(items, subtotal, nextDivision);
+                }}
+              />
+
+              <SearchableSelect
+                label="District"
+                value={district}
+                options={districts}
+                disabled={!division}
+                disabledHint="Select division first"
+                placeholder="Select district"
+                error={errorFor("district") ? fieldErrors.district?.[0] : null}
+                onChange={(next) => {
+                  setDistrict(next);
+                  setThana("");
+                }}
+              />
 
               <div>
-                <label className={labelClass}>District</label>
-                <select
-                  value={district}
-                  onChange={(event) => {
-                    setDistrict(event.target.value);
-                    setThana("");
-                  }}
-                  disabled={!division}
-                  required
-                  className={inputClass}
-                >
-                  <option value="">{division ? "Select district" : "Select division first"}</option>
-                  {districts.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-                {errorFor("district")}
-              </div>
-
-              <div>
-                <label className={labelClass}>Thana / Area</label>
                 {upazilas.length > 0 ? (
-                  <select
-                    name="thana"
+                  <SearchableSelect
+                    label="Thana / Area"
                     value={thana}
-                    onChange={(event) => setThana(event.target.value)}
+                    options={upazilas}
                     disabled={!district}
-                    required
-                    className={inputClass}
-                  >
-                    <option value="">{district ? "Select thana / area" : "Select district first"}</option>
-                    {upazilas.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    name="thana"
-                    value={thana}
-                    onChange={(event) => setThana(event.target.value)}
-                    disabled={!district}
-                    required
-                    placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
-                    className={inputClass}
+                    disabledHint="Select district first"
+                    placeholder="Select thana / area"
+                    searchPlaceholder="Search thana / area..."
+                    error={errorFor("thana") ? fieldErrors.thana?.[0] : null}
+                    onChange={setThana}
                   />
+                ) : (
+                  <>
+                    <label className={labelClass}>Thana / Area</label>
+                    <input
+                      value={thana}
+                      onChange={(event) => setThana(event.target.value)}
+                      disabled={!district}
+                      required
+                      placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
+                      className={inputClass}
+                    />
+                    {errorFor("thana")}
+                  </>
                 )}
-                {errorFor("thana")}
               </div>
             </div>
 
