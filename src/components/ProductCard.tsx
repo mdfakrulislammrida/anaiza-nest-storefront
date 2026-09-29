@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import ResponsiveImage from "@/components/ResponsiveImage";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 
@@ -15,7 +15,7 @@ export default function ProductCard({
 }) {
   const { addItem } = useCart();
   const { isWishlisted, toggle } = useWishlist();
-  const image = product.images?.[0]?.url ?? null;
+  const image = product.images?.[0] ?? null;
   const onSale = product.discount_percent !== null;
   const wishlisted = isWishlisted(product.id);
   const dark = theme === "dark";
@@ -28,12 +28,11 @@ export default function ProductCard({
       <a href={`/product/${product.slug}`} className="block">
         <div className={`relative aspect-square overflow-hidden ${dark ? "bg-white/10" : "bg-pill"}`}>
           {image ? (
-            <Image
-              src={image}
+            <ResponsiveImage
+              image={image}
               alt={product.name}
-              fill
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div

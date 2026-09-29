@@ -33,6 +33,10 @@ export interface ProductAttributeValue {
 export interface ProductImage {
   id: number;
   url: string;
+  url_400: string | null;
+  url_800: string | null;
+  width: number | null;
+  height: number | null;
   alt_text: string | null;
   sort_order: number;
 }
@@ -41,6 +45,25 @@ export interface ProductVariant {
   id: number;
   name: string;
   value: string;
+  price: number | null;
+  sale_price: number | null;
+  effective_price: number;
+  discount_percent: number | null;
+  stock_quantity: number;
+  sku: string;
+  image: Pick<ProductImage, "id" | "url" | "url_400" | "url_800" | "width" | "height" | "alt_text"> | null;
+}
+
+export interface ProductFaq {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+export interface ProductVideo {
+  url: string | null;
+  file: string | null;
+  poster: string | null;
 }
 
 export interface ProductSeo {
@@ -54,6 +77,7 @@ export interface Product {
   name: string;
   slug: string;
   description: string | null;
+  short_description: string | null;
   seo?: ProductSeo;
   price: number;
   sale_price: number | null;
@@ -67,10 +91,12 @@ export interface Product {
   category: Category;
   brand: Brand | null;
   images: ProductImage[];
+  video?: ProductVideo;
   variants?: ProductVariant[];
   tags?: ProductTag[];
   labels?: ProductLabel[];
   attribute_values?: ProductAttributeValue[];
+  faqs?: ProductFaq[];
 }
 
 export interface PaginationLinks {
@@ -155,6 +181,7 @@ export interface OrderItem {
   price: number;
   variant_name: string | null;
   variant_value: string | null;
+  sku: string | null;
 }
 
 export interface Order {

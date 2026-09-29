@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ApiError, getAllProducts, getProduct, getProducts } from "@/lib/api";
-import { breadcrumbJsonLd, productJsonLd } from "@/lib/jsonld";
+import { breadcrumbJsonLd, faqPageJsonLd, productJsonLd } from "@/lib/jsonld";
 import ProductDetailClient from "@/components/ProductDetailClient";
 
 // Static export needs every product slug enumerated at build time. A slug
@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!product) return {};
 
   const title = product.seo?.meta_title || product.name;
-  const description = product.seo?.meta_description || product.description || undefined;
+  const description = product.seo?.meta_description || product.short_description || undefined;
   const image = product.seo?.og_image || product.images?.[0]?.url;
 
   return {
@@ -75,6 +75,12 @@ export default async function ProductPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
+      {product.faqs && product.faqs.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(product.faqs)) }}
+        />
+      )}
       <ProductDetailClient initialProduct={product} initialRelated={related} />
     </>
   );

@@ -1,30 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import ResponsiveImage from "@/components/ResponsiveImage";
 import type { ProductImage } from "@/lib/types";
 
 export default function ProductGallery({
   images,
   productName,
+  selectedImageId = null,
 }: {
   images: ProductImage[];
   productName: string;
+  // Set when the chosen variant has its own image -- jumps the gallery to
+  // it, same as if the visitor had clicked that thumbnail themselves.
+  selectedImageId?: number | null;
 }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    if (selectedImageId === null) return 0;
+    const index = images.findIndex((image) => image.id === selectedImageId);
+    return index !== -1 ? index : 0;
+  });
+  // Adjusting state during render (React's documented pattern for reacting
+  // to a prop change) instead of an effect: re-renders once more before
+  // paint rather than committing the stale frame first, then re-running.
+  const [appliedImageId, setAppliedImageId] = useState(selectedImageId);
+  if (selectedImageId !== appliedImageId) {
+    setAppliedImageId(selectedImageId);
+    // null means the newly selected variant has no image override -- fall
+    // back to the product's own main image, rather than leaving whatever
+    // the previously selected variant had showing.
+    const index = selectedImageId === null ? 0 : images.findIndex((image) => image.id === selectedImageId);
+    setActiveIndex(index !== -1 ? index : 0);
+  }
+
   const active = images[activeIndex];
 
   return (
     <div>
       <div className="relative aspect-square overflow-hidden rounded-xl bg-pill">
         {active ? (
-          <Image
-            src={active.url}
+          <ResponsiveImage
+            image={active}
             alt={productName}
-            fill
             priority
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cream to-pill">
@@ -44,12 +64,11 @@ export default function ProductGallery({
                 index === activeIndex ? "border-navy" : "border-transparent"
               }`}
             >
-              <Image
-                src={image.url}
+              <ResponsiveImage
+                image={image}
                 alt={`${productName} thumbnail ${index + 1}`}
-                fill
                 sizes="100px"
-                className="object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             </button>
           ))}

@@ -2,34 +2,49 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
-import type { Product } from "@/lib/types";
+import { useCart, type CartAddableProduct } from "@/context/CartContext";
+import type { Product, ProductVariant } from "@/lib/types";
 
-export default function AddToCartForm({ product }: { product: Product }) {
+export default function AddToCartForm({
+  product,
+  selectedVariant,
+  onSelectVariant,
+}: {
+  product: Product;
+  selectedVariant: ProductVariant | null;
+  onSelectVariant: (variant: ProductVariant) => void;
+}) {
   const router = useRouter();
   const { addItem } = useCart();
   const variants = useMemo(() => product.variants ?? [], [product.variants]);
-  const [variantId, setVariantId] = useState<number | null>(
-    variants[0]?.id ?? null,
-  );
   const [quantity, setQuantity] = useState(1);
 
-  const inStock = product.stock_quantity > 0;
-  const maxQuantity = Math.max(product.stock_quantity, 0);
+  // A variant only overrides price/stock/image when the admin actually set
+  // one for it; otherwise it inherits the product's (see effective_stock on
+  // ProductVariant in the API).
+  const stockQuantity = selectedVariant?.stock_quantity ?? product.stock_quantity;
+  const inStock = stockQuantity > 0;
+  const maxQuantity = Math.max(stockQuantity, 0);
 
-  const selectedVariant = useMemo(
-    () => variants.find((v) => v.id === variantId) ?? null,
-    [variants, variantId],
-  );
+  function cartAddableProduct(): CartAddableProduct {
+    return {
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      effective_price: selectedVariant?.effective_price ?? product.effective_price,
+      stock_quantity: stockQuantity,
+      images: selectedVariant?.image ? [{ url: selectedVariant.image.url }] : product.images,
+    };
+  }
 
   function handleAddToCart() {
     if (!inStock) return;
-    addItem(product, selectedVariant, quantity);
+    addItem(cartAddableProduct(), selectedVariant, quantity);
   }
 
   function handleBuyNow() {
     if (!inStock) return;
-    addItem(product, selectedVariant, quantity);
+    addItem(cartAddableProduct(), selectedVariant, quantity);
     router.push("/checkout");
   }
 
@@ -45,14 +60,16 @@ export default function AddToCartForm({ product }: { product: Product }) {
               <button
                 key={variant.id}
                 type="button"
-                onClick={() => setVariantId(variant.id)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                  variant.id === variantId
+                onClick={() => onSelectVariant(variant)}
+                disabled={variant.stock_quantity <= 0}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  variant.id === selectedVariant?.id
                     ? "border-navy bg-navy text-white"
                     : "border-line text-ink hover:border-navy"
                 }`}
               >
                 {variant.name}: {variant.value}
+                {variant.stock_quantity <= 0 ? " (Out of stock)" : ""}
               </button>
             ))}
           </div>

@@ -1,16 +1,31 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
 import Accordion from "@/components/Accordion";
-import type { Product } from "@/lib/types";
+import VideoFacade from "@/components/VideoFacade";
+import type { Product, ProductVariant } from "@/lib/types";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper, so both render identical
 // markup regardless of which one is currently supplying the data.
 export default function ProductDetail({ product, related }: { product: Product; related: Product[] }) {
-  const onSale = product.discount_percent !== null;
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    product.variants?.[0] ?? null,
+  );
+
+  // A variant only overrides price/stock/image when the admin actually set
+  // one; otherwise it behaves exactly like the plain product (see the
+  // effective_* accessors on ProductVariant in the API).
+  const effectivePrice = selectedVariant?.effective_price ?? product.effective_price;
+  const discountPercent = selectedVariant?.discount_percent ?? product.discount_percent;
+  const regularPrice = selectedVariant?.price ?? product.price;
+  const stockQuantity = selectedVariant?.stock_quantity ?? product.stock_quantity;
+  const onSale = discountPercent !== null;
 
   return (
     // Extra bottom padding on mobile clears the fixed Add to Cart / Buy Now
@@ -30,43 +45,52 @@ export default function ProductDetail({ product, related }: { product: Product; 
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-2">
-        <ProductGallery images={product.images} productName={product.name} />
+        <ProductGallery
+          images={product.images}
+          productName={product.name}
+          selectedImageId={selectedVariant?.image?.id ?? null}
+        />
 
         <div>
-          <p className="text-xs text-muted">SKU: {product.sku}</p>
+          <p className="text-xs text-muted">SKU: {selectedVariant?.sku ?? product.sku}</p>
           <h1 className="mt-2 font-serif text-2xl text-ink sm:text-3xl">{product.name}</h1>
           <p className="mt-1 text-sm text-muted">
-            (4) · {product.stock_quantity > 0 ? "In stock" : "Out of stock"}
+            (4) · {stockQuantity > 0 ? "In stock" : "Out of stock"}
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <span className="text-2xl font-semibold text-ink">
-              {formatPrice(product.effective_price)}
-            </span>
+            <span className="text-2xl font-semibold text-ink">{formatPrice(effectivePrice)}</span>
             {onSale && (
               <>
-                <span className="text-lg text-muted line-through">{formatPrice(product.price)}</span>
+                <span className="text-lg text-muted line-through">{formatPrice(regularPrice)}</span>
                 <span className="rounded bg-pill px-2 py-0.5 text-sm font-medium text-navy">
-                  -{product.discount_percent}%
+                  -{discountPercent}%
                 </span>
               </>
             )}
           </div>
 
-          {product.description && (
+          {product.short_description && (
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink/80">
-              {product.description}
+              {product.short_description}
             </p>
           )}
 
           <div className="mt-6">
-            <AddToCartForm product={product} />
+            <AddToCartForm
+              product={product}
+              selectedVariant={selectedVariant}
+              onSelectVariant={setSelectedVariant}
+            />
           </div>
 
+          {product.video && (product.video.url || product.video.file) && product.video.poster && (
+            <div className="mt-8 max-w-xl">
+              <VideoFacade video={product.video} />
+            </div>
+          )}
+
           <div className="mt-8">
-            <Accordion title="Product Details" defaultOpen>
-              {product.description ?? "No additional details for this product yet."}
-            </Accordion>
             <Accordion title="Delivery Info">
               Delivered nationwide via trusted courier partners — 1–3 business days
               inside Dhaka, 3–5 outside. Free delivery inside Dhaka on orders over
@@ -80,6 +104,49 @@ export default function ProductDetail({ product, related }: { product: Product; 
           </div>
         </div>
       </div>
+
+      {product.description && (
+        <section className="mt-16 max-w-3xl">
+          <h2 className="mb-4 font-serif text-xl text-ink sm:text-2xl">Description</h2>
+          {/* CSS-only mobile collapse: the checkbox drives a `peer` class so
+              the clipped height only ever changes via CSS (`peer-checked`,
+              `sm:`), never JS -- the full description HTML below is always
+              present in the server-rendered markup regardless of screen
+              size or checkbox state. */}
+          <input type="checkbox" id="description-expand" className="peer sr-only" />
+          <div
+            className="max-h-40 overflow-hidden text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-ink [&_h2]:first:mt-0 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mt-3 [&_p]:first:mt-0 [&_ul]:list-disc peer-checked:max-h-none sm:max-h-none sm:overflow-visible"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
+          <label
+            htmlFor="description-expand"
+            className="mt-2 inline-block cursor-pointer text-sm font-medium text-navy underline peer-checked:hidden sm:hidden"
+          >
+            Read more
+          </label>
+          <label
+            htmlFor="description-expand"
+            className="mt-2 hidden cursor-pointer text-sm font-medium text-navy underline peer-checked:inline-block sm:hidden"
+          >
+            Read less
+          </label>
+        </section>
+      )}
+
+      {product.faqs && product.faqs.length > 0 && (
+        <section className="mt-16 max-w-3xl">
+          <h2 className="mb-4 font-serif text-xl text-ink sm:text-2xl">
+            Frequently Asked Questions
+          </h2>
+          <div>
+            {product.faqs.map((faq) => (
+              <Accordion key={faq.id} title={faq.question}>
+                {faq.answer}
+              </Accordion>
+            ))}
+          </div>
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="mt-16">

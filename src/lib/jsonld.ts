@@ -27,26 +27,46 @@ export function organizationJsonLd(siteSettings: SiteSetting | null) {
   };
 }
 
+function offerAvailability(stockQuantity: number): string {
+  return stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
+}
+
 export function productJsonLd(product: Product) {
   const image = product.images?.[0]?.url ?? product.seo?.og_image ?? undefined;
+  const url = absoluteUrl(`/product/${product.slug}`);
+
+  // Variants with their own price stand as distinct Offers; a product whose
+  // variants (if any) are purely cosmetic labels keeps the single-offer form.
+  const pricedVariants = (product.variants ?? []).filter((variant) => variant.price !== null);
+
+  const offers =
+    pricedVariants.length > 0
+      ? pricedVariants.map((variant) => ({
+          "@type": "Offer",
+          name: `${product.name} - ${variant.name}: ${variant.value}`,
+          sku: variant.sku,
+          url,
+          priceCurrency: "BDT",
+          price: variant.effective_price,
+          availability: offerAvailability(variant.stock_quantity),
+        }))
+      : {
+          "@type": "Offer",
+          url,
+          priceCurrency: "BDT",
+          price: product.effective_price,
+          availability: offerAvailability(product.stock_quantity),
+        };
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description ?? undefined,
+    description: product.short_description ?? undefined,
     sku: product.sku,
     ...(image ? { image } : {}),
-    url: absoluteUrl(`/product/${product.slug}`),
-    offers: {
-      "@type": "Offer",
-      url: absoluteUrl(`/product/${product.slug}`),
-      priceCurrency: "BDT",
-      price: product.effective_price,
-      availability:
-        product.stock_quantity > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-    },
+    url,
+    offers,
   };
 }
 
@@ -62,7 +82,7 @@ export function articleJsonLd(article: Article) {
   };
 }
 
-export function faqPageJsonLd(faqs: Faq[]) {
+export function faqPageJsonLd(faqs: Pick<Faq, "question" | "answer">[]) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
