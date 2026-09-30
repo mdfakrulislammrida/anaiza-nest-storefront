@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllArticles, getAllProducts, getPages } from "@/lib/api";
+import { getAllArticles, getAllProducts, getCategories, getPages } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 
 // Required for output: "export" -- there's no server to compute this
@@ -11,8 +11,9 @@ export const dynamic = "force-static";
 const STATIC_ROUTES = ["/", "/shop", "/hot-deals", "/gift-finder", "/contact", "/faq", "/track-order", "/blog"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, pages, articles] = await Promise.all([
+  const [products, categories, pages, articles] = await Promise.all([
     getAllProducts().catch(() => []),
+    getCategories().catch(() => []),
     getPages().catch(() => []),
     getAllArticles().catch(() => []),
   ]);
@@ -29,6 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
+    url: new URL(`/category/${category.slug}`, SITE_URL).toString(),
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
   const pageEntries: MetadataRoute.Sitemap = pages.map((page) => ({
     url: new URL(`/pages/${page.slug}`, SITE_URL).toString(),
     changeFrequency: "monthly",
@@ -41,5 +48,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...productEntries, ...pageEntries, ...articleEntries];
+  return [...staticEntries, ...productEntries, ...categoryEntries, ...pageEntries, ...articleEntries];
 }

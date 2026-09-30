@@ -61,7 +61,7 @@ export default async function ProductPage({
 
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", path: "/" },
-    { name: "Gifts", path: `/shop?category=${product.category.slug}` },
+    { name: product.category.name, path: `/category/${product.category.slug}` },
     { name: product.name, path: `/product/${product.slug}` },
   ]);
 

@@ -1,4 +1,4 @@
-import type { Article, Faq, Page, Product, SiteSetting } from "./types";
+import type { Article, CategoryDetail, Faq, Page, Product, SiteSetting } from "./types";
 import { SITE_URL } from "./config";
 
 export function absoluteUrl(path: string): string {
@@ -94,6 +94,14 @@ export function faqPageJsonLd(faqs: Pick<Faq, "question" | "answer">[]) {
         text: faq.answer,
       },
     })),
+  };
+}
+
+export function categoryMetaFromApi(category: CategoryDetail) {
+  return {
+    title: category.seo.meta_title,
+    description: category.seo.meta_description || category.intro_text || undefined,
+    image: category.banner_desktop.url ?? undefined,
   };
 }
 

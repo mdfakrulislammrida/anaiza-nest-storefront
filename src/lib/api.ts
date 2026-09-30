@@ -7,7 +7,8 @@ import type {
   AuthResponse,
   Banner,
   Brand,
-  Category,
+  CategoryDetail,
+  CategorySummary,
   ContactSubmissionPayload,
   CreateOrderPayload,
   Faq,
@@ -60,8 +61,15 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function getCategories(): Promise<Category[]> {
-  const { data } = await apiFetch<{ data: Category[] }>("/categories");
+export async function getCategories(): Promise<CategorySummary[]> {
+  const { data } = await apiFetch<{ data: CategorySummary[] }>("/categories");
+  return data;
+}
+
+export async function getCategory(slug: string): Promise<CategoryDetail> {
+  const { data } = await apiFetch<{ data: CategoryDetail }>(
+    `/categories/${encodeURIComponent(slug)}`,
+  );
   return data;
 }
 

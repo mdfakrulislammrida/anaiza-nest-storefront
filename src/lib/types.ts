@@ -1,8 +1,39 @@
-export interface Category {
+export interface ImageMeta {
+  url: string | null;
+  width: number | null;
+  height: number | null;
+}
+
+// The lightweight shape returned by the /categories list endpoint and
+// nested inside a Product -- see CategoryDetail for the full category page.
+export interface CategorySummary {
+  id: number;
+  name: string;
+  slug: string;
+  thumbnail: ImageMeta;
+}
+
+export interface CategoryFaq {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+export interface CategoryDetail {
   id: number;
   name: string;
   slug: string;
   description: string | null;
+  intro_text: string | null;
+  seo_description: string | null;
+  banner_desktop: ImageMeta;
+  banner_mobile: ImageMeta & { auto_generated: boolean };
+  thumbnail: ImageMeta;
+  seo: {
+    meta_title: string;
+    meta_description: string | null;
+  };
+  faqs?: CategoryFaq[];
 }
 
 export interface Brand {
@@ -88,7 +119,7 @@ export interface Product {
   is_new: boolean;
   is_featured: boolean;
   is_active: boolean;
-  category: Category;
+  category: CategorySummary;
   brand: Brand | null;
   images: ProductImage[];
   video?: ProductVideo;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ProductListing from "@/components/ProductListing";
+import ShopCategoryRedirect from "@/components/ShopCategoryRedirect";
 
 export const metadata: Metadata = {
   title: "Shop All Gifts",
@@ -20,6 +21,7 @@ export default function ShopPage() {
       </div>
 
       <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
+        <ShopCategoryRedirect />
         <ProductListing breadcrumbLabel="Shop" />
       </Suspense>
     </div>

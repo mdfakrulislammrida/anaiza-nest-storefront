@@ -37,8 +37,8 @@ export default function ProductDetail({ product, related }: { product: Product; 
           Home
         </Link>
         <span className="mx-1.5">/</span>
-        <Link href={`/shop?category=${product.category.slug}`} className="hover:text-navy">
-          Gifts
+        <Link href={`/category/${product.category.slug}`} className="hover:text-navy">
+          {product.category.name}
         </Link>
         <span className="mx-1.5">/</span>
         <span className="text-ink">{product.name}</span>
