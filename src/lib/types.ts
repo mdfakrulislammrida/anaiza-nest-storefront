@@ -368,3 +368,20 @@ export interface Testimonial {
   rating: number;
   is_featured: boolean;
 }
+
+export type PopupTrigger = "delay" | "scroll" | "exit_intent";
+
+export type PopupPage = "all" | "home" | "shop" | "product" | "category";
+
+export interface PopupConfig {
+  enabled: boolean;
+  trigger: PopupTrigger;
+  delay_seconds: number;
+  pages: PopupPage[];
+  image: string | null;
+}
+
+export interface PopupSettings {
+  newsletter: PopupConfig;
+  gift_finder: PopupConfig;
+}

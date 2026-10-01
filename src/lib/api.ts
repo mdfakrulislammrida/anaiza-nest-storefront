@@ -18,6 +18,7 @@ import type {
   Order,
   Page,
   PaymentSetting,
+  PopupSettings,
   Product,
   ProductListParams,
   ProductListResponse,
@@ -242,6 +243,11 @@ export async function getMarketingSettings(): Promise<MarketingSetting> {
 
 export async function getPaymentSettings(): Promise<PaymentSetting> {
   const { data } = await apiFetch<{ data: PaymentSetting }>("/payment-settings");
+  return data;
+}
+
+export async function getPopupSettings(): Promise<PopupSettings> {
+  const { data } = await apiFetch<{ data: PopupSettings }>("/popup-settings");
   return data;
 }
 

@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import PopupManager from "@/components/PopupManager";
 import { getMarketingSettings, getSiteSettings } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 import { organizationJsonLd } from "@/lib/jsonld";
@@ -99,6 +100,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <Footer />
                 <CartDrawer />
                 <WhatsAppButton />
+                <PopupManager />
               </WishlistProvider>
             </CartProvider>
           </AuthProvider>
