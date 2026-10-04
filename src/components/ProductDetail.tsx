@@ -7,6 +7,7 @@ import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
 import Accordion from "@/components/Accordion";
+import ClampedText from "@/components/ClampedText";
 import VideoFacade from "@/components/VideoFacade";
 import ProductSpecs from "@/components/ProductSpecs";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
@@ -61,7 +62,7 @@ export default function ProductDetail({ product, related }: { product: Product; 
           <p className="text-xs text-muted">SKU: {selectedVariant?.sku ?? product.sku}</p>
           <h1 className="mt-2 font-serif text-2xl text-ink sm:text-3xl">{product.name}</h1>
           {product.summary && (
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink/80">{product.summary}</p>
+            <ClampedText text={product.summary} className="mt-3 max-w-xl text-sm leading-relaxed text-ink/80" />
           )}
           <p className="mt-1 text-sm text-muted">
             (4) · {stockQuantity > 0 ? "In stock" : "Out of stock"}
