@@ -8,12 +8,18 @@ import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
 import Accordion from "@/components/Accordion";
 import VideoFacade from "@/components/VideoFacade";
+import ProductSpecs from "@/components/ProductSpecs";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { formatDays, resolvePolicy } from "@/lib/policy";
+import { RICH_TABLE_CLASSES, wrapTables } from "@/lib/richHtml";
 import type { Product, ProductVariant } from "@/lib/types";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper, so both render identical
 // markup regardless of which one is currently supplying the data.
 export default function ProductDetail({ product, related }: { product: Product; related: Product[] }) {
+  const { siteSettings } = useSiteSettings();
+  const policy = resolvePolicy(siteSettings);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants?.[0] ?? null,
   );
@@ -54,6 +60,9 @@ export default function ProductDetail({ product, related }: { product: Product; 
         <div>
           <p className="text-xs text-muted">SKU: {selectedVariant?.sku ?? product.sku}</p>
           <h1 className="mt-2 font-serif text-2xl text-ink sm:text-3xl">{product.name}</h1>
+          {product.summary && (
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink/80">{product.summary}</p>
+          )}
           <p className="mt-1 text-sm text-muted">
             (4) · {stockQuantity > 0 ? "In stock" : "Out of stock"}
           </p>
@@ -92,10 +101,10 @@ export default function ProductDetail({ product, related }: { product: Product; 
 
           <div className="mt-8">
             <Accordion title="Delivery Info">
-              Delivered nationwide via trusted courier partners — 1–3 business days
-              inside Dhaka, 3–5 outside. Free delivery inside Dhaka on orders over
-              ৳2,000. You can track any order from the Track Order page using your
-              order ID and phone number.
+              Delivered nationwide via trusted courier partners — {formatDays(policy.delivery_days_dhaka)} business days
+              inside Dhaka, {formatDays(policy.delivery_days_outside_dhaka)} outside. Free delivery inside Dhaka on
+              orders over {formatPrice(policy.free_delivery_threshold)}. You can track any order from the Track Order
+              page using your order ID and phone number.
             </Accordion>
             <Accordion title="Reviews (4)">
               Customer reviews for this product aren&rsquo;t live yet — check back
@@ -115,8 +124,8 @@ export default function ProductDetail({ product, related }: { product: Product; 
               size or checkbox state. */}
           <input type="checkbox" id="description-expand" className="peer sr-only" />
           <div
-            className="max-h-40 overflow-hidden text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-ink [&_h2]:first:mt-0 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mt-3 [&_p]:first:mt-0 [&_ul]:list-disc peer-checked:max-h-none sm:max-h-none sm:overflow-visible"
-            dangerouslySetInnerHTML={{ __html: product.description }}
+            className={`max-h-40 overflow-hidden text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-ink [&_h2]:first:mt-0 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mt-3 [&_p]:first:mt-0 [&_ul]:list-disc peer-checked:max-h-none sm:max-h-none sm:overflow-visible ${RICH_TABLE_CLASSES}`}
+            dangerouslySetInnerHTML={{ __html: wrapTables(product.description) }}
           />
           <label
             htmlFor="description-expand"
@@ -133,6 +142,8 @@ export default function ProductDetail({ product, related }: { product: Product; 
         </section>
       )}
 
+      <ProductSpecs specifications={product.specifications ?? []} />
+
       {product.faqs && product.faqs.length > 0 && (
         <section className="mt-16 max-w-3xl">
           <h2 className="mb-4 font-serif text-xl text-ink sm:text-2xl">
@@ -140,7 +151,7 @@ export default function ProductDetail({ product, related }: { product: Product; 
           </h2>
           <div>
             {product.faqs.map((faq) => (
-              <Accordion key={faq.id} title={faq.question}>
+              <Accordion key={faq.id} title={faq.question} asHeading>
                 {faq.answer}
               </Accordion>
             ))}

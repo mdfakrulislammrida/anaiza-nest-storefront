@@ -31,7 +31,9 @@ export async function GET() {
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
   const lines: string[] = [`# ${siteName}`, ""];
 
-  if (siteSettings?.footer_about) lines.push(`> ${siteSettings.footer_about}`, "");
+  // Brand description first; the footer About text is the fallback when it is blank.
+  const description = siteSettings?.brand_description || siteSettings?.footer_about;
+  if (description) lines.push(`> ${description}`, "");
 
   if (categories.length > 0) {
     lines.push("## Categories", "");

@@ -1,5 +1,6 @@
-import type { Article, CategoryDetail, Faq, Page, Product, SiteSetting } from "./types";
+import type { Article, CategoryDetail, DayRange, Faq, Page, Product, ProductSpec, SiteSetting, StorePolicy } from "./types";
 import { SITE_URL } from "./config";
+import { BD_DIVISIONS } from "./bangladesh-geography";
 
 export function absoluteUrl(path: string): string {
   return new URL(path, SITE_URL).toString();
@@ -27,7 +28,9 @@ function organizationNode(siteSettings: SiteSetting | null) {
     ...(siteSettings?.logo_url
       ? { logo: { "@type": "ImageObject", url: siteSettings.logo_url } }
       : {}),
-    ...(siteSettings?.footer_about ? { description: siteSettings.footer_about } : {}),
+    ...(siteSettings?.brand_description || siteSettings?.footer_about
+      ? { description: siteSettings.brand_description || siteSettings.footer_about }
+      : {}),
     ...(sameAs.length > 0 ? { sameAs } : {}),
     ...(siteSettings?.contact_phone || siteSettings?.contact_email
       ? {
@@ -101,9 +104,89 @@ export function itemListJsonLd(name: string, path: string, products: Product[]) 
   };
 }
 
-export function productJsonLd(product: Product) {
+const rate = (value: number) => ({ "@type": "MonetaryAmount", value, currency: "BDT" });
+
+const transit = (days: DayRange) => ({
+  "@type": "ShippingDeliveryTime",
+  transitTime: { "@type": "QuantitativeValue", minValue: days.min, maxValue: days.max, unitCode: "DAY" },
+});
+
+// Both zones come straight from the Delivery & returns settings. Free delivery
+// is a cart-level rule, so the Dhaka rate here is what a single-item order for
+// this price would pay.
+function shippingDetailsFor(policy: StorePolicy, price: number) {
+  const dhakaRate = price > policy.free_delivery_threshold ? 0 : policy.delivery_fee_dhaka;
+  const region = (addressRegion: string) => ({ "@type": "DefinedRegion", addressCountry: "BD", addressRegion });
+
+  return [
+    {
+      "@type": "OfferShippingDetails",
+      shippingRate: rate(dhakaRate),
+      shippingDestination: region("Dhaka"),
+      deliveryTime: transit(policy.delivery_days_dhaka),
+    },
+    {
+      "@type": "OfferShippingDetails",
+      shippingRate: rate(policy.delivery_fee_outside_dhaka),
+      shippingDestination: BD_DIVISIONS.filter((division) => division !== "Dhaka").map(region),
+      deliveryTime: transit(policy.delivery_days_outside_dhaka),
+    },
+  ];
+}
+
+function returnPolicyFor(policy: StorePolicy) {
+  return policy.return_window_days > 0
+    ? {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "BD",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: policy.return_window_days,
+      }
+    : {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "BD",
+        returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+      };
+}
+
+// A barcode is published only when it is filled in, under the property that
+// matches its length (an 8/12/13/14 digit code is a GTIN-8/12/13/14).
+function gtinProperty(gtin: string | null): Record<string, string> {
+  if (!gtin) return {};
+  const key = ({ 8: "gtin8", 12: "gtin12", 13: "gtin13", 14: "gtin14" } as Record<number, string>)[gtin.length];
+  return key ? { [key]: gtin } : {};
+}
+
+// Spec rows become schema.org properties only where the mapping is unambiguous:
+// every row as a PropertyValue, plus Material / Colour rows as the matching
+// native property. Nothing is inferred beyond what the admin typed.
+function specProperties(specs: ProductSpec[] | undefined) {
+  const rows = (specs ?? []).filter((spec) => spec.label && spec.value);
+  if (rows.length === 0) return {};
+
+  const byLabel = (...labels: string[]) =>
+    rows.find((spec) => labels.includes(spec.label.trim().toLowerCase()))?.value;
+  const material = byLabel("material");
+  const color = byLabel("color", "colour");
+
+  return {
+    ...(material ? { material } : {}),
+    ...(color ? { color } : {}),
+    additionalProperty: rows.map((spec) => ({
+      "@type": "PropertyValue",
+      name: spec.label,
+      value: spec.value,
+    })),
+  };
+}
+
+export function productJsonLd(product: Product, policy?: StorePolicy | null) {
   const image = product.images?.[0]?.url ?? product.seo?.og_image ?? undefined;
   const url = absoluteUrl(`/product/${product.slug}`);
+
+  // Shipping and returns are attached only when the settings were available.
+  const policyFor = (price: number) =>
+    policy ? { shippingDetails: shippingDetailsFor(policy, price), hasMerchantReturnPolicy: returnPolicyFor(policy) } : {};
 
   // Variants with their own price stand as distinct Offers; a product whose
   // variants (if any) are purely cosmetic labels keeps the single-offer form.
@@ -119,6 +202,7 @@ export function productJsonLd(product: Product) {
           priceCurrency: "BDT",
           price: variant.effective_price,
           availability: offerAvailability(variant.stock_quantity),
+          ...policyFor(variant.effective_price),
         }))
       : {
           "@type": "Offer",
@@ -126,6 +210,7 @@ export function productJsonLd(product: Product) {
           priceCurrency: "BDT",
           price: product.effective_price,
           availability: offerAvailability(product.stock_quantity),
+          ...policyFor(product.effective_price),
         };
 
   return {
@@ -134,6 +219,9 @@ export function productJsonLd(product: Product) {
     name: product.name,
     description: product.short_description ?? undefined,
     sku: product.sku,
+    ...gtinProperty(product.gtin),
+    ...(product.mpn ? { mpn: product.mpn } : {}),
+    ...specProperties(product.specifications),
     // The product's own Brand when one is set in the admin; otherwise the
     // store itself (the Organization node from the root layout).
     brand: product.brand
@@ -152,9 +240,19 @@ export function articleJsonLd(article: Article) {
     "@type": "BlogPosting",
     headline: article.title,
     publisher: { "@id": ORGANIZATION_ID },
+    ...(article.author?.name
+      ? {
+          author: {
+            "@type": "Person",
+            name: article.author.name,
+            ...(article.author.bio ? { description: article.author.bio } : {}),
+          },
+        }
+      : {}),
     url: absoluteUrl(`/blog/${article.slug}`),
     ...(article.featured_image ? { image: article.featured_image } : {}),
     ...(article.published_at ? { datePublished: article.published_at } : {}),
+    ...(article.updated_at ? { dateModified: article.updated_at } : {}),
     ...(article.seo?.meta_description ? { description: article.seo.meta_description } : {}),
   };
 }

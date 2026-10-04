@@ -8,6 +8,8 @@ import { ApiError, createOrder } from "@/lib/api";
 import { getStoredUtmParams } from "@/lib/attribution";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
+import { estimateDeliveryFee, resolvePolicy } from "@/lib/policy";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import {
   BD_DISTRICTS_BY_DIVISION,
   BD_DIVISIONS,
@@ -24,21 +26,12 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string; initial: string }[
   { value: "cod", label: "Cash on Delivery", initial: "C" },
 ];
 
-const FREE_DELIVERY_THRESHOLD = 2000;
-const DHAKA_FEE = 80;
-const OUTSIDE_DHAKA_FEE = 130;
-
-// Mirrors the backend's DeliveryFeeCalculator so the order summary can show
-// a live estimate before submitting — the server always recomputes and
-// charges the authoritative fee itself.
-function estimateDeliveryFee(division: string, subtotal: number): number {
-  if (division !== "Dhaka") return OUTSIDE_DHAKA_FEE;
-  return subtotal > FREE_DELIVERY_THRESHOLD ? 0 : DHAKA_FEE;
-}
-
 export default function CheckoutForm({ paymentSettings }: { paymentSettings: PaymentSetting | null }) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  // The order summary shows a live estimate from the editable delivery settings;
+  // the server always recomputes and charges the authoritative fee itself.
+  const policy = resolvePolicy(useSiteSettings().siteSettings);
 
   const paymentMethods = useMemo(
     () => PAYMENT_METHODS.filter((method) => method.value !== "cod" || paymentSettings?.cod_enabled !== false),
@@ -60,7 +53,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   // Falls back to free-text whenever a district's upazila list is missing or
   // empty, so a data gap never blocks checkout.
   const upazilas = district ? (BD_UPAZILAS_BY_DISTRICT[district] ?? []) : [];
-  const deliveryFee = division ? estimateDeliveryFee(division, subtotal) : null;
+  const deliveryFee = division ? estimateDeliveryFee(policy, division, subtotal) : null;
 
   useEffect(() => {
     if (items.length > 0) trackBeginCheckout(items, subtotal);

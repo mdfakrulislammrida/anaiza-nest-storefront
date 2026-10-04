@@ -14,9 +14,18 @@ const SiteSettingsContext = createContext<SiteSettingsContextValue>({
   loading: true,
 });
 
-export function SiteSettingsProvider({ children }: { children: ReactNode }) {
-  const [siteSettings, setSiteSettings] = useState<SiteSetting | null>(null);
-  const [loading, setLoading] = useState(true);
+// initialSettings is the copy fetched at build time: it lets the static HTML show
+// the real delivery/return numbers rather than fallbacks. The fetch below still
+// runs, so an admin edit shows up without a rebuild.
+export function SiteSettingsProvider({
+  children,
+  initialSettings = null,
+}: {
+  children: ReactNode;
+  initialSettings?: SiteSetting | null;
+}) {
+  const [siteSettings, setSiteSettings] = useState<SiteSetting | null>(initialSettings);
+  const [loading, setLoading] = useState(!initialSettings);
 
   useEffect(() => {
     let cancelled = false;

@@ -97,6 +97,11 @@ export interface ProductVideo {
   poster: string | null;
 }
 
+export interface ProductSpec {
+  label: string;
+  value: string;
+}
+
 export interface ProductSeo {
   meta_title: string;
   meta_description: string | null;
@@ -109,6 +114,10 @@ export interface Product {
   slug: string;
   description: string | null;
   short_description: string | null;
+  summary: string | null;
+  specifications: ProductSpec[];
+  gtin: string | null;
+  mpn: string | null;
   seo?: ProductSeo;
   price: number;
   sale_price: number | null;
@@ -247,7 +256,9 @@ export interface Article {
   slug: string;
   content: string | null;
   featured_image: string | null;
+  author: { name: string | null; bio: string | null };
   published_at: string | null;
+  updated_at: string;
   seo?: ProductSeo;
 }
 
@@ -299,6 +310,22 @@ export interface SocialLink {
   url: string;
 }
 
+export interface DayRange {
+  min: number;
+  max: number;
+}
+
+// Editable in the admin (Site Settings > Delivery & returns); drives the
+// checkout fee, every place that quotes delivery/returns, and the product schema.
+export interface StorePolicy {
+  free_delivery_threshold: number;
+  delivery_fee_dhaka: number;
+  delivery_fee_outside_dhaka: number;
+  delivery_days_dhaka: DayRange;
+  delivery_days_outside_dhaka: DayRange;
+  return_window_days: number;
+}
+
 export interface SiteSetting {
   site_name: string;
   logo_url: string | null;
@@ -311,6 +338,8 @@ export interface SiteSetting {
   footer_links: NavLink[];
   social_links: SocialLink[];
   footer_copyright_text: string;
+  brand_description: string | null;
+  policy: StorePolicy;
 }
 
 export interface MarketingSetting {

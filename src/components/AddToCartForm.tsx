@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, type CartAddableProduct } from "@/context/CartContext";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { formatPrice } from "@/lib/format";
+import { formatDays, resolvePolicy } from "@/lib/policy";
 import type { Product, ProductVariant } from "@/lib/types";
 
 export default function AddToCartForm({
@@ -16,6 +19,7 @@ export default function AddToCartForm({
 }) {
   const router = useRouter();
   const { addItem } = useCart();
+  const policy = resolvePolicy(useSiteSettings().siteSettings);
   const variants = useMemo(() => product.variants ?? [], [product.variants]);
   const [quantity, setQuantity] = useState(1);
 
@@ -156,7 +160,8 @@ export default function AddToCartForm({
       </div>
 
       <p className="text-xs text-muted">
-        1–3 business days inside Dhaka, 3–5 outside. Free inside Dhaka over ৳2,000.
+        {formatDays(policy.delivery_days_dhaka)} business days inside Dhaka, {formatDays(policy.delivery_days_outside_dhaka)} outside.
+        Free inside Dhaka over {formatPrice(policy.free_delivery_threshold)}.
       </p>
       <p className="text-xs text-muted">Pay with bKash, Nagad, Rocket, or Cash on Delivery.</p>
     </div>

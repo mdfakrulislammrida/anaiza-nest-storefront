@@ -35,27 +35,35 @@ const SITE_NAME = "Anaiza Nest";
 const SITE_DESCRIPTION =
   "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh.";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  robots: siteRobots(),
-  title: {
-    default: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
-    template: `%s | ${SITE_NAME}`,
-  },
-  description: SITE_DESCRIPTION,
-  openGraph: {
-    siteName: SITE_NAME,
-    type: "website",
-    locale: "en_US",
-    title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
-    description: SITE_DESCRIPTION,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
-    description: SITE_DESCRIPTION,
-  },
-};
+// Default meta description: the admin's brand description when one is set,
+// otherwise the fixed line that was used before it existed. Pages that set their
+// own description are unaffected.
+export async function generateMetadata(): Promise<Metadata> {
+  const siteSettings = await getSiteSettings().catch(() => null);
+  const description = siteSettings?.brand_description || SITE_DESCRIPTION;
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    robots: siteRobots(),
+    title: {
+      default: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
+      template: `%s | ${SITE_NAME}`,
+    },
+    description,
+    openGraph: {
+      siteName: SITE_NAME,
+      type: "website",
+      locale: "en_US",
+      title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
+      description,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
+      description,
+    },
+  };
+}
 
 // viewportFit: "cover" lets content draw under the home-indicator area on
 // notched phones, which is what makes env(safe-area-inset-bottom) resolve
@@ -92,7 +100,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <MarketingBodyNoscript marketing={marketing} />
         <RouteChangeTracker />
         <UtmCapture />
-        <SiteSettingsProvider>
+        <SiteSettingsProvider initialSettings={siteSettings}>
           <AuthProvider>
             <CartProvider>
               <WishlistProvider>

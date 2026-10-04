@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import ProductListing from "@/components/ProductListing";
 import ProductListingFallback from "@/components/ProductListingFallback";
 import Accordion from "@/components/Accordion";
+import { RICH_TABLE_CLASSES, wrapTables } from "@/lib/richHtml";
 import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
 
 // Pure presentational -- shared by the statically-rendered server page and
@@ -72,8 +73,8 @@ export default function CategoryDetail({
               size or checkbox state. */}
           <input type="checkbox" id="category-description-expand" className="peer sr-only" />
           <div
-            className="max-h-40 overflow-hidden text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-ink [&_h2]:first:mt-0 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mt-3 [&_p]:first:mt-0 [&_ul]:list-disc peer-checked:max-h-none sm:max-h-none sm:overflow-visible"
-            dangerouslySetInnerHTML={{ __html: category.seo_description }}
+            className={`max-h-40 overflow-hidden text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-ink [&_h2]:first:mt-0 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mt-3 [&_p]:first:mt-0 [&_ul]:list-disc peer-checked:max-h-none sm:max-h-none sm:overflow-visible ${RICH_TABLE_CLASSES}`}
+            dangerouslySetInnerHTML={{ __html: wrapTables(category.seo_description) }}
           />
           <label
             htmlFor="category-description-expand"
@@ -97,7 +98,7 @@ export default function CategoryDetail({
           </h2>
           <div>
             {category.faqs.map((faq) => (
-              <Accordion key={faq.id} title={faq.question}>
+              <Accordion key={faq.id} title={faq.question} asHeading>
                 {faq.answer}
               </Accordion>
             ))}

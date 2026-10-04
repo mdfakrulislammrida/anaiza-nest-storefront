@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Page } from "@/lib/types";
+import { RICH_TABLE_CLASSES, wrapTables } from "@/lib/richHtml";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper.
@@ -17,8 +18,8 @@ export default function CmsPageContent({ page }: { page: Page }) {
       <h1 className="font-serif text-3xl text-ink sm:text-4xl">{page.title}</h1>
       {page.content && (
         <div
-          className="mt-8 space-y-4 text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:text-ink [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-xl [&_h3]:text-ink [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:text-ink [&_ul]:list-disc"
-          dangerouslySetInnerHTML={{ __html: page.content }}
+          className={`mt-8 space-y-4 text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:text-ink [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-xl [&_h3]:text-ink [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:text-ink [&_ul]:list-disc ${RICH_TABLE_CLASSES}`}
+          dangerouslySetInnerHTML={{ __html: wrapTables(page.content) }}
         />
       )}
     </div>

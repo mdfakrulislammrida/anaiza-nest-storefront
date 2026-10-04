@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ApiError, getAllProducts, getProduct, getProducts } from "@/lib/api";
+import { ApiError, getAllProducts, getProduct, getProducts, getSiteSettings } from "@/lib/api";
 import { breadcrumbJsonLd, faqPageJsonLd, productJsonLd } from "@/lib/jsonld";
 import ProductDetailClient from "@/components/ProductDetailClient";
 
@@ -55,6 +55,9 @@ export default async function ProductPage({
     throw error;
   });
 
+  // Delivery/returns in the product schema come from the editable store policy.
+  const siteSettings = await getSiteSettings().catch(() => null);
+
   const related = await getProducts({ category: product.category.slug, per_page: 5 })
     .then((res) => res.data.filter((p) => p.id !== product.id).slice(0, 4))
     .catch(() => []);
@@ -69,7 +72,7 @@ export default async function ProductPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product, siteSettings?.policy)) }}
       />
       <script
         type="application/ld+json"

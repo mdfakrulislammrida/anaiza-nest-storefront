@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
-
-const FALLBACK_PROMO_TEXT = "Free delivery inside Dhaka on orders over ৳2,000";
+import { freeDeliveryText, resolvePolicy } from "@/lib/policy";
 
 export default function TopPromoBar() {
   const { siteSettings } = useSiteSettings();
   const phone = siteSettings?.contact_phone;
-  const promoText = siteSettings?.promo_text ?? FALLBACK_PROMO_TEXT;
+  const promoText = siteSettings?.promo_text ?? freeDeliveryText(resolvePolicy(siteSettings));
 
   return (
     <div className="bg-black text-white">
