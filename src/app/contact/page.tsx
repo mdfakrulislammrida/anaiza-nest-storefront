@@ -4,6 +4,7 @@ import { getSiteSettings } from "@/lib/api";
 import type { SiteSetting } from "@/lib/types";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/contact" },
   title: "Contact Us",
   description: "Get in touch with Anaiza Nest about an order, a product, or bulk gifting.",
 };

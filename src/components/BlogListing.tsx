@@ -1,31 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getArticles } from "@/lib/api";
-import ArticleCard from "./ArticleCard";
+import ArticleGrid from "./ArticleGrid";
 import type { ArticleListResponse } from "@/lib/types";
 
-export default function BlogListing() {
+export default function BlogListing({
+  initialResult,
+}: {
+  // First page fetched at build time -- the same data the static fallback put in the HTML.
+  initialResult?: ArticleListResponse | null;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentPage = Number(searchParams.get("page") ?? "1") || 1;
 
-  const [result, setResult] = useState<ArticleListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState<ArticleListResponse | null>(initialResult ?? null);
+  const [loading, setLoading] = useState(!initialResult);
+  const refreshQuietlyOnce = useRef(Boolean(initialResult));
 
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
+    // Build-time data covers page 1: refresh it in the background without dimming a correct grid.
+    const quiet = refreshQuietlyOnce.current && currentPage === 1;
+    refreshQuietlyOnce.current = false;
+    if (!quiet) setLoading(true);
 
     getArticles({ page: currentPage, per_page: 12 })
       .then((res) => {
         if (!cancelled) setResult(res);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !quiet) setLoading(false);
       });
 
     return () => {
@@ -58,15 +66,7 @@ export default function BlogListing() {
         {showSkeleton ? (
           <p className="py-20 text-center text-muted">Loading articles…</p>
         ) : articles.length > 0 ? (
-          <div
-            className={`grid grid-cols-1 gap-x-8 gap-y-12 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${
-              loading ? "opacity-60" : "opacity-100"
-            }`}
-          >
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
+          <ArticleGrid articles={articles} dimmed={loading} />
         ) : (
           <p className="py-20 text-center text-muted">No articles published yet — check back soon.</p>
         )}

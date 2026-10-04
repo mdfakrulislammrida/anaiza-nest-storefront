@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getProducts } from "@/lib/api";
 import ProductListing from "@/components/ProductListing";
+import ProductListingFallback from "@/components/ProductListingFallback";
 import ShopCategoryRedirect from "@/components/ShopCategoryRedirect";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/shop" },
   title: "Shop All Gifts",
   description: "Browse the full Anaiza Nest gift catalog — Bangladesh's #1 gift shop.",
 };
 
-export default function ShopPage() {
+export default async function ShopPage() {
+  // First page at build time (same query the client makes), so the cards are in the static HTML.
+  const initialResult = await getProducts({ page: 1, per_page: 24 }).catch(() => null);
+
   return (
     <div>
       <div className="border-b border-line bg-cream">
@@ -20,9 +26,13 @@ export default function ShopPage() {
         </div>
       </div>
 
-      <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
+      <Suspense
+        fallback={
+          <ProductListingFallback result={initialResult} breadcrumbLabel="Shop" basePath="/shop" />
+        }
+      >
         <ShopCategoryRedirect />
-        <ProductListing breadcrumbLabel="Shop" />
+        <ProductListing breadcrumbLabel="Shop" initialResult={initialResult} />
       </Suspense>
     </div>
   );

@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { getHomeCatalog, getHomepageSections } from "@/lib/api";
 import { DEFAULT_HOMEPAGE_SECTIONS } from "@/lib/defaultHomepageSections";
 import HomeClient from "@/components/HomeClient";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   const catalog = await getHomeCatalog().catch(() => null);

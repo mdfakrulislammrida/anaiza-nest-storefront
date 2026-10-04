@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getArticles } from "@/lib/api";
 import BlogListing from "@/components/BlogListing";
+import BlogListingFallback from "@/components/BlogListingFallback";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/blog" },
   title: "Blog",
   description: "Gift guides, care tips, and stories from Anaiza Nest — Bangladesh's #1 gift shop.",
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  // First page at build time (same query the client makes), so the article cards are in the static HTML.
+  const initialResult = await getArticles({ page: 1, per_page: 12 }).catch(() => null);
+
   return (
     <div>
       <div className="border-b border-line bg-cream">
@@ -19,8 +25,8 @@ export default function BlogPage() {
         </div>
       </div>
 
-      <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
-        <BlogListing />
+      <Suspense fallback={<BlogListingFallback result={initialResult} />}>
+        <BlogListing initialResult={initialResult} />
       </Suspense>
     </div>
   );

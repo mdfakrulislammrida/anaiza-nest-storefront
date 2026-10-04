@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ApiError, getCategories, getCategory } from "@/lib/api";
-import { breadcrumbJsonLd, categoryMetaFromApi, faqPageJsonLd } from "@/lib/jsonld";
+import { ApiError, getCategories, getCategory, getProducts } from "@/lib/api";
+import { breadcrumbJsonLd, categoryMetaFromApi, faqPageJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import CategoryDetailClient from "@/components/CategoryDetailClient";
 
 // Static export needs every category slug enumerated at build time. A slug
@@ -53,6 +53,11 @@ export default async function CategoryPage({
     throw error;
   });
 
+  // First page, same query the client makes -- rendered into the static HTML and described in ItemList JSON-LD.
+  const initialProducts = await getProducts({ category: category.slug, page: 1, per_page: 24 }).catch(
+    () => null,
+  );
+
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: category.name, path: `/category/${category.slug}` },
@@ -64,13 +69,23 @@ export default async function CategoryPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
+      {initialProducts && initialProducts.data.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              itemListJsonLd(category.name, `/category/${category.slug}`, initialProducts.data),
+            ),
+          }}
+        />
+      )}
       {category.faqs && category.faqs.length > 0 && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(category.faqs)) }}
         />
       )}
-      <CategoryDetailClient initialCategory={category} />
+      <CategoryDetailClient initialCategory={category} initialProducts={initialProducts} />
     </>
   );
 }

@@ -1,12 +1,19 @@
 import { Suspense } from "react";
 import ProductListing from "@/components/ProductListing";
+import ProductListingFallback from "@/components/ProductListingFallback";
 import Accordion from "@/components/Accordion";
-import type { CategoryDetail as CategoryDetailType } from "@/lib/types";
+import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper, so both render identical
 // markup regardless of which one is currently supplying the data.
-export default function CategoryDetail({ category }: { category: CategoryDetailType }) {
+export default function CategoryDetail({
+  category,
+  initialProducts,
+}: {
+  category: CategoryDetailType;
+  initialProducts: ProductListResponse | null;
+}) {
   const { banner_desktop: desktop, banner_mobile: mobile } = category;
   const hasBanner = Boolean(desktop.url || mobile.url);
 
@@ -38,8 +45,20 @@ export default function CategoryDetail({ category }: { category: CategoryDetailT
       </div>
 
       <div className="mt-4">
-        <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
-          <ProductListing fixedParams={{ category: category.slug }} breadcrumbLabel={category.name} />
+        <Suspense
+          fallback={
+            <ProductListingFallback
+              result={initialProducts}
+              breadcrumbLabel={category.name}
+              basePath={`/category/${category.slug}`}
+            />
+          }
+        >
+          <ProductListing
+            fixedParams={{ category: category.slug }}
+            breadcrumbLabel={category.name}
+            initialResult={initialProducts}
+          />
         </Suspense>
       </div>
 

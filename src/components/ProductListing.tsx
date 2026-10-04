@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api";
 import { trackViewItemList } from "@/lib/tracking";
-import ProductCard from "./ProductCard";
+import ProductGrid from "./ProductGrid";
 import PriceFilterPanel from "./PriceFilterPanel";
 import SortDropdown from "./SortDropdown";
 import type { ProductListParams, ProductListResponse, ProductSort } from "@/lib/types";
@@ -15,9 +15,13 @@ const VALID_SORTS: ProductSort[] = ["newest", "price_asc", "price_desc"];
 export default function ProductListing({
   fixedParams,
   breadcrumbLabel,
+  initialResult,
 }: {
   fixedParams?: Partial<ProductListParams>;
   breadcrumbLabel: string;
+  // First page (default sort, no filters) fetched at build time by the server
+  // page -- the same data the static fallback already put in the HTML.
+  initialResult?: ProductListResponse | null;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -34,16 +38,22 @@ export default function ProductListing({
   const sort = VALID_SORTS.includes(sortParam as ProductSort) ? (sortParam as ProductSort) : undefined;
   const currentPage = Number(searchParams.get("page") ?? "1") || 1;
 
-  const [result, setResult] = useState<ProductListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState<ProductListResponse | null>(initialResult ?? null);
+  const [loading, setLoading] = useState(!initialResult);
+
+  // The build-time data only describes the unfiltered first page, so it can
+  // stand in for the first fetch only when the URL asks for exactly that.
+  const isDefaultView =
+    !search && minPrice === undefined && maxPrice === undefined && !sort && currentPage === 1;
+  const refreshQuietlyOnce = useRef(Boolean(initialResult));
 
   useEffect(() => {
     let cancelled = false;
-    // Flip the loading flag before kicking off the fetch below — standard
-    // "start of an async effect" pattern, not a case the lint rule's
-    // cascading-render concern actually applies to.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
+    // First run with build-time data on the default view: refresh in the
+    // background without dimming a grid that is already correct on screen.
+    const quiet = refreshQuietlyOnce.current && isDefaultView;
+    refreshQuietlyOnce.current = false;
+    if (!quiet) setLoading(true);
 
     getProducts({
       ...fixedParamsRef.current,
@@ -61,12 +71,14 @@ export default function ProductListing({
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !quiet) setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
+    // isDefaultView is derived from the same params already listed here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, minPrice, maxPrice, sort, currentPage, breadcrumbLabel]);
 
   const buildHref = (overrides: Record<string, string | number | undefined>) => {
@@ -117,15 +129,7 @@ export default function ProductListing({
             {showSkeleton ? (
               <p className="py-20 text-center text-muted">Loading products…</p>
             ) : products.length > 0 ? (
-              <div
-                className={`grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 transition-opacity ${
-                  loading ? "opacity-60" : "opacity-100"
-                }`}
-              >
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <ProductGrid products={products} dimmed={loading} />
             ) : (
               <p className="py-20 text-center text-muted">No products match these filters.</p>
             )}

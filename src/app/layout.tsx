@@ -13,7 +13,8 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import PopupManager from "@/components/PopupManager";
 import { getMarketingSettings, getSiteSettings } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
-import { organizationJsonLd } from "@/lib/jsonld";
+import { siteJsonLd } from "@/lib/jsonld";
+import { siteRobots } from "@/lib/seo";
 import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
 import RouteChangeTracker from "@/components/RouteChangeTracker";
 import UtmCapture from "@/components/UtmCapture";
@@ -36,6 +37,7 @@ const SITE_DESCRIPTION =
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  robots: siteRobots(),
   title: {
     default: `${SITE_NAME} — Bangladesh's #1 Gift Shop`,
     template: `%s | ${SITE_NAME}`,
@@ -82,7 +84,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(siteSettings)) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd(siteSettings)) }}
         />
         <MarketingHeadScripts marketing={marketing} />
       </head>

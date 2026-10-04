@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import { getCategory } from "@/lib/api";
 import CategoryDetail from "./CategoryDetail";
-import type { CategoryDetail as CategoryDetailType } from "@/lib/types";
+import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
 
 // Seeded from the statically-built category content, so first render is
 // already correct -- no loading state. Silently refetches once on mount to
 // pick up a content edit since the build; a failed refetch keeps what's
 // rendered.
-export default function CategoryDetailClient({ initialCategory }: { initialCategory: CategoryDetailType }) {
+export default function CategoryDetailClient({
+  initialCategory,
+  initialProducts,
+}: {
+  initialCategory: CategoryDetailType;
+  initialProducts: ProductListResponse | null;
+}) {
   const [category, setCategory] = useState(initialCategory);
 
   useEffect(() => {
@@ -28,5 +34,5 @@ export default function CategoryDetailClient({ initialCategory }: { initialCateg
     };
   }, [initialCategory.slug]);
 
-  return <CategoryDetail category={category} />;
+  return <CategoryDetail category={category} initialProducts={initialProducts} />;
 }

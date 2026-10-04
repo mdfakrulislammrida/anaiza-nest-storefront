@@ -5,14 +5,30 @@ export function absoluteUrl(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
-export function organizationJsonLd(siteSettings: SiteSetting | null) {
-  const name = siteSettings?.site_name ?? "Anaiza Nest";
+// Stable node ids, so the Organization and WebSite are emitted once (root
+// layout) and every other page's JSON-LD -- Product brand, Article publisher
+// -- can point at them with {"@id": ...} instead of repeating them.
+export const ORGANIZATION_ID = `${SITE_URL}/#organization`;
+export const WEBSITE_ID = `${SITE_URL}/#website`;
+
+const SITE_NAME_FALLBACK = "Anaiza Nest";
+
+// Everything below comes from site-settings; a field that isn't set is simply
+// left out rather than filled with a guess.
+function organizationNode(siteSettings: SiteSetting | null) {
+  const name = siteSettings?.site_name ?? SITE_NAME_FALLBACK;
+  const sameAs = (siteSettings?.social_links ?? []).map((link) => link.url).filter(Boolean);
+
   return {
-    "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": ORGANIZATION_ID,
     name,
     url: SITE_URL,
-    ...(siteSettings?.logo_url ? { logo: siteSettings.logo_url } : {}),
+    ...(siteSettings?.logo_url
+      ? { logo: { "@type": "ImageObject", url: siteSettings.logo_url } }
+      : {}),
+    ...(siteSettings?.footer_about ? { description: siteSettings.footer_about } : {}),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
     ...(siteSettings?.contact_phone || siteSettings?.contact_email
       ? {
           contactPoint: {
@@ -23,12 +39,66 @@ export function organizationJsonLd(siteSettings: SiteSetting | null) {
           },
         }
       : {}),
-    ...(siteSettings?.address ? { address: siteSettings.address } : {}),
+    ...(siteSettings?.address
+      ? { address: { "@type": "PostalAddress", streetAddress: siteSettings.address } }
+      : {}),
+  };
+}
+
+function websiteNode(siteSettings: SiteSetting | null) {
+  return {
+    "@type": "WebSite",
+    "@id": WEBSITE_ID,
+    url: SITE_URL,
+    name: siteSettings?.site_name ?? SITE_NAME_FALLBACK,
+    publisher: { "@id": ORGANIZATION_ID },
+    // No SearchAction on purpose: Google retired the sitelinks search box, so
+    // it would buy nothing.
+  };
+}
+
+// One @graph with both entities, emitted from the root layout.
+export function siteJsonLd(siteSettings: SiteSetting | null) {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [organizationNode(siteSettings), websiteNode(siteSettings)],
   };
 }
 
 function offerAvailability(stockQuantity: number): string {
   return stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
+}
+
+// First page of a listing, for category pages. Names, URLs and prices are the
+// real catalog values (BDT) -- nothing is added that the API didn't return.
+export function itemListJsonLd(name: string, path: string, products: Product[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    url: absoluteUrl(path),
+    numberOfItems: products.length,
+    itemListElement: products.map((product, index) => {
+      const image = product.images?.[0]?.url;
+      return {
+        "@type": "ListItem",
+        position: index + 1,
+        url: absoluteUrl(`/product/${product.slug}`),
+        item: {
+          "@type": "Product",
+          name: product.name,
+          url: absoluteUrl(`/product/${product.slug}`),
+          ...(image ? { image } : {}),
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "BDT",
+            price: product.effective_price,
+            availability: offerAvailability(product.stock_quantity),
+          },
+        },
+      };
+    }),
+  };
 }
 
 export function productJsonLd(product: Product) {
@@ -64,9 +134,15 @@ export function productJsonLd(product: Product) {
     name: product.name,
     description: product.short_description ?? undefined,
     sku: product.sku,
+    // The product's own Brand when one is set in the admin; otherwise the
+    // store itself (the Organization node from the root layout).
+    brand: product.brand
+      ? { "@type": "Brand", name: product.brand.name }
+      : { "@id": ORGANIZATION_ID },
     ...(image ? { image } : {}),
     url,
     offers,
+    // No aggregateRating / review: the API has no real product review data.
   };
 }
 
@@ -75,6 +151,7 @@ export function articleJsonLd(article: Article) {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: article.title,
+    publisher: { "@id": ORGANIZATION_ID },
     url: absoluteUrl(`/blog/${article.slug}`),
     ...(article.featured_image ? { image: article.featured_image } : {}),
     ...(article.published_at ? { datePublished: article.published_at } : {}),

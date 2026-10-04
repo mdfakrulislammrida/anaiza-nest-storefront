@@ -34,3 +34,43 @@ RewriteRule ^blog/.+$ /article.html [L]
 
 # 5. Custom 404 page
 ErrorDocument 404 /404.html
+
+# ---------------------------------------------------------------------------
+# Performance: compression + caching. Each block is wrapped in <IfModule> so a
+# host without that module just skips it instead of returning a 500.
+# ---------------------------------------------------------------------------
+
+# 6. Compression (Brotli for clients that accept it, gzip otherwise).
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml text/javascript application/javascript application/json application/ld+json application/xml image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml text/javascript application/javascript application/json application/ld+json application/xml image/svg+xml
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Tell caches the response differs by Accept-Encoding.
+  <FilesMatch "\.(html|css|js|json|svg|xml|txt)$">
+    Header append Vary Accept-Encoding
+  </FilesMatch>
+
+  # 7. Cache headers.
+  # Build output under /_next/static/ has a content hash in every filename, so
+  # a changed file always gets a new URL and the old one can be cached forever.
+  <If "%{REQUEST_URI} =~ m#^/_next/static/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+
+  # Fonts and images. (.ico is left out: favicon.ico keeps the same name when
+  # it changes. Note files in the site root such as svgs are not content-hashed
+  # either, so replacing one of those means giving it a new filename.)
+  <FilesMatch "\.(woff2?|ttf|otf|eot|png|jpe?g|gif|webp|avif|svg)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # HTML, the navigation payloads (.txt), sitemap/robots/llms.txt: always
+  # revalidate, so a new deployment shows up right away. 304s keep it cheap.
+  <FilesMatch "\.(html|txt|xml)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

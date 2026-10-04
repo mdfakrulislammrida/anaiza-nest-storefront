@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getProducts } from "@/lib/api";
 import ProductListing from "@/components/ProductListing";
+import ProductListingFallback from "@/components/ProductListingFallback";
 import CountdownTimer from "@/components/CountdownTimer";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/hot-deals" },
   title: "Hot Deals",
   description: "Limited-time prices on Anaiza Nest gifts, while stock lasts.",
 };
 
-export default function HotDealsPage() {
+export default async function HotDealsPage() {
+  // First page at build time (same query the client makes), so the cards are in the static HTML.
+  const initialResult = await getProducts({ on_sale: true, page: 1, per_page: 24 }).catch(() => null);
+
   return (
     <div>
       <div className="relative flex min-h-[220px] flex-col justify-end bg-gradient-to-br from-gray-500 to-black p-8 text-white sm:p-12">
@@ -24,8 +30,16 @@ export default function HotDealsPage() {
         </div>
       </div>
 
-      <Suspense fallback={<div className="py-20 text-center text-muted">Loading…</div>}>
-        <ProductListing fixedParams={{ on_sale: true }} breadcrumbLabel="Hot Deals" />
+      <Suspense
+        fallback={
+          <ProductListingFallback result={initialResult} breadcrumbLabel="Hot Deals" basePath="/hot-deals" />
+        }
+      >
+        <ProductListing
+          fixedParams={{ on_sale: true }}
+          breadcrumbLabel="Hot Deals"
+          initialResult={initialResult}
+        />
       </Suspense>
     </div>
   );
