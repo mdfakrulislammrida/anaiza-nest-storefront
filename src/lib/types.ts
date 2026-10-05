@@ -331,6 +331,17 @@ export interface StorePolicy {
   return_window_days: number;
 }
 
+// Admin-written homepage wording (Site Settings > Homepage wording); each field is null when blank.
+export interface HomepageWording {
+  hero_badge: string | null;
+  hero_title: string | null;
+  hero_text: string | null;
+  hot_deals_tile_text: string | null;
+  new_arrivals_tile_text: string | null;
+  newsletter_headline: string | null;
+  newsletter_text: string | null;
+}
+
 export interface SiteSetting {
   site_name: string;
   logo_url: string | null;
@@ -346,6 +357,8 @@ export interface SiteSetting {
   social_links: SocialLink[];
   footer_copyright_text: string;
   brand_description: string | null;
+  // Absent on an older API, in which case the neutral defaults apply.
+  homepage?: HomepageWording;
   policy: StorePolicy;
 }
 

@@ -19,8 +19,8 @@ RewriteRule ^(.+)$ $1.html [L]
 RewriteCond %{DOCUMENT_ROOT}/$1.html -f
 RewriteRule ^(.+)/$ /$1.html [L]
 
-# 4. Fallback for a product/page/article slug that didn't match a file in
-#    step 2 -- i.e. one added after the last build, so generateStaticParams
+# 4. Fallback for a product/page/category/article slug that didn't match a file
+#    in step 2 -- i.e. one added after the last build, so generateStaticParams
 #    didn't know about it yet. Serves a client-only shell, which reads the
 #    real slug from the URL and fetches it from the API directly, so brand
 #    new content still shows up without waiting for the next rebuild (just
@@ -30,6 +30,7 @@ RewriteRule ^(.+)/$ /$1.html [L]
 #    /article, rather than reusing /blog.html for double duty.
 RewriteRule ^product/.+$ /product.html [L]
 RewriteRule ^pages/.+$ /pages.html [L]
+RewriteRule ^category/.+$ /category.html [L]
 RewriteRule ^blog/.+$ /article.html [L]
 
 # 5. Custom 404 page

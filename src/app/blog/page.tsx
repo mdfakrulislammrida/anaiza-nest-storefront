@@ -7,7 +7,7 @@ import BlogListingFallback from "@/components/BlogListingFallback";
 export const metadata: Metadata = {
   alternates: { canonical: "/blog" },
   title: "Blog",
-  description: "Gift guides, care tips, and stories from Anaiza Nest — Bangladesh's #1 gift shop.",
+  description: "Gift guides, care tips, and stories from Anaiza Nest.",
 };
 
 export default async function BlogPage() {

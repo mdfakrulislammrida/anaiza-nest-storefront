@@ -7,6 +7,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import SearchBar from "./SearchBar";
 import ThemeToggle from "./ThemeToggle";
+import { getCategories } from "@/lib/api";
 import type { CategorySummary } from "@/lib/types";
 
 const FALLBACK_NAV_LINKS = [
@@ -20,7 +21,7 @@ const FALLBACK_NAV_LINKS = [
 const ICON_BUTTON_CLASS =
   "flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-pill";
 
-export default function Header({ categories = [] }: { categories?: CategorySummary[] }) {
+export default function Header({ categories: initialCategories = [] }: { categories?: CategorySummary[] }) {
   const { itemCount, openDrawer } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { siteSettings } = useSiteSettings();
@@ -28,6 +29,28 @@ export default function Header({ categories = [] }: { categories?: CategorySumma
   const navLinks = siteSettings?.nav_links?.length ? siteSettings.nav_links : FALLBACK_NAV_LINKS;
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  // Seeded from the categories known at build time, so the menu is in the static HTML; then
+  // refreshed once from the API so hiding, reordering or adding a category in the admin shows up
+  // without a rebuild. (A category added since the build opens through the /category fallback
+  // shell.) A failed refresh keeps what is already shown. The nav links themselves follow the
+  // same rule through SiteSettingsProvider, which refetches site settings on load.
+  const [categories, setCategories] = useState(initialCategories);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getCategories()
+      .then((fresh) => {
+        if (!cancelled) setCategories(fresh);
+      })
+      .catch(() => {
+        // Keep the build-time list.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const navRef = useRef<HTMLDivElement>(null);
 
   // Admin-controlled: a site-wide switch, plus a per-category "show in menu" flag. Hidden entirely
@@ -187,8 +210,10 @@ export default function Header({ categories = [] }: { categories?: CategorySumma
           </div>
         </nav>
 
-        {categoriesOpen && menuCategories.length > 0 && (
-          <div id="categories-menu-panel" className="border-b border-line bg-ivory">
+        {/* Always rendered, merely hidden while closed, so the category links are in the static HTML
+            that crawlers read -- not only after someone opens the menu. */}
+        {menuCategories.length > 0 && (
+          <div id="categories-menu-panel" hidden={!categoriesOpen} className="border-b border-line bg-ivory">
             <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 px-4 py-2 sm:grid-cols-3 sm:px-6 lg:grid-cols-4">
               {menuCategories.map((category) => (
                 <li key={category.id}>

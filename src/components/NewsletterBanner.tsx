@@ -2,9 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { subscribeToNewsletter } from "@/lib/api";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { resolveWording } from "@/lib/homepageWording";
 
 export default function NewsletterBanner() {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const wording = resolveWording(useSiteSettings().siteSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,10 +28,8 @@ export default function NewsletterBanner() {
   return (
     <section className="bg-navy text-white">
       <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <h2 className="font-serif text-2xl sm:text-3xl">Get 10% off your first order</h2>
-        <p className="mt-2 text-sm text-white/70">
-          Join our list for early access to hot deals and new arrivals.
-        </p>
+        <h2 className="font-serif text-2xl sm:text-3xl">{wording.newsletter_headline}</h2>
+        <p className="mt-2 text-sm text-white/70">{wording.newsletter_text}</p>
 
         {status === "done" ? (
           <p className="mt-6 text-sm font-medium">Thanks — you&apos;re on the list.</p>

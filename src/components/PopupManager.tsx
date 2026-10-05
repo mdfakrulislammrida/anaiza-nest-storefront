@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Modal from "./Modal";
 import { getPopupSettings, subscribeToNewsletter } from "@/lib/api";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { resolveWording } from "@/lib/homepageWording";
 import type { PopupConfig, PopupPage, PopupSettings } from "@/lib/types";
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -141,6 +143,7 @@ function PopupImage({ src, alt }: { src: string | null; alt: string }) {
 
 function NewsletterPopupContent({ image }: { image: string | null }) {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const wording = resolveWording(useSiteSettings().siteSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -162,10 +165,8 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
     <div>
       <PopupImage src={image} alt="Newsletter" />
       <div className="p-6 text-center">
-        <h2 className="font-serif text-xl text-ink">Get 10% off your first order</h2>
-        <p className="mt-2 text-sm text-muted">
-          Join our list for early access to hot deals and new arrivals.
-        </p>
+        <h2 className="font-serif text-xl text-ink">{wording.newsletter_headline}</h2>
+        <p className="mt-2 text-sm text-muted">{wording.newsletter_text}</p>
 
         {status === "done" ? (
           <p className="mt-5 text-sm font-medium text-ink">Thanks — you&apos;re on the list.</p>

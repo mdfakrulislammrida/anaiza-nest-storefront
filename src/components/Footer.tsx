@@ -3,7 +3,7 @@
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 const FALLBACK_ABOUT =
-  "Bangladesh's #1 gift shop — handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh with cash-on-delivery and mobile-wallet checkout.";
+  "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh with cash-on-delivery and mobile-wallet checkout.";
 
 const FALLBACK_FOOTER_LINKS = [
   { label: "Track Order", url: "/track-order" },
