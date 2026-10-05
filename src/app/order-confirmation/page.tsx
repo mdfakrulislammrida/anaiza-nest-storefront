@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
+import { paymentMethodLabel } from "@/lib/payment";
 import { trackPurchase } from "@/lib/tracking";
 import type { Order } from "@/lib/types";
 
@@ -71,7 +72,7 @@ export default function OrderConfirmationPage() {
       <p className="mt-3 text-ink/70">
         Order <span className="font-semibold text-ink">#{order.id}</span> has
         been placed and will be paid via{" "}
-        <span className="font-semibold text-ink">{order.payment_method}</span>.
+        <span className="font-semibold text-ink">{paymentMethodLabel(order.payment_method)}</span>.
       </p>
 
       <div className="mt-10 rounded-xl border border-line p-6">

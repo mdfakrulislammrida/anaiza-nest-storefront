@@ -36,6 +36,11 @@ export interface CartItem {
   stock: number;
 }
 
+// The most a line can hold: its stock, or a generous ceiling when the stock figure is unknown.
+export function maxQuantityFor(item: Pick<CartItem, "stock">): number {
+  return item.stock > 0 ? item.stock : 99;
+}
+
 interface CartContextValue {
   items: CartItem[];
   itemCount: number;
@@ -93,7 +98,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             item.key === key
               ? {
                   ...item,
-                  quantity: Math.min(item.quantity + quantity, item.stock || 99),
+                  quantity: Math.min(item.quantity + quantity, maxQuantityFor(item)),
                 }
               : item,
           );
@@ -123,7 +128,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) =>
       prev
         .map((item) =>
-          item.key === key ? { ...item, quantity: Math.max(quantity, 0) } : item,
+          item.key === key ? { ...item, quantity: Math.min(Math.max(quantity, 0), maxQuantityFor(item)) } : item,
         )
         .filter((item) => item.quantity > 0),
     );

@@ -9,7 +9,16 @@ import type { PopupConfig, PopupPage, PopupSettings } from "@/lib/types";
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
+// Popups never appear while someone is buying: not in the cart, checkout or on the confirmation,
+// whatever the admin chose in "Show on". An interruption there costs the order.
+const NO_POPUP_PATHS = ["/cart", "/checkout", "/order-confirmation"];
+
+function isPurchaseFlow(pathname: string): boolean {
+  return NO_POPUP_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
 function pageMatches(pages: PopupPage[], pathname: string): boolean {
+  if (isPurchaseFlow(pathname)) return false;
   if (pages.includes("all")) return true;
   if (pages.includes("home") && pathname === "/") return true;
   if (pages.includes("shop") && pathname === "/shop") return true;
@@ -100,6 +109,16 @@ function PopupController({
     document.addEventListener("mouseout", onMouseOut);
     return () => document.removeEventListener("mouseout", onMouseOut);
   }, [config, pathname, canShow, storageKey, onShown]);
+
+  // An already-open popup is closed (without starting the 24h cooldown) if the visitor heads
+  // into the purchase flow, e.g. via Buy Now.
+  useEffect(() => {
+    if (open && isPurchaseFlow(pathname)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOpen(false);
+      onClosed();
+    }
+  }, [open, pathname, onClosed]);
 
   function handleClose() {
     setOpen(false);

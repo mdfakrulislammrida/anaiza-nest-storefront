@@ -291,6 +291,8 @@ export interface HomepageSection {
   position: number;
   custom_title: string | null;
   custom_html: string | null;
+  // Hot Deals only: when the offer really ends. Null/absent means no countdown.
+  deal_ends_at?: string | null;
 }
 
 export interface Faq {

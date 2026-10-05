@@ -65,7 +65,7 @@ export default function ProductDetail({ product, related }: { product: Product; 
             <ClampedText text={product.summary} className="mt-3 max-w-xl text-sm leading-relaxed text-ink/80" />
           )}
           <p className="mt-1 text-sm text-muted">
-            (4) · {stockQuantity > 0 ? "In stock" : "Out of stock"}
+            {stockQuantity > 0 ? "In stock" : "Out of stock"}
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -106,10 +106,6 @@ export default function ProductDetail({ product, related }: { product: Product; 
               inside Dhaka, {formatDays(policy.delivery_days_outside_dhaka)} outside. Free delivery inside Dhaka on
               orders over {formatPrice(policy.free_delivery_threshold)}. You can track any order from the Track Order
               page using your order ID and phone number.
-            </Accordion>
-            <Accordion title="Reviews (4)">
-              Customer reviews for this product aren&rsquo;t live yet — check back
-              soon.
             </Accordion>
           </div>
         </div>

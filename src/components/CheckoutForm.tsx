@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
@@ -26,12 +26,30 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string; initial: string }[
   { value: "cod", label: "Cash on Delivery", initial: "C" },
 ];
 
+// Field names the form shows an inline error for. Any other validation key (the server's
+// "items" stock check, for one) has no field to light up, so its message is shown in the alert instead.
+const FORM_FIELDS = [
+  "customer_name",
+  "customer_email",
+  "customer_phone",
+  "customer_address",
+  "division",
+  "district",
+  "thana",
+  "payment_method",
+  "gift_note",
+];
+
 export default function CheckoutForm({ paymentSettings }: { paymentSettings: PaymentSetting | null }) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   // The order summary shows a live estimate from the editable delivery settings;
   // the server always recomputes and charges the authoritative fee itself.
-  const policy = resolvePolicy(useSiteSettings().siteSettings);
+  const { siteSettings } = useSiteSettings();
+  const policy = resolvePolicy(siteSettings);
+  const supportPhone = siteSettings?.contact_phone ?? null;
+  const uid = useId();
+  const alertRef = useRef<HTMLDivElement>(null);
 
   const paymentMethods = useMemo(
     () => PAYMENT_METHODS.filter((method) => method.value !== "cod" || paymentSettings?.cod_enabled !== false),
@@ -46,8 +64,26 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(paymentMethods[0]?.value ?? "cod");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Server messages that belong to no single field, e.g. "Insufficient stock for ...".
+  const [orderProblems, setOrderProblems] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [orderPlaced, setOrderPlaced] = useState(false);
+
+  // Bumped whenever a problem should be brought into view. The effect below runs after the alert
+  // and the field errors are on screen, then moves the visitor to what needs fixing: the first
+  // invalid text field if there is one, otherwise the alert. Without this the message sat below
+  // the fold, next to a button the visitor had already scrolled past.
+  const [revealCount, setRevealCount] = useState(0);
+
+  useEffect(() => {
+    if (revealCount === 0) return;
+    const firstInvalid = document
+      .getElementById("checkout-form")
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]:not(button)');
+    const target = firstInvalid ?? alertRef.current;
+    target?.scrollIntoView({ block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [revealCount]);
 
   const districts = division ? BD_DISTRICTS_BY_DIVISION[division] : [];
   // Falls back to free-text whenever a district's upazila list is missing or
@@ -77,17 +113,20 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setFormError(null);
+    setOrderProblems([]);
     setFieldErrors({});
 
     if (!division || !district || !thana) {
       setFormError("Please select your division, district and thana/area.");
+      setRevealCount((count) => count + 1);
       return;
     }
 
     setSubmitting(true);
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const email = String(form.get("customer_email") ?? "").trim();
 
     const payload: CreateOrderPayload = {
@@ -117,10 +156,23 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
         setFieldErrors(error.errors);
-        setFormError("Please check the highlighted fields and try again.");
+        const unplaced = Object.entries(error.errors)
+          .filter(([key]) => !FORM_FIELDS.includes(key))
+          .flatMap(([, messages]) => messages);
+        const hasFieldErrors = Object.keys(error.errors).some((key) => FORM_FIELDS.includes(key));
+
+        setOrderProblems(unplaced);
+        setFormError(
+          unplaced.length > 0
+            ? "We couldn't place your order."
+            : hasFieldErrors
+              ? "Please check the highlighted fields and try again."
+              : error.message || "We couldn't place your order. Please try again.",
+        );
       } else {
         setFormError("Something went wrong placing your order. Please try again.");
       }
+      setRevealCount((count) => count + 1);
     } finally {
       setSubmitting(false);
     }
@@ -155,25 +207,99 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
       <div className="mt-8 flex flex-col gap-10 lg:flex-row">
         <form id="checkout-form" onSubmit={handleSubmit} className="flex-1 space-y-8">
+          {formError && (
+            <div
+              ref={alertRef}
+              role="alert"
+              tabIndex={-1}
+              className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 focus:outline-none"
+            >
+              <p className="font-medium">{formError}</p>
+              {orderProblems.length > 0 && (
+                <>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {orderProblems.map((problem) => (
+                      <li key={problem}>{problem}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-3">
+                    <Link href="/cart" className="font-medium underline">
+                      Review your cart
+                    </Link>{" "}
+                    and lower the quantity, then place the order again.
+                  </p>
+                </>
+              )}
+              {supportPhone && (
+                <p className="mt-3">
+                  Need a hand? Call{" "}
+                  <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-medium underline">
+                    {supportPhone}
+                  </a>{" "}
+                  or{" "}
+                  <a
+                    href={`https://wa.me/${supportPhone.replace(/[^\d]/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="font-medium underline"
+                  >
+                    message us on WhatsApp
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
+          )}
+
           <fieldset className="space-y-4">
             <legend className="font-serif text-xl text-ink">Shipping details</legend>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={labelClass}>Full name</label>
-                <input name="customer_name" required className={inputClass} />
+                <label htmlFor={`${uid}-name`} className={labelClass}>
+                  Full name
+                </label>
+                <input
+                  id={`${uid}-name`}
+                  name="customer_name"
+                  autoComplete="name"
+                  required
+                  aria-invalid={fieldErrors.customer_name ? true : undefined}
+                  className={inputClass}
+                />
                 {errorFor("customer_name")}
               </div>
               <div>
-                <label className={labelClass}>Phone number</label>
-                <input name="customer_phone" type="tel" required className={inputClass} />
+                <label htmlFor={`${uid}-phone`} className={labelClass}>
+                  Phone number
+                </label>
+                <input
+                  id={`${uid}-phone`}
+                  name="customer_phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  required
+                  aria-invalid={fieldErrors.customer_phone ? true : undefined}
+                  className={inputClass}
+                />
                 {errorFor("customer_phone")}
               </div>
             </div>
 
             <div>
-              <label className={labelClass}>Email (optional)</label>
-              <input name="customer_email" type="email" className={inputClass} />
+              <label htmlFor={`${uid}-email`} className={labelClass}>
+                Email (optional)
+              </label>
+              <input
+                id={`${uid}-email`}
+                name="customer_email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                aria-invalid={fieldErrors.customer_email ? true : undefined}
+                className={inputClass}
+              />
               {errorFor("customer_email")}
             </div>
 
@@ -222,8 +348,13 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                   />
                 ) : (
                   <>
-                    <label className={labelClass}>Thana / Area</label>
+                    <label htmlFor={`${uid}-thana`} className={labelClass}>
+                      Thana / Area
+                    </label>
                     <input
+                      id={`${uid}-thana`}
+                      autoComplete="off"
+                      aria-invalid={fieldErrors.thana ? true : undefined}
                       value={thana}
                       onChange={(event) => setThana(event.target.value)}
                       disabled={!district}
@@ -238,8 +369,17 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
             </div>
 
             <div>
-              <label className={labelClass}>Street address</label>
-              <input name="customer_address" required className={inputClass} />
+              <label htmlFor={`${uid}-address`} className={labelClass}>
+                Street address
+              </label>
+              <input
+                id={`${uid}-address`}
+                name="customer_address"
+                autoComplete="street-address"
+                required
+                aria-invalid={fieldErrors.customer_address ? true : undefined}
+                className={inputClass}
+              />
               {errorFor("customer_address")}
             </div>
 
@@ -249,8 +389,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
             </p>
 
             <div>
-              <label className={labelClass}>Order notes (optional)</label>
-              <textarea name="gift_note" rows={3} className={inputClass} />
+              <label htmlFor={`${uid}-notes`} className={labelClass}>
+                Order notes (optional)
+              </label>
+              <textarea id={`${uid}-notes`} name="gift_note" rows={3} autoComplete="off" className={inputClass} />
             </div>
           </fieldset>
 
@@ -345,8 +487,6 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
               <span>Total</span>
               <span>{formatPrice(subtotal + (deliveryFee ?? 0))}</span>
             </div>
-
-            {formError && <p className="mt-4 text-sm text-red-600">{formError}</p>}
 
             <button
               type="submit"

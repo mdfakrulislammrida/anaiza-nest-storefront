@@ -2,7 +2,14 @@ import type { Product } from "@/lib/types";
 import ProductCard from "./ProductCard";
 import CountdownTimer from "./CountdownTimer";
 
-export default function HotDealsSection({ products }: { products: Product[] }) {
+export default function HotDealsSection({
+  products,
+  endsAt,
+}: {
+  products: Product[];
+  // The admin's "Deal ends at"; the countdown shows only when it is set and still in the future.
+  endsAt?: string | null;
+}) {
   if (products.length === 0) return null;
 
   return (
@@ -13,9 +20,9 @@ export default function HotDealsSection({ products }: { products: Product[] }) {
             <h2 className="flex items-center gap-2 font-serif text-2xl sm:text-3xl">
               🔥 Hot Deals
             </h2>
-            <p className="mt-1 text-sm text-white/70">Limited-time prices, while stock lasts.</p>
+            <p className="mt-1 text-sm text-white/70">Reduced prices, while stock lasts.</p>
           </div>
-          <CountdownTimer />
+          <CountdownTimer endsAt={endsAt} />
         </div>
 
         <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-5">

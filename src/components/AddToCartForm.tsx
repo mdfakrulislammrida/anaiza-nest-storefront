@@ -29,6 +29,10 @@ export default function AddToCartForm({
   const stockQuantity = selectedVariant?.stock_quantity ?? product.stock_quantity;
   const inStock = stockQuantity > 0;
   const maxQuantity = Math.max(stockQuantity, 0);
+  // Shown in the mobile sticky bar, which covers the page's own price and option pills.
+  const unitPrice = selectedVariant?.effective_price ?? product.effective_price;
+  const regularPrice = selectedVariant?.price ?? product.price;
+  const onSale = unitPrice < regularPrice;
 
   function cartAddableProduct(): CartAddableProduct {
     return {
@@ -115,8 +119,21 @@ export default function AddToCartForm({
           stepper on mobile (desktop keeps using the in-flow one above,
           unchanged) so quantity can be adjusted without scrolling. */}
       <div className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-3 border-t border-line bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:shadow-none sm:flex-row">
-        <div className="flex items-center justify-center gap-3 sm:hidden">
-          <div className="flex items-center rounded-full border border-line">
+        <div className="flex items-center justify-between gap-3 sm:hidden">
+          {/* The bar hides the price and the option pills on a phone's first screen, so it states
+              both: the price being paid and which option is selected. */}
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-baseline gap-x-2 leading-tight">
+              <span className="text-lg font-semibold text-ink">{formatPrice(unitPrice)}</span>
+              {onSale && <span className="text-sm text-muted line-through">{formatPrice(regularPrice)}</span>}
+            </p>
+            {selectedVariant && (
+              <p className="truncate text-xs text-muted">
+                {selectedVariant.name}: {selectedVariant.value}
+              </p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center rounded-full border border-line">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}

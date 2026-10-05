@@ -11,19 +11,19 @@ export default function TopPromoBar() {
 
   return (
     <div className="bg-black text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 text-xs sm:px-6">
-        {/* Hidden below sm: with the promo message, phone, and both links
-            all fighting for one row, this truncated illegibly on narrow
-            screens. "Login / Sign Up" is also redundant with the account
-            icon already in the header, so it's dropped on mobile too. */}
-        <p className="hidden truncate sm:block">{promoText}</p>
-        <div className="flex w-full shrink-0 items-center justify-between gap-4 sm:w-auto sm:justify-end">
+      {/* On phones this is two short rows -- the delivery promise on top, then the phone number and
+          Track Order -- so the offer and a way to call are visible without opening anything. From
+          sm up it is the single row it always was. "Login / Sign Up" stays desktop-only because the
+          header already has an account icon. */}
+      <div className="mx-auto flex max-w-7xl flex-col px-4 py-1 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-2">
+        <p className="py-1 text-center sm:truncate sm:py-0 sm:text-left">{promoText}</p>
+        <div className="flex shrink-0 items-center justify-between gap-4 sm:w-auto sm:justify-end">
           {phone && (
-            <a href={`tel:${phone.replace(/\s+/g, "")}`} className="hidden sm:inline">
+            <a href={`tel:${phone.replace(/\s+/g, "")}`} className="py-2 hover:underline sm:py-0">
               {phone}
             </a>
           )}
-          <Link href="/track-order" className="py-1 hover:underline">
+          <Link href="/track-order" className="py-2 hover:underline sm:py-1">
             Track Order
           </Link>
           <Link href="/account" className="hidden py-1 hover:underline sm:inline">

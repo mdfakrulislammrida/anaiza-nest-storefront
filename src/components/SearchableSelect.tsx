@@ -35,6 +35,8 @@ export default function SearchableSelect({
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+  const triggerId = useId();
+  const errorId = useId();
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -103,8 +105,19 @@ export default function SearchableSelect({
 
   return (
     <div>
-      <label className={labelClass}>{label}</label>
-      <button type="button" onClick={openSheet} disabled={disabled} className={triggerClass}>
+      <label htmlFor={triggerId} className={labelClass}>
+        {label}
+      </label>
+      <button
+        id={triggerId}
+        type="button"
+        onClick={openSheet}
+        disabled={disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-describedby={error ? errorId : undefined}
+        className={triggerClass}
+      >
         <span className={value ? "" : "text-muted"}>
           {value || (disabled ? disabledHint : placeholder)}
         </span>
@@ -112,7 +125,11 @@ export default function SearchableSelect({
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && (
+        <p id={errorId} className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
 
       {open &&
         createPortal(
@@ -128,7 +145,7 @@ export default function SearchableSelect({
                   type="button"
                   onClick={close}
                   aria-label="Close"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-ink hover:bg-pill"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-pill"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
                     <path d="M18 6 6 18M6 6l12 12" />

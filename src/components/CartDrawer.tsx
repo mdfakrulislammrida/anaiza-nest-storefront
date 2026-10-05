@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCart } from "@/context/CartContext";
+import { maxQuantityFor, useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 
 export default function CartDrawer() {
@@ -66,7 +66,7 @@ export default function CartDrawer() {
                         type="button"
                         onClick={() => removeItem(item.key)}
                         aria-label="Remove item"
-                        className="flex h-8 w-8 shrink-0 items-center justify-center text-muted hover:text-red-600"
+                        className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center text-muted hover:text-red-600"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
                           <path d="M18 6 6 18M6 6l12 12" />
@@ -74,22 +74,28 @@ export default function CartDrawer() {
                       </button>
                     </div>
                     {item.variantLabel && <p className="text-xs text-muted">{item.variantLabel}</p>}
+                    {item.stock > 0 && item.quantity >= item.stock && (
+                      <p className="text-xs text-muted">
+                        {item.stock === 1 ? "Only 1 available" : `Only ${item.stock} available`}
+                      </p>
+                    )}
                     <div className="mt-2 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           aria-label="Decrease quantity"
                           onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                          className="flex h-9 w-9 items-center justify-center rounded border border-line text-ink"
+                          className="flex h-11 w-11 items-center justify-center rounded border border-line text-ink"
                         >
                           −
                         </button>
-                        <span className="w-4 text-center text-sm">{item.quantity}</span>
+                        <span className="w-6 text-center text-sm">{item.quantity}</span>
                         <button
                           type="button"
                           aria-label="Increase quantity"
                           onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                          className="flex h-9 w-9 items-center justify-center rounded border border-line text-ink"
+                          disabled={item.quantity >= maxQuantityFor(item)}
+                          className="flex h-11 w-11 items-center justify-center rounded border border-line text-ink disabled:cursor-not-allowed disabled:opacity-30"
                         >
                           +
                         </button>

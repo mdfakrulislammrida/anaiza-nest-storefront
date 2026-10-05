@@ -60,7 +60,7 @@ export default function HomeClient({
               </Fragment>
             );
           case "hot_deals":
-            return <HotDealsSection key={section.id} products={catalog.hotDeals} />;
+            return <HotDealsSection key={section.id} products={catalog.hotDeals} endsAt={section.deal_ends_at} />;
           case "bestsellers":
             return (
               <ProductSection

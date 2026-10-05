@@ -61,7 +61,6 @@ export default function ProductCard({
           <h3 className={`line-clamp-2 text-sm font-medium ${dark ? "text-white" : "text-ink"}`}>
             {product.name}
           </h3>
-          <p className={`text-xs ${dark ? "text-white/50" : "text-muted"}`}>(4)</p>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`text-base font-semibold ${dark ? "text-white" : "text-ink"}`}>
               {formatPrice(product.effective_price)}
