@@ -11,7 +11,7 @@ import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import PopupManager from "@/components/PopupManager";
-import { getMarketingSettings, getSiteSettings } from "@/lib/api";
+import { getCategories, getMarketingSettings, getSiteSettings } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 import { siteJsonLd } from "@/lib/jsonld";
 import { siteRobots } from "@/lib/seo";
@@ -83,6 +83,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // this build-time copy only needs to be roughly right, not live.
   const siteSettings = await getSiteSettings().catch(() => null);
   const marketing = await getMarketingSettings().catch(() => null);
+  // The header's Categories menu is built from the categories as of this build; a category added
+  // later is linked only after the next build, because its page doesn't exist until then.
+  const categories = await getCategories().catch(() => []);
 
   return (
     <html
@@ -105,7 +108,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <CartProvider>
               <WishlistProvider>
                 <TopPromoBar />
-                <Header />
+                <Header categories={categories} />
                 <main className="flex-1">{children}</main>
                 <Footer />
                 <CartDrawer />

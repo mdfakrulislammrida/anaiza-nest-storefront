@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import SearchBar from "./SearchBar";
 import ThemeToggle from "./ThemeToggle";
+import type { CategorySummary } from "@/lib/types";
 
 const FALLBACK_NAV_LINKS = [
   { label: "Home", url: "/" },
@@ -19,13 +20,60 @@ const FALLBACK_NAV_LINKS = [
 const ICON_BUTTON_CLASS =
   "flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-pill";
 
-export default function Header() {
+export default function Header({ categories = [] }: { categories?: CategorySummary[] }) {
   const { itemCount, openDrawer } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
   const navLinks = siteSettings?.nav_links?.length ? siteSettings.nav_links : FALLBACK_NAV_LINKS;
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // Admin-controlled: a site-wide switch, plus a per-category "show in menu" flag. Hidden entirely
+  // when nothing is left to list, so an empty menu never appears.
+  const menuCategories =
+    siteSettings?.show_categories_menu === false ? [] : categories.filter((category) => category.show_in_menu !== false);
+
+  useEffect(() => {
+    if (!categoriesOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!navRef.current?.contains(event.target as Node)) setCategoriesOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setCategoriesOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [categoriesOpen]);
+
+  const categoriesButton = menuCategories.length > 0 && (
+    <button
+      key="categories-menu"
+      type="button"
+      onClick={() => setCategoriesOpen((open) => !open)}
+      aria-expanded={categoriesOpen}
+      aria-controls="categories-menu-panel"
+      className="flex items-center gap-1 whitespace-nowrap py-1 transition-colors hover:text-navy"
+    >
+      Categories
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        className={`h-3.5 w-3.5 transition-transform ${categoriesOpen ? "rotate-180" : ""}`}
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </button>
+  );
 
   return (
     <>
@@ -119,18 +167,44 @@ export default function Header() {
         )}
       </header>
 
-      <nav className="border-b border-t border-line bg-ivory">
-        <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-4 py-2.5 text-sm font-medium text-ink sm:px-6">
-          {navLinks.map((link) => (
-            // A plain <a>, not next/link: these URLs are admin-editable
-            // (site-settings) rather than known at build time, and may be
-            // relative paths or full external URLs.
-            <a key={link.url} href={link.url} className="whitespace-nowrap py-1 transition-colors hover:text-navy">
-              {link.label}
-            </a>
-          ))}
-        </div>
-      </nav>
+      <div ref={navRef}>
+        <nav className="border-b border-t border-line bg-ivory">
+          <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-4 py-2.5 text-sm font-medium text-ink sm:px-6">
+            {navLinks.map((link) => (
+              <Fragment key={link.url}>
+                {/* A plain <a>, not next/link: these URLs are admin-editable
+                    (site-settings) rather than known at build time, and may be
+                    relative paths or full external URLs. */}
+                <a href={link.url} className="whitespace-nowrap py-1 transition-colors hover:text-navy">
+                  {link.label}
+                </a>
+                {/* Right after Shop, so it is on screen on a phone rather than at the end of the scrolling row. */}
+                {link.url === "/shop" && categoriesButton}
+              </Fragment>
+            ))}
+            {/* No Shop link in the admin's menu: put it last instead. */}
+            {!navLinks.some((link) => link.url === "/shop") && categoriesButton}
+          </div>
+        </nav>
+
+        {categoriesOpen && menuCategories.length > 0 && (
+          <div id="categories-menu-panel" className="border-b border-line bg-ivory">
+            <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 px-4 py-2 sm:grid-cols-3 sm:px-6 lg:grid-cols-4">
+              {menuCategories.map((category) => (
+                <li key={category.id}>
+                  {/* Plain <a>: category pages are static files, so a real navigation. */}
+                  <a
+                    href={`/category/${category.slug}`}
+                    className="flex min-h-11 items-center text-sm text-ink transition-colors hover:text-navy"
+                  >
+                    {category.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </>
   );
 }

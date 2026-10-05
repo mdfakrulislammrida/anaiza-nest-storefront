@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type TouchEvent } from "react";
 import ResponsiveImage from "@/components/ResponsiveImage";
 import type { ProductImage } from "@/lib/types";
 
@@ -35,9 +35,37 @@ export default function ProductGallery({
 
   const active = images[activeIndex];
 
+  // Swipe between images on touch screens. touch-action: pan-y on the frame leaves vertical
+  // scrolling to the browser and hands horizontal drags to us; a drag only counts as a swipe when
+  // it is mostly horizontal and long enough, so scrolling past the gallery never flips an image.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  function handleTouchStart(event: TouchEvent) {
+    const touch = event.touches[0];
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchEnd(event: TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || images.length < 2) return;
+
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    setActiveIndex((index) => Math.min(Math.max(index + (dx < 0 ? 1 : -1), 0), images.length - 1));
+  }
+
   return (
     <div>
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-pill">
+      <div
+        className="relative aspect-square touch-pan-y overflow-hidden rounded-xl bg-pill"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => (touchStart.current = null)}
+      >
         {active ? (
           <ResponsiveImage
             image={active}
@@ -50,6 +78,16 @@ export default function ProductGallery({
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cream to-pill">
             <span className="font-serif text-2xl text-ink/20">Anaiza Nest</span>
           </div>
+        )}
+
+        {/* Tells a phone visitor there is more to swipe to. */}
+        {images.length > 1 && (
+          <p
+            aria-live="polite"
+            className="absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white sm:hidden"
+          >
+            {activeIndex + 1} / {images.length}
+          </p>
         )}
       </div>
 

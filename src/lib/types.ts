@@ -10,6 +10,9 @@ export interface CategorySummary {
   id: number;
   name: string;
   slug: string;
+  // Whether the admin lists it in the header's Categories menu (absent on an older API = yes).
+  show_in_menu?: boolean;
+  menu_order?: number;
   thumbnail: ImageMeta;
 }
 
@@ -335,6 +338,8 @@ export interface SiteSetting {
   contact_email: string | null;
   address: string | null;
   promo_text: string;
+  // Master switch for the header's Categories menu (absent on an older API = on).
+  show_categories_menu?: boolean;
   nav_links: NavLink[];
   footer_about: string;
   footer_links: NavLink[];

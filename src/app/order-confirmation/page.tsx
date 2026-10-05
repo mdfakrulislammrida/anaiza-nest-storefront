@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { paymentMethodLabel } from "@/lib/payment";
+import { formatDays, resolvePolicy } from "@/lib/policy";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { trackPurchase } from "@/lib/tracking";
 import type { Order } from "@/lib/types";
 
@@ -25,6 +27,9 @@ function alreadyTrackedPurchase(orderId: number): boolean {
 
 export default function OrderConfirmationPage() {
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
+  const { siteSettings } = useSiteSettings();
+  const policy = resolvePolicy(siteSettings);
+  const supportPhone = siteSettings?.contact_phone ?? null;
 
   useEffect(() => {
     try {
@@ -120,6 +125,63 @@ export default function OrderConfirmationPage() {
         {order.customer.email && <p className="mt-2">{order.customer.email}</p>}
         <p>{order.customer.phone}</p>
       </div>
+
+      <section className="mt-6 rounded-xl border border-line p-6">
+        <h2 className="font-serif text-xl text-ink">What happens next</h2>
+        <ol className="mt-4 space-y-4 text-sm text-ink/70">
+          <li>
+            <span className="font-medium text-ink">Keep your order number.</span> It is #{order.id}. With the phone
+            number you ordered with, it lets you follow this order on the{" "}
+            <Link href="/track-order" className="underline hover:text-navy">
+              Track Order
+            </Link>{" "}
+            page.
+          </li>
+          <li>
+            <span className="font-medium text-ink">Delivery.</span> Orders to{" "}
+            {order.customer.division === "Dhaka" ? "addresses inside Dhaka" : "addresses outside Dhaka"} usually take{" "}
+            {formatDays(
+              order.customer.division === "Dhaka" ? policy.delivery_days_dhaka : policy.delivery_days_outside_dhaka,
+            )}{" "}
+            business days.
+          </li>
+          <li>
+            <span className="font-medium text-ink">Payment.</span>{" "}
+            {order.payment_method === "cod"
+              ? `Pay ${formatPrice(order.total)} in cash when your order arrives.`
+              : `You chose ${paymentMethodLabel(order.payment_method)} for ${formatPrice(order.total)}.`}
+          </li>
+          <li>
+            <span className="font-medium text-ink">Questions?</span>{" "}
+            {supportPhone ? (
+              <>
+                Call{" "}
+                <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="underline hover:text-navy">
+                  {supportPhone}
+                </a>{" "}
+                or{" "}
+                <a
+                  href={`https://wa.me/${supportPhone.replace(/[^\d]/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="underline hover:text-navy"
+                >
+                  message us on WhatsApp
+                </a>
+                , and mention order #{order.id}.
+              </>
+            ) : (
+              <>
+                Use the{" "}
+                <Link href="/contact" className="underline hover:text-navy">
+                  Contact
+                </Link>{" "}
+                page and mention order #{order.id}.
+              </>
+            )}
+          </li>
+        </ol>
+      </section>
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
