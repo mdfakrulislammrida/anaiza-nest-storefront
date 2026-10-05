@@ -5,8 +5,8 @@ import type { SiteSetting } from "@/lib/types";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
-  title: "Contact Us",
-  description: "Get in touch with Anaiza Nest about an order, a product, or bulk gifting.",
+  title: "Contact us",
+  description: "Get in touch with Anaiza Nest about an order, a gift or a corporate quotation.",
 };
 
 export default async function ContactPage() {
@@ -14,10 +14,9 @@ export default async function ContactPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-      <h1 className="font-serif text-3xl text-ink sm:text-4xl">Get in Touch</h1>
-      <p className="mt-2 max-w-lg text-sm text-muted">
-        Questions about an order, a product, or a bulk gifting request? We
-        usually reply within a few hours.
+      <h1 className="font-serif text-charcoal text-h1">Get in touch</h1>
+      <p className="mt-2 max-w-lg text-body text-stone">
+        Questions about an order or a gift, or a corporate quotation? Send us a message and we will help.
       </p>
 
       <div className="mt-10 flex flex-col gap-10 lg:flex-row">
@@ -27,27 +26,27 @@ export default async function ContactPage() {
 
         <aside className="space-y-6 lg:w-64">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">Phone</p>
-            <p className="mt-1 text-sm text-ink">{siteSettings?.contact_phone ?? "+880 1886-004421"}</p>
+            <p className="text-caption font-medium text-stone">Phone</p>
+            <p className="mt-1 text-body text-charcoal">{siteSettings?.contact_phone ?? "+880 1886-004421"}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">WhatsApp</p>
+            <p className="text-caption font-medium text-stone">WhatsApp</p>
             <a
-              href="https://wa.me/8801886004421"
+              href={`https://wa.me/${(siteSettings?.contact_phone ?? "+8801886004421").replace(/[^\d]/g, "")}`}
               target="_blank"
               rel="noreferrer noopener"
-              className="mt-1 inline-block text-sm text-navy hover:underline"
+              className="mt-1 inline-block text-body text-navy hover:underline"
             >
-              Chat with us
+              Message us on WhatsApp
             </a>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">Email</p>
-            <p className="mt-1 text-sm text-ink">{siteSettings?.contact_email ?? "hello@anaizanest.com"}</p>
+            <p className="text-caption font-medium text-stone">Email</p>
+            <p className="mt-1 text-body text-charcoal">{siteSettings?.contact_email ?? "hello@anaizanest.com"}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">Address</p>
-            <p className="mt-1 text-sm text-ink">{siteSettings?.address ?? "Dhaka, Bangladesh"}</p>
+            <p className="text-caption font-medium text-stone">Address</p>
+            <p className="mt-1 text-body text-charcoal">{siteSettings?.address ?? "Dhaka, Bangladesh"}</p>
           </div>
         </aside>
       </div>

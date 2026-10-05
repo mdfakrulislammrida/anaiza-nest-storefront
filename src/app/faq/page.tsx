@@ -20,27 +20,27 @@ export default async function FaqPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(faqs)) }}
         />
       )}
-      <nav className="mb-6 text-xs text-muted">
+      <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">FAQs</span>
+        <span className="text-charcoal">FAQs</span>
       </nav>
 
-      <h1 className="font-serif text-3xl text-ink sm:text-4xl">Frequently Asked Questions</h1>
+      <h1 className="font-serif text-charcoal text-h1">Frequently asked questions</h1>
 
       {faqs.length === 0 ? (
-        <p className="mt-8 text-muted">Nothing here yet — check back soon.</p>
+        <p className="mt-8 text-body text-stone">No questions here yet. If you need a hand, write to us on the Contact page.</p>
       ) : (
-        <div className="mt-8 divide-y divide-line border-t border-line">
+        <div className="mt-8 divide-y divide-linen border-t border-linen">
           {faqs.map((faq) => (
-            <details key={faq.id} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-center justify-between text-base font-medium text-ink">
+            <details key={faq.id} className="group py-6">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-base font-medium text-charcoal">
                 {faq.question}
-                <span className="ml-4 text-muted transition-transform group-open:rotate-45">+</span>
+                <span className="ml-4 text-stone transition-transform group-open:rotate-45">+</span>
               </summary>
-              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/70">
+              <p className="mt-4 whitespace-pre-line text-body leading-relaxed text-charcoal/70">
                 {faq.answer}
               </p>
             </details>

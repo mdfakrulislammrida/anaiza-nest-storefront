@@ -16,10 +16,10 @@ export default async function BlogPage() {
 
   return (
     <div>
-      <div className="border-b border-line bg-cream">
+      <div className="border-b border-linen bg-linen">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-          <h1 className="font-serif text-3xl text-ink sm:text-4xl">Blog</h1>
-          <p className="mt-2 text-sm text-muted">
+          <h1 className="font-serif text-charcoal text-h1">Blog</h1>
+          <p className="mt-2 text-body text-charcoal/70">
             Gift guides, care tips, and stories from Anaiza Nest.
           </p>
         </div>

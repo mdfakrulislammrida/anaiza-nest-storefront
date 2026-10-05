@@ -20,7 +20,7 @@ export default function ProductListingFallback({
   basePath: string;
 }) {
   // The build-time fetch failed: same placeholder as before this existed.
-  if (!result) return <div className="py-20 text-center text-muted">Loading…</div>;
+  if (!result) return <div className="py-20 text-center text-stone">One moment…</div>;
 
   const buildHref = (overrides: { min_price?: number; max_price?: number }) => {
     const params = new URLSearchParams();
@@ -32,12 +32,12 @@ export default function ProductListingFallback({
 
   return (
     <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-xs text-muted sm:px-6">
+      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">{breadcrumbLabel}</span>
+        <span className="text-charcoal">{breadcrumbLabel}</span>
       </nav>
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
@@ -48,13 +48,13 @@ export default function ProductListingFallback({
 
           <div className="flex-1">
             <div className="mb-6 flex items-center justify-between">
-              <p className="text-sm text-muted">{result.meta.total} products</p>
+              <p className="text-body text-stone">{result.meta.total} products</p>
             </div>
 
             {result.data.length > 0 ? (
               <ProductGrid products={result.data} />
             ) : (
-              <p className="py-20 text-center text-muted">No products match these filters.</p>
+              <p className="py-20 text-center text-stone">Nothing matches those filters yet. Try loosening them, or let the Gift finder help you find the right gift.</p>
             )}
           </div>
         </div>

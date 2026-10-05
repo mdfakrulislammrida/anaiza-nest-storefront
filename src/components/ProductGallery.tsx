@@ -61,7 +61,7 @@ export default function ProductGallery({
   return (
     <div>
       <div
-        className="relative aspect-square touch-pan-y overflow-hidden rounded-xl bg-pill"
+        className="relative aspect-square touch-pan-y overflow-hidden rounded-xl bg-linen shadow-warm"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={() => (touchStart.current = null)}
@@ -75,8 +75,8 @@ export default function ProductGallery({
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cream to-pill">
-            <span className="font-serif text-2xl text-ink/20">Anaiza Nest</span>
+          <div className="flex h-full w-full items-center justify-center bg-linen">
+            <span className="font-serif text-h2 text-charcoal/70">Anaiza Nest</span>
           </div>
         )}
 
@@ -84,7 +84,7 @@ export default function ProductGallery({
         {images.length > 1 && (
           <p
             aria-live="polite"
-            className="absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white sm:hidden"
+            className="absolute bottom-3 right-3 rounded-btn bg-deepink/80 px-2 py-1 text-caption font-medium text-ivory sm:hidden"
           >
             {activeIndex + 1} / {images.length}
           </p>
@@ -92,7 +92,7 @@ export default function ProductGallery({
       </div>
 
       {images.length > 1 && (
-        <div className="mt-4 grid grid-cols-5 gap-3">
+        <div className="mt-4 grid grid-cols-5 gap-4">
           {images.map((image, index) => (
             <button
               key={image.id}

@@ -34,7 +34,7 @@ export default function VideoFacade({ video }: { video: ProductVideo }) {
 
     if (embedUrl) {
       return (
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-deepink">
           <iframe
             src={embedUrl}
             title="Product video"
@@ -48,7 +48,7 @@ export default function VideoFacade({ video }: { video: ProductVideo }) {
 
     if (video.file) {
       return (
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-deepink">
           <video
             src={video.file}
             poster={video.poster}
@@ -68,7 +68,7 @@ export default function VideoFacade({ video }: { video: ProductVideo }) {
       type="button"
       onClick={() => setPlaying(true)}
       aria-label="Play product video"
-      className="group relative block aspect-video w-full overflow-hidden rounded-xl bg-pill"
+      className="group relative block aspect-video w-full overflow-hidden rounded-xl bg-linen"
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized. */}
       <img
@@ -77,8 +77,8 @@ export default function VideoFacade({ video }: { video: ProductVideo }) {
         loading="lazy"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <span className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-105">
+      <span className="absolute inset-0 flex items-center justify-center bg-deepink/20 transition-colors group-hover:bg-deepink/30">
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-ivory/90 transition-transform group-hover:scale-105">
           <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6 text-navy">
             <path d="M8 5v14l11-7z" />
           </svg>

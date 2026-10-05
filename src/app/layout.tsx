@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Fraunces, Hind_Siliguri, Inter, Noto_Serif_Bengali } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
@@ -12,6 +12,7 @@ import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import PopupManager from "@/components/PopupManager";
 import { getCategories, getMarketingSettings, getSiteSettings } from "@/lib/api";
+import { BRAND } from "@/lib/brand";
 import { SITE_URL } from "@/lib/config";
 import { siteJsonLd } from "@/lib/jsonld";
 import { siteRobots } from "@/lib/seo";
@@ -19,10 +20,22 @@ import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/Market
 import RouteChangeTracker from "@/components/RouteChangeTracker";
 import UtmCapture from "@/components/UtmCapture";
 
+// Brand kit type: Fraunces 300/400/500 for headings (italic 300 only for the one emotional line),
+// Inter 400/500/600 for text. Both are variable fonts, so every weight the kit uses (300/400/500 and 400/500/600) is one file each.
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",
+});
+
+// Loaded on demand: only a page that actually shows the emotional line asks for this file.
+const frauncesItalic = Fraunces({
+  subsets: ["latin"],
+  style: "italic",
+  weight: "300",
+  variable: "--font-fraunces-italic",
+  display: "swap",
+  preload: false,
 });
 
 const inter = Inter({
@@ -31,36 +44,57 @@ const inter = Inter({
   display: "swap",
 });
 
-const SITE_NAME = "Anaiza Nest";
-const SITE_TAGLINE = "Handcrafted tea sets & gifts";
-const SITE_DESCRIPTION =
-  "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh.";
+// Bangla: Noto Serif Bengali 400/500 for headings, Hind Siliguri 400/500/600 for text. Only the
+// Bengali subset is declared (so these families have no Latin glyphs) and preload is off, so the
+// browser downloads a Bangla file only when a page contains Bangla characters.
+const notoSerifBengali = Noto_Serif_Bengali({
+  subsets: ["bengali"],
+  weight: ["400", "500"],
+  variable: "--font-bn-serif",
+  display: "swap",
+  preload: false,
+});
 
-// Default meta description: the admin's brand description when one is set,
-// otherwise the fixed line that was used before it existed. Pages that set their
-// own description are unaffected.
+const hindSiliguri = Hind_Siliguri({
+  subsets: ["bengali"],
+  weight: ["400", "500", "600"],
+  variable: "--font-bn-sans",
+  display: "swap",
+  preload: false,
+});
+
+const SITE_NAME = BRAND.name;
+
+// Default meta: the title pattern is "Page name | Anaiza Nest" (the template below); the home page,
+// which has no page name, reads "Anaiza Nest | <tagline>". The default description is the one-line
+// boilerplate (the footer blurb the admin can edit). Pages that set their own are unaffected.
 export async function generateMetadata(): Promise<Metadata> {
   const siteSettings = await getSiteSettings().catch(() => null);
-  const description = siteSettings?.brand_description || SITE_DESCRIPTION;
+  // A blank tagline in the admin comes back null: the title is then just the name.
+  const tagline = siteSettings ? siteSettings.tagline : BRAND.tagline;
+  const description = siteSettings?.footer_about || BRAND.oneLine;
+  const homeTitle = tagline ? `${SITE_NAME} | ${tagline}` : SITE_NAME;
+  const monogram = siteSettings?.monogram;
 
   return {
     metadataBase: new URL(SITE_URL),
     robots: siteRobots(),
     title: {
-      default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+      default: homeTitle,
       template: `%s | ${SITE_NAME}`,
     },
     description,
+    ...(monogram ? { icons: { icon: monogram, apple: monogram } } : {}),
     openGraph: {
       siteName: SITE_NAME,
       type: "website",
       locale: "en_US",
-      title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+      title: homeTitle,
       description,
     },
     twitter: {
       card: "summary_large_image",
-      title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+      title: homeTitle,
       description,
     },
   };
@@ -91,7 +125,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${frauncesItalic.variable} ${inter.variable} ${notoSerifBengali.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
       <head>
         <script
@@ -100,7 +134,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         />
         <MarketingHeadScripts marketing={marketing} />
       </head>
-      <body className="flex min-h-full flex-col bg-ivory text-ink">
+      <body className="flex min-h-full flex-col bg-ivory text-charcoal">
         <MarketingBodyNoscript marketing={marketing} />
         <RouteChangeTracker />
         <UtmCapture />

@@ -54,21 +54,21 @@ export default function BlogListing({
 
   return (
     <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-xs text-muted sm:px-6">
+      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">Blog</span>
+        <span className="text-charcoal">Blog</span>
       </nav>
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
         {showSkeleton ? (
-          <p className="py-20 text-center text-muted">Loading articles…</p>
+          <p className="py-20 text-center text-stone">One moment, finding the articles…</p>
         ) : articles.length > 0 ? (
           <ArticleGrid articles={articles} dimmed={loading} />
         ) : (
-          <p className="py-20 text-center text-muted">No articles published yet — check back soon.</p>
+          <p className="py-20 text-center text-stone">No articles published yet — check back soon.</p>
         )}
 
         {meta && meta.last_page > 1 && (
@@ -77,8 +77,8 @@ export default function BlogListing({
               <Link
                 key={page}
                 href={buildHref(page)}
-                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                  page === meta.current_page ? "bg-navy text-white" : "text-ink/70 hover:bg-pill"
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-body font-medium transition-colors ${
+                  page === meta.current_page ? "bg-navy text-ivory" : "text-charcoal/70 hover:bg-linen"
                 }`}
               >
                 {page}

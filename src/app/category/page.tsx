@@ -64,7 +64,7 @@ export default function CategoryShellPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">Loading category…</p>
+        <p className="text-stone">One moment, finding that category…</p>
       </div>
     );
   }
@@ -72,8 +72,8 @@ export default function CategoryShellPage() {
   if (notFound || !category) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">We couldn&apos;t find that category.</p>
-        <Link href="/shop" className="mt-4 inline-block text-sm text-navy underline">
+        <p className="text-stone">We couldn&apos;t find that category. Have a look at the shop instead.</p>
+        <Link href="/shop" className="mt-4 inline-block text-body text-navy underline">
           Back to shop
         </Link>
       </div>

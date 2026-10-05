@@ -25,8 +25,8 @@ function organizationNode(siteSettings: SiteSetting | null) {
     "@id": ORGANIZATION_ID,
     name,
     url: SITE_URL,
-    ...(siteSettings?.logo_url
-      ? { logo: { "@type": "ImageObject", url: siteSettings.logo_url } }
+    ...(siteSettings?.logo_navy || siteSettings?.logo_url
+      ? { logo: { "@type": "ImageObject", url: siteSettings.logo_navy || siteSettings.logo_url } }
       : {}),
     ...(siteSettings?.brand_description || siteSettings?.footer_about
       ? { description: siteSettings.brand_description || siteSettings.footer_about }

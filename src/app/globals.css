@@ -1,32 +1,109 @@
 @import "tailwindcss";
 
+/* Anaiza Nest brand kit v1.0 palette. These are the only colours the storefront uses. */
 :root {
-  --ivory: #fffdfb;
-  --cream: #f7f4f1;
-  --ink: #16161a;
-  --navy: #223967;
-  --muted: #8b8b97;
-  --line: #ece7e1;
-  --pill: #f5f7f9;
+  --ivory: #f6f1e7;
+  --linen: #ede4d3;
+  --navy: #1b2a41;
+  --deepink: #141f30;
+  --gold: #ad8a50;
+  --champagne: #d4b786;
+  --burgundy: #661e29;
+  --charcoal: #2a2622;
+  --stone: #6f675c;
+}
+
+/* The taka sign (U+09F3) lives in the Bengali block, so without this every page that shows a price
+   would pull in the Bangla web fonts (Noto Serif Bengali alone is ~190 KB). This face covers only
+   that one code point and reads it from a font already installed on the device; where none exists
+   the sign simply falls through to the Bangla web font. It sits first in both stacks below. */
+@font-face {
+  font-family: "Taka";
+  src: local("Nirmala UI"), local("Noto Sans Bengali"), local("Noto Serif Bengali"), local("Bangla Sangam MN"),
+    local("Shonar Bangla"), local("Kohinoor Bangla"), local("Vrinda"), local("Arial Unicode MS");
+  unicode-range: U+09F3;
 }
 
 @theme inline {
   --color-ivory: var(--ivory);
-  --color-cream: var(--cream);
-  --color-ink: var(--ink);
+  --color-linen: var(--linen);
   --color-navy: var(--navy);
-  --color-muted: var(--muted);
-  --color-line: var(--line);
-  --color-pill: var(--pill);
+  --color-deepink: var(--deepink);
+  --color-gold: var(--gold);
+  --color-champagne: var(--champagne);
+  --color-burgundy: var(--burgundy);
+  --color-charcoal: var(--charcoal);
+  --color-stone: var(--stone);
 
-  --font-serif: var(--font-fraunces), Georgia, serif;
-  --font-sans: var(--font-inter), Arial, sans-serif;
+  /* Latin first; the Bangla families only have Bangla glyphs (unicode-range), so a Bangla
+     character falls through to them and nothing else ever loads them. */
+  --font-serif: "Taka", var(--font-fraunces), var(--font-bn-serif), Georgia, serif;
+  --font-sans: "Taka", var(--font-inter), var(--font-bn-sans), Arial, sans-serif;
+  --font-serif-italic: "Taka", var(--font-fraunces-italic), var(--font-fraunces), var(--font-bn-serif), Georgia, serif;
+
+  /* Buttons, inputs and chips: 2px. */
+  --radius-btn: 2px;
+}
+
+/* Kit type scale. Display, H1 and H2 step down on phones so a long product name still fits. */
+@utility text-display {
+  font-size: 2.5rem; /* 40/44 on phones */
+  line-height: 2.75rem;
+  @media (min-width: 40rem) {
+    font-size: 3.5rem; /* 56/60 */
+    line-height: 3.75rem;
+  }
+}
+
+@utility text-h1 {
+  font-size: 1.75rem; /* 28/34 on phones */
+  line-height: 2.125rem;
+  @media (min-width: 40rem) {
+    font-size: 2.5rem; /* 40/46 */
+    line-height: 2.875rem;
+  }
+}
+
+@utility text-h2 {
+  font-size: 1.375rem; /* 22/28 on phones */
+  line-height: 1.75rem;
+  @media (min-width: 40rem) {
+    font-size: 1.625rem; /* 26/32 */
+    line-height: 2rem;
+  }
+}
+
+/* The one italic line per layout: Fraunces italic 300. */
+@utility text-emotional {
+  font-family: var(--font-serif-italic);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 1.375rem; /* 22/32 */
+  line-height: 2rem;
+}
+
+@utility text-body {
+  font-size: 1rem; /* 16/26 */
+  line-height: 1.625rem;
+}
+
+@utility text-button {
+  font-size: 0.875rem; /* 14/20, weight 600 */
+  line-height: 1.25rem;
+  font-weight: 600;
+}
+
+@utility text-caption {
+  font-size: 0.8125rem; /* 13/19 */
+  line-height: 1.1875rem;
 }
 
 body {
   background: var(--ivory);
-  color: var(--ink);
+  color: var(--charcoal);
   font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.625rem;
 }
 
 h1,
@@ -35,4 +112,82 @@ h3,
 h4 {
   font-family: var(--font-serif);
   font-weight: 400;
+}
+
+/* Graphic devices ----------------------------------------------------------------------- */
+
+/* Pour line: one 1px line that draws itself once when it scrolls into view. The component
+   sets data-drawn when the IntersectionObserver fires; reduced motion shows it already drawn. */
+.pour-line {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 0;
+  background: var(--champagne);
+}
+.pour-line::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 9999px;
+  background: var(--champagne);
+  opacity: 0;
+}
+.pour-line[data-drawn="true"] {
+  height: var(--pour-length, 8rem);
+  transition: height 1.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.pour-line[data-drawn="true"]::after {
+  opacity: 1;
+  transition: opacity 0.4s ease-out 1.6s;
+}
+.pour-line-h {
+  position: static;
+  width: 100%;
+  height: 1px;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.pour-line-h::after {
+  display: none;
+}
+.pour-line-h[data-drawn="true"] {
+  height: 1px;
+  transform: scaleX(1);
+  transition: transform 1.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pour-line[data-drawn],
+  .pour-line[data-drawn]::after,
+  .pour-line-h[data-drawn] {
+    transition: none !important;
+  }
+  .pour-line {
+    height: var(--pour-length, 8rem);
+  }
+  .pour-line::after {
+    opacity: 1;
+  }
+  .pour-line-h {
+    transform: none;
+  }
+}
+
+/* Gift frame: 4% of the short side where container query units exist, 4% of each side otherwise. */
+.gift-frame-line {
+  inset: 4%;
+}
+@supports (width: 1cqmin) {
+  .gift-frame-line {
+    inset: 4cqmin;
+  }
+}
+
+/* Product photography only: a soft, warm shadow (never on cards). */
+@utility shadow-warm {
+  box-shadow: 0 12px 28px -14px rgba(42, 38, 34, 0.35);
 }

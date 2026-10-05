@@ -1,17 +1,18 @@
+import { BRAND } from "./brand";
 import type { HomepageWording, SiteSetting } from "./types";
 
 // What the homepage hero tiles and the newsletter sign-up say when the admin has not written
-// anything. Deliberately neutral: no percentage, discount, ranking or time-limit claim. A real
-// offer is entered in the admin (Site Settings > Homepage wording), never hardcoded here.
+// anything. Every line is either from the brand kit or a plain statement of what the shop does:
+// no percentage, discount, ranking or time-limit claim. A real offer is entered in the admin
+// (Site Settings > Homepage wording), never hardcoded here.
 export const DEFAULT_WORDING = {
   hero_badge: null,
-  hero_title: "Handcrafted tea sets & gifts, done right.",
-  hero_text:
-    "Ceramic tea sets, porcelain collections, and premium gift boxes \u2014 curated for Bangladesh, delivered to your door with the payment method you already trust.",
-  hot_deals_tile_text: "Hot deals, while stock lasts",
+  hero_title: "Tea sets and gifts, packed by hand.",
+  hero_text: BRAND.oneLine,
+  hot_deals_tile_text: "Selected pieces at lower prices",
   new_arrivals_tile_text: "New gifts to explore",
-  newsletter_headline: "Stay in the loop",
-  newsletter_text: "Join our list for news about new arrivals and hot deals.",
+  newsletter_headline: "New pieces, sent with care.",
+  newsletter_text: "Join our list for new arrivals and special prices.",
 } as const;
 
 export interface ResolvedWording {

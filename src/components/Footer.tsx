@@ -1,21 +1,20 @@
 "use client";
 
 import { useSiteSettings } from "@/context/SiteSettingsContext";
-
-const FALLBACK_ABOUT =
-  "Handcrafted ceramic tea sets, porcelain collections, and premium gift boxes, delivered across Bangladesh with cash-on-delivery and mobile-wallet checkout.";
+import { BRAND, resolveTagline } from "@/lib/brand";
+import Logo from "./Logo";
 
 const FALLBACK_FOOTER_LINKS = [
-  { label: "Track Order", url: "/track-order" },
-  { label: "Shipping Policy", url: "/pages/shipping" },
-  { label: "Returns & Refunds", url: "/pages/returns" },
+  { label: "Track order", url: "/track-order" },
+  { label: "Shipping policy", url: "/pages/shipping" },
+  { label: "Returns & refunds", url: "/pages/returns" },
   { label: "FAQs", url: "/faq" },
-  { label: "Contact Us", url: "/contact" },
+  { label: "Contact us", url: "/contact" },
 ];
 
 const FALLBACK_COPYRIGHT_TEXT = "All rights reserved.";
 
-const PAYMENT_METHODS = ["bKash", "Nagad", "Rocket", "COD"];
+const WALLET_METHODS = ["bKash", "Nagad", "Rocket"];
 
 // Feather-style stroke icons for the platforms customers actually use with
 // this store; anything else (TikTok, Pinterest, WhatsApp, or a platform an
@@ -30,7 +29,7 @@ const SOCIAL_ICON_PATHS: Record<string, string> = {
 function SocialIcon({ platform }: { platform: string }) {
   if (platform === "instagram") {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
         <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
         <line x1="17.5" y1="6.5" x2="17.5" y2="6.5" />
@@ -40,7 +39,7 @@ function SocialIcon({ platform }: { platform: string }) {
 
   if (platform === "youtube") {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
         <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
         <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
       </svg>
@@ -49,7 +48,7 @@ function SocialIcon({ platform }: { platform: string }) {
 
   if (platform === "linkedin") {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
         <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
         <rect x="2" y="9" width="4" height="12" />
         <circle cx="4" cy="4" r="2" />
@@ -60,7 +59,7 @@ function SocialIcon({ platform }: { platform: string }) {
   const path = SOCIAL_ICON_PATHS[platform];
   if (path) {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
         <path d={path} />
       </svg>
     );
@@ -68,7 +67,7 @@ function SocialIcon({ platform }: { platform: string }) {
 
   // Generic fallback for platforms without a dedicated icon above.
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
       <path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5" />
       <path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5" />
     </svg>
@@ -78,19 +77,23 @@ function SocialIcon({ platform }: { platform: string }) {
 export default function Footer() {
   const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
-  const about = siteSettings?.footer_about ?? FALLBACK_ABOUT;
+  const about = siteSettings?.footer_about || BRAND.oneLine;
+  const tagline = resolveTagline(siteSettings);
+  const paymentMethods = siteSettings?.cod_enabled === false ? WALLET_METHODS : [...WALLET_METHODS, "Cash on delivery"];
   const footerLinks = siteSettings?.footer_links?.length ? siteSettings.footer_links : FALLBACK_FOOTER_LINKS;
   const socialLinks = siteSettings?.social_links ?? [];
   const copyrightText = siteSettings?.footer_copyright_text ?? FALLBACK_COPYRIGHT_TEXT;
 
   return (
-    <footer className="border-t border-line bg-cream text-ink">
+    // A deep ink area: ivory logo, ivory text, champagne for the small accents (never gold text).
+    <footer className="bg-deepink text-ivory">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-3 sm:px-6">
         <div>
-          <p className="font-serif text-xl">{siteName}</p>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">{about}</p>
+          <Logo variant="ivory" />
+          {tagline && <p className="mt-2 text-caption text-champagne">{tagline}</p>}
+          <p className="mt-4 max-w-xs text-body text-ivory/80">{about}</p>
           {socialLinks.length > 0 && (
-            <div className="mt-4 flex gap-3">
+            <div className="mt-4 flex gap-4">
               {socialLinks.map((social) => (
                 <a
                   key={social.platform}
@@ -98,7 +101,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={social.platform}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-ink transition-colors hover:border-navy hover:text-navy"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-ivory/40 text-ivory transition-colors hover:border-champagne hover:text-champagne"
                 >
                   <SocialIcon platform={social.platform} />
                 </a>
@@ -108,15 +111,13 @@ export default function Footer() {
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-            Customer Care
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-ink/80">
+          <p className="text-caption font-medium text-champagne">Customer care</p>
+          <ul className="mt-4 space-y-2 text-body text-ivory/80">
             {footerLinks.map((link) => (
               <li key={link.url}>
                 {/* A plain <a>, not next/link: these URLs are admin-editable
                     (site-settings) rather than known at build time. */}
-                <a href={link.url} className="transition-colors hover:text-navy">
+                <a href={link.url} className="transition-colors hover:text-champagne">
                   {link.label}
                 </a>
               </li>
@@ -125,19 +126,17 @@ export default function Footer() {
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-            Get in Touch
-          </p>
-          <div className="mt-4 space-y-1 text-sm text-ink/80">
+          <p className="text-caption font-medium text-champagne">Get in touch</p>
+          <div className="mt-4 space-y-1 text-body text-ivory/80">
             <p>{siteSettings?.address ?? "Dhaka, Bangladesh"}</p>
             {siteSettings?.contact_phone && <p>{siteSettings.contact_phone}</p>}
             {siteSettings?.contact_email && <p>{siteSettings.contact_email}</p>}
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            {PAYMENT_METHODS.map((method) => (
+            {paymentMethods.map((method) => (
               <span
                 key={method}
-                className="rounded border border-line px-2.5 py-1 text-xs font-medium text-ink/70"
+                className="rounded-btn border border-ivory/30 px-2 py-1 text-caption text-ivory/80"
               >
                 {method}
               </span>
@@ -146,7 +145,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-line px-4 py-6 text-center text-xs text-muted sm:px-6">
+      <div className="border-t border-ivory/20 px-4 py-6 text-center text-caption text-ivory/70 sm:px-6">
         © {new Date().getFullYear()} {siteName}. {copyrightText}
       </div>
     </footer>

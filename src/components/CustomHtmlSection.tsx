@@ -14,7 +14,7 @@ export default function CustomHtmlSection({
     <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
       {title && (
         <div className="mb-8">
-          <h2 className="font-serif text-2xl text-ink sm:text-3xl">{title}</h2>
+          <h2 className="font-serif text-charcoal text-h2">{title}</h2>
         </div>
       )}
       <div dangerouslySetInnerHTML={{ __html: html }} />

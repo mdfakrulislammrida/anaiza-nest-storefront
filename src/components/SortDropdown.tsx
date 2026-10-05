@@ -3,11 +3,11 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 const OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "Most Relevant" },
+  { value: "", label: "Most relevant" },
   { value: "newest", label: "Newest" },
-  { value: "price_asc", label: "Price: Low to High" },
-  { value: "price_desc", label: "Price: High to Low" },
-  { value: "top_rated", label: "Top Rated" },
+  { value: "price_asc", label: "Price: low to high" },
+  { value: "price_desc", label: "Price: high to low" },
+  { value: "top_rated", label: "Top rated" },
 ];
 
 export default function SortDropdown() {
@@ -26,12 +26,12 @@ export default function SortDropdown() {
   }
 
   return (
-    <label className="flex items-center gap-2 text-xs">
-      <span className="font-semibold uppercase tracking-widest text-muted">Sort:</span>
+    <label className="flex items-center gap-2 text-caption">
+      <span className="font-semibold text-stone">Sort:</span>
       <select
         defaultValue={searchParams.get("sort") ?? ""}
         onChange={(event) => handleChange(event.target.value)}
-        className="border-0 bg-transparent text-sm font-medium text-ink focus:outline-none"
+        className="border-0 bg-transparent text-body font-medium text-charcoal focus:outline-none"
       >
         {OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

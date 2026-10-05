@@ -39,11 +39,11 @@ export default function AuthCallbackClient() {
   if (error) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center sm:px-6">
-        <h1 className="font-serif text-2xl text-ink">Sign-in failed</h1>
-        <p className="mt-3 text-sm text-muted">{error}</p>
+        <h1 className="font-serif text-charcoal text-h1">Sign-in failed</h1>
+        <p className="mt-4 text-body text-stone">{error}</p>
         <Link
           href="/account"
-          className="mt-8 inline-flex items-center justify-center rounded-full bg-navy px-8 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="mt-8 inline-flex items-center justify-center rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90"
         >
           Back to login
         </Link>
@@ -53,8 +53,8 @@ export default function AuthCallbackClient() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-24 text-center sm:px-6">
-      <h1 className="font-serif text-2xl text-ink">Signing you in&hellip;</h1>
-      <p className="mt-3 text-sm text-muted">Just a moment.</p>
+      <h1 className="font-serif text-charcoal text-h1">Signing you in&hellip;</h1>
+      <p className="mt-4 text-body text-stone">Just a moment.</p>
     </div>
   );
 }

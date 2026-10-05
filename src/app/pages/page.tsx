@@ -61,7 +61,7 @@ export default function CmsPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">Loading…</p>
+        <p className="text-stone">One moment…</p>
       </div>
     );
   }
@@ -69,8 +69,8 @@ export default function CmsPage() {
   if (notFound || !page) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">We couldn&apos;t find that page.</p>
-        <Link href="/" className="mt-4 inline-block text-sm text-navy underline">
+        <p className="text-stone">We couldn&apos;t find that page.</p>
+        <Link href="/" className="mt-4 inline-block text-body text-navy underline">
           Back to home
         </Link>
       </div>
@@ -79,18 +79,18 @@ export default function CmsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <nav className="mb-6 text-xs text-muted">
+      <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">{page.title}</span>
+        <span className="text-charcoal">{page.title}</span>
       </nav>
 
-      <h1 className="font-serif text-3xl text-ink sm:text-4xl">{page.title}</h1>
+      <h1 className="font-serif text-charcoal text-h1">{page.title}</h1>
       {page.content && (
         <div
-          className={`mt-8 space-y-4 text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:text-ink [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-xl [&_h3]:text-ink [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:text-ink [&_ul]:list-disc ${RICH_TABLE_CLASSES}`}
+          className={`mt-8 space-y-4 text-body leading-relaxed text-charcoal/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-h2 [&_h2]:text-charcoal [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-h2 [&_h3]:text-charcoal [&_li]:ml-6 [&_ol]:list-decimal [&_strong]:text-charcoal [&_ul]:list-disc ${RICH_TABLE_CLASSES}`}
           dangerouslySetInnerHTML={{ __html: wrapTables(page.content) }}
         />
       )}

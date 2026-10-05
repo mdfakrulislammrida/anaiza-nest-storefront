@@ -66,7 +66,7 @@ export default function ArticleFallbackPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">Loading article…</p>
+        <p className="text-stone">One moment, finding that article…</p>
       </div>
     );
   }
@@ -74,8 +74,8 @@ export default function ArticleFallbackPage() {
   if (notFound || !article) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">We couldn&apos;t find that article.</p>
-        <Link href="/blog" className="mt-4 inline-block text-sm text-navy underline">
+        <p className="text-stone">We couldn&apos;t find that article.</p>
+        <Link href="/blog" className="mt-4 inline-block text-body text-navy underline">
           Back to blog
         </Link>
       </div>

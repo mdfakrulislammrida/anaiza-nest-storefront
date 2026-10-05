@@ -10,7 +10,7 @@ export default function ArticleCard({ article }: { article: Article }) {
     // only resolves correctly on a real browser navigation, not a
     // client-side one -- same reasoning as ProductCard's product links.
     <a href={`/blog/${article.slug}`} className="group block">
-      <div className="relative aspect-[16/10] overflow-hidden bg-pill">
+      <div className="relative aspect-[16/10] overflow-hidden bg-linen">
         {article.featured_image ? (
           <Image
             src={article.featured_image}
@@ -20,20 +20,20 @@ export default function ArticleCard({ article }: { article: Article }) {
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cream to-pill">
-            <span className="font-serif text-lg text-ink/20">Anaiza Nest</span>
+          <div className="flex h-full w-full items-center justify-center bg-linen">
+            <span className="font-serif text-body text-charcoal/20">Anaiza Nest</span>
           </div>
         )}
       </div>
 
       <div className="mt-4 space-y-2">
         {article.published_at && (
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+          <p className="text-caption font-semibold text-stone">
             {formatDate(article.published_at)}
           </p>
         )}
-        <h2 className="line-clamp-2 font-serif text-xl text-ink group-hover:text-navy">{article.title}</h2>
-        <p className="line-clamp-2 text-sm text-ink/70">{excerptFromHtml(article.content)}</p>
+        <h2 className="line-clamp-2 font-serif text-charcoal group-hover:text-navy text-h2">{article.title}</h2>
+        <p className="line-clamp-2 text-body text-charcoal/70">{excerptFromHtml(article.content)}</p>
       </div>
     </a>
   );

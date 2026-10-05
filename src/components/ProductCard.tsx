@@ -26,7 +26,8 @@ export default function ProductCard({
           static shell (see src/app/product/page.tsx) that only resolves
           correctly on a real browser navigation, not a client-side one. */}
       <a href={`/product/${product.slug}`} className="block">
-        <div className={`relative aspect-square overflow-hidden ${dark ? "bg-white/10" : "bg-pill"}`}>
+        {/* The product photograph is the one thing that carries a soft, warm shadow; the card does not. */}
+        <div className={`relative aspect-square overflow-hidden shadow-warm ${dark ? "bg-ivory/10" : "bg-linen"}`}>
           {image ? (
             <ResponsiveImage
               image={image}
@@ -35,47 +36,38 @@ export default function ProductCard({
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div
-              className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${
-                dark ? "from-white/10 to-white/5" : "from-cream to-pill"
-              }`}
-            >
-              <span className={`font-serif text-lg ${dark ? "text-white/20" : "text-ink/20"}`}>
-                Anaiza Nest
-              </span>
+            <div className="flex h-full w-full items-center justify-center" aria-hidden="true">
+              <span className={`font-serif text-body ${dark ? "text-ivory/70" : "text-charcoal/70"}`}>Anaiza Nest</span>
             </div>
           )}
 
+          {/* Quiet labels in palette colours: no fills that shout. */}
           {onSale ? (
-            <span className="absolute left-3 top-3 rounded-full bg-red-600 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
-              Hot Deal
+            <span className="absolute left-2 top-2 rounded-btn bg-ivory/90 px-2 py-1 text-caption font-medium text-navy">
+              Special price
             </span>
           ) : product.is_new ? (
-            <span className="absolute left-3 top-3 rounded-full bg-navy px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+            <span className="absolute left-2 top-2 rounded-btn bg-ivory/90 px-2 py-1 text-caption font-medium text-navy">
               New
             </span>
           ) : null}
         </div>
 
-        <div className="mt-3 space-y-1">
-          <h3 className={`line-clamp-2 text-sm font-medium ${dark ? "text-white" : "text-ink"}`}>
+        <div className="mt-4 space-y-1">
+          <h3 className={`line-clamp-2 text-body font-medium ${dark ? "text-ivory" : "text-charcoal"}`}>
             {product.name}
           </h3>
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`text-base font-semibold ${dark ? "text-white" : "text-ink"}`}>
+            <span className={`text-body font-semibold ${dark ? "text-ivory" : "text-charcoal"}`}>
               {formatPrice(product.effective_price)}
             </span>
             {onSale && (
               <>
-                <span className={`text-sm line-through ${dark ? "text-white/50" : "text-muted"}`}>
+                <span className={`text-body line-through ${dark ? "text-ivory/70" : "text-stone"}`}>
                   {formatPrice(product.price)}
                 </span>
-                <span
-                  className={`rounded px-1.5 py-0.5 text-xs font-medium ${
-                    dark ? "bg-white/10 text-white" : "bg-pill text-navy"
-                  }`}
-                >
-                  -{product.discount_percent}%
+                <span className={`text-caption ${dark ? "text-champagne" : "text-navy"}`}>
+                  Save {product.discount_percent}%
                 </span>
               </>
             )}
@@ -87,14 +79,14 @@ export default function ProductCard({
         type="button"
         onClick={() => toggle(product)}
         aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:text-red-600"
+        className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-ivory/90 text-navy transition-colors hover:text-gold"
       >
         <svg
           viewBox="0 0 24 24"
           fill={wishlisted ? "currentColor" : "none"}
           stroke="currentColor"
           strokeWidth={1.5}
-          className={`h-4 w-4 ${wishlisted ? "text-red-600" : ""}`}
+          className="h-4 w-4"
         >
           <path d="M12 21s-7.5-4.6-10-9.3C.5 8.4 2.4 5 6 5c2 0 3.5 1 6 3 2.5-2 4-3 6-3 3.6 0 5.5 3.4 4 6.7-2.5 4.7-10 9.3-10 9.3Z" />
         </svg>
@@ -104,10 +96,10 @@ export default function ProductCard({
         type="button"
         onClick={() => addItem(product, null, 1)}
         disabled={product.stock_quantity <= 0}
-        className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-navy text-white shadow-sm transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
+        className={`absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${dark ? "bg-ivory text-navy" : "bg-navy text-ivory"}`}
         aria-label="Add to cart"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
           <circle cx="9" cy="21" r="1" />
           <circle cx="20" cy="21" r="1" />
           <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />

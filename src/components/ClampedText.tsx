@@ -40,7 +40,7 @@ export default function ClampedText({ text, className = "" }: { text: string; cl
           onClick={() => setExpanded((open) => !open)}
           aria-expanded={expanded}
           aria-controls={id}
-          className="-mt-1 inline-flex min-h-11 items-center text-sm font-medium text-navy hover:underline sm:hidden"
+          className="-mt-1 inline-flex min-h-11 items-center text-body font-medium text-navy hover:underline sm:hidden"
         >
           {expanded ? "Show less" : "Read more"}
         </button>

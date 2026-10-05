@@ -1,7 +1,8 @@
 import { CURRENCY_SYMBOL } from "./config";
 
 export function formatPrice(amount: number): string {
-  return `${CURRENCY_SYMBOL}${amount.toLocaleString("en-US")}`;
+  // Whole takas with a thousands comma and no decimals: ৳1,450.
+  return `${CURRENCY_SYMBOL}${Math.round(amount).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
 export function formatDate(iso: string): string {

@@ -4,15 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { getProducts } from "@/lib/api";
 import ProductCard from "./ProductCard";
+import { CTA } from "@/lib/brand";
 import type { Product } from "@/lib/types";
 
-const RECIPIENTS = ["A Close Friend", "Family Elder", "Partner / Spouse", "Colleague / Boss", "A New Baby"];
-const OCCASIONS = ["Wedding", "Housewarming", "Birthday", "Just Because"];
+const RECIPIENTS = ["A close friend", "A family elder", "Partner or spouse", "Colleague or boss", "A new baby"];
+const OCCASIONS = ["Wedding", "Housewarming", "Birthday", "Just because"];
 const BUDGETS: { label: string; min?: number; max?: number }[] = [
   { label: "Under ৳1,500", max: 1500 },
   { label: "৳1,500 – ৳3,000", min: 1500, max: 3000 },
   { label: "৳3,000 – ৳5,000", min: 3000, max: 5000 },
-  { label: "No limit — go premium", min: 5000 },
+  { label: "No limit", min: 5000 },
 ];
 
 type Step = 1 | 2 | 3 | "results";
@@ -47,10 +48,10 @@ export default function GiftFinderQuiz() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-navy">Not sure what to choose?</p>
-      <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">Find Their Perfect Gift</h1>
-      <p className="mt-2 text-sm text-muted">
-        Three quick questions — we&rsquo;ll match you with something they&rsquo;ll actually love.
+      <p className="text-caption font-semibold text-navy">Not sure what to give?</p>
+      <h1 className="mt-2 font-serif text-charcoal text-h1">{CTA.findGift}</h1>
+      <p className="mt-2 text-body text-stone">
+        Three quick questions, then a few thoughtful ideas.
       </p>
 
       <div className="mt-10 text-left">
@@ -58,7 +59,7 @@ export default function GiftFinderQuiz() {
           <button
             type="button"
             onClick={() => setStep((step === 3 ? 2 : 1) as Step)}
-            className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted hover:text-navy"
+            className="mb-4 text-caption font-semibold text-stone hover:text-navy"
           >
             ← Back
           </button>
@@ -66,8 +67,8 @@ export default function GiftFinderQuiz() {
 
         {step === 1 && (
           <div>
-            <h2 className="mb-4 text-center font-serif text-xl text-ink">Who is this gift for?</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <h2 className="mb-4 text-center font-serif text-charcoal text-h2">Who is this gift for?</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
               {RECIPIENTS.map((option) => (
                 <button
                   key={option}
@@ -76,7 +77,7 @@ export default function GiftFinderQuiz() {
                     setRecipient(option);
                     setStep(2);
                   }}
-                  className="rounded-lg border border-line px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-navy hover:bg-pill"
+                  className="rounded-btn border border-stone/80 px-6 py-4 text-button text-charcoal transition-colors hover:border-navy hover:bg-linen"
                 >
                   {option}
                 </button>
@@ -87,8 +88,8 @@ export default function GiftFinderQuiz() {
 
         {step === 2 && (
           <div>
-            <h2 className="mb-4 text-center font-serif text-xl text-ink">What&rsquo;s the occasion?</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <h2 className="mb-4 text-center font-serif text-charcoal text-h2">What&rsquo;s the occasion?</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
               {OCCASIONS.map((option) => (
                 <button
                   key={option}
@@ -97,7 +98,7 @@ export default function GiftFinderQuiz() {
                     setOccasion(option);
                     setStep(3);
                   }}
-                  className="rounded-lg border border-line px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-navy hover:bg-pill"
+                  className="rounded-btn border border-stone/80 px-6 py-4 text-button text-charcoal transition-colors hover:border-navy hover:bg-linen"
                 >
                   {option}
                 </button>
@@ -108,15 +109,15 @@ export default function GiftFinderQuiz() {
 
         {step === 3 && (
           <div>
-            <h2 className="mb-4 text-center font-serif text-xl text-ink">What&rsquo;s your budget?</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <h2 className="mb-4 text-center font-serif text-charcoal text-h2">What&rsquo;s your budget?</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
               {BUDGETS.map((option) => (
                 <button
                   key={option.label}
                   type="button"
                   onClick={() => handleBudgetSelect(option)}
                   disabled={loading}
-                  className="rounded-lg border border-line px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-navy hover:bg-pill disabled:opacity-50"
+                  className="rounded-btn border border-stone/80 px-6 py-4 text-button text-charcoal transition-colors hover:border-navy hover:bg-linen disabled:opacity-50"
                 >
                   {option.label}
                 </button>
@@ -127,43 +128,42 @@ export default function GiftFinderQuiz() {
 
         {step === "results" && (
           <div>
-            <p className="text-center text-xs font-semibold uppercase tracking-widest text-navy">Your matches</p>
-            <h2 className="mt-1 text-center font-serif text-xl text-ink">
+            <p className="text-center text-caption font-semibold text-navy">Your matches</p>
+            <h2 className="mt-1 text-center font-serif text-charcoal text-h2">
               Matched for {recipient} &middot; {occasion}
             </h2>
-            <p className="mt-2 text-center text-sm text-muted">
-              Based on your answers, these are the best fits in stock right now —
-              every one within your budget.
+            <p className="mt-2 text-center text-body text-stone">
+              Based on your answers: pieces in stock now, all within your budget.
             </p>
 
             {matches.length > 0 ? (
-              <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3">
+              <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
                 {matches.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             ) : (
-              <p className="mt-8 text-center text-sm text-muted">
-                No products matched that budget yet — try the full shop instead.
+              <p className="mt-8 text-center text-body text-stone">
+                Nothing in the shop matches that budget just yet. Have a look at the full shop, or message us and we will help you choose.
               </p>
             )}
 
-            <div className="mt-10 flex flex-wrap justify-center gap-3">
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
               <button
                 type="button"
                 onClick={retake}
-                className="rounded-full border border-line px-8 py-3 text-sm font-medium text-ink hover:bg-pill"
+                className="rounded-btn border border-stone/80 px-8 py-4 text-button text-charcoal hover:bg-linen"
               >
-                Retake the Quiz
+                Start again
               </button>
               <Link
                 href={`/shop?${new URLSearchParams({
                   ...(budget?.min ? { min_price: String(budget.min) } : {}),
                   ...(budget?.max ? { max_price: String(budget.max) } : {}),
                 }).toString()}`}
-                className="rounded-full bg-navy px-8 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90"
               >
-                See More Like These
+                See more like these
               </Link>
             </div>
           </div>

@@ -21,16 +21,16 @@ export default function PriceFilterPanel({
     // grid at full width, and being force-open pushed every product below
     // the fold. A single tap on "Filter" expands it either way.
     <details className="group">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-ink">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-caption font-semibold text-charcoal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
           <path d="M4 6h16M7 12h10M10 18h4" />
         </svg>
         Filter
       </summary>
 
-      <div className="mt-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted">Price</p>
-        <ul className="space-y-2 text-sm">
+      <div className="mt-4 space-y-4">
+        <p className="text-caption font-semibold text-stone">Price</p>
+        <ul className="space-y-2 text-body">
           {PRICE_RANGES.map((range) => {
             const active = activeMin === range.min && activeMax === range.max;
             return (
@@ -39,7 +39,7 @@ export default function PriceFilterPanel({
                   href={buildHref(
                     active ? { min_price: undefined, max_price: undefined } : { min_price: range.min, max_price: range.max },
                   )}
-                  className={active ? "font-semibold text-navy" : "text-ink/70 hover:text-navy"}
+                  className={active ? "font-semibold text-navy" : "text-charcoal/70 hover:text-navy"}
                 >
                   {range.label}
                 </Link>

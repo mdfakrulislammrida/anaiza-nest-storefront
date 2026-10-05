@@ -15,12 +15,12 @@ export default function Accordion({
   asHeading?: boolean;
 }) {
   return (
-    <details className="group border-b border-line py-4" open={defaultOpen}>
-      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-ink">
-        {asHeading ? <h3 className="font-medium">{title}</h3> : title}
-        <span className="text-lg text-muted transition-transform group-open:rotate-45">+</span>
+    <details className="group border-b border-linen py-4" open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-center justify-between text-body font-medium text-charcoal">
+        {asHeading ? <h3 className="font-medium text-body">{title}</h3> : title}
+        <span className="text-body text-stone transition-transform group-open:rotate-45">+</span>
       </summary>
-      <div className="mt-3 text-sm leading-relaxed text-ink/80">{children}</div>
+      <div className="mt-4 text-body leading-relaxed text-charcoal/80">{children}</div>
     </details>
   );
 }

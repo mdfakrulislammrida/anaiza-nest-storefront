@@ -3,11 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { ApiError, submitContactForm } from "@/lib/api";
 
-// text-base (not text-sm): iOS Safari auto-zooms the page when a focused
-// input's font is under 16px, which text-sm's 14px would trigger.
+// text-base (not text-body): iOS Safari auto-zooms the page when a focused
+// input's font is under 16px, which text-body's 14px would trigger.
 const inputClass =
-  "mt-1 w-full rounded-lg border border-line bg-ivory px-3 py-2.5 text-base text-ink focus:border-navy focus:outline-none";
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-muted";
+  "mt-1 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none";
+const labelClass = "text-caption font-semibold text-stone";
 
 export default function ContactForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -31,14 +31,14 @@ export default function ContactForm() {
       form.reset();
     } catch (err) {
       setStatus("error");
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message : "Sorry, that did not go through. Please try again in a moment.");
     }
   }
 
   if (status === "done") {
     return (
-      <p className="rounded-lg border border-line bg-pill p-6 text-sm text-ink">
-        Thanks — we&rsquo;ll get back to you shortly.
+      <p className="rounded-btn border border-linen bg-linen p-6 text-body text-charcoal">
+        Thank you. We have your message and will reply soon.
       </p>
     );
   }
@@ -57,13 +57,13 @@ export default function ContactForm() {
         <label className={labelClass}>Message</label>
         <textarea name="message" rows={5} required className={inputClass} />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-body text-burgundy">{error}</p>}
       <button
         type="submit"
         disabled={status === "loading"}
-        className="rounded-full bg-navy px-8 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {status === "loading" ? "Sending..." : "Send Message"}
+        {status === "loading" ? "Sending..." : "Send message"}
       </button>
     </form>
   );

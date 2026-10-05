@@ -21,7 +21,7 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noreferrer noopener"
       aria-label="Chat with us on WhatsApp"
-      className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 sm:bottom-5 ${
+      className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-champagne text-navy transition-transform hover:scale-105 sm:bottom-5 ${
         isProductPage ? "bottom-40" : "bottom-5"
       }`}
     >

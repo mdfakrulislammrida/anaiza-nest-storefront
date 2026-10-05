@@ -74,7 +74,7 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">Loading product…</p>
+        <p className="text-stone">One moment, finding that piece…</p>
       </div>
     );
   }
@@ -82,8 +82,8 @@ export default function ProductPage() {
   if (notFound || !product) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
-        <p className="text-muted">We couldn&apos;t find that product.</p>
-        <Link href="/shop" className="mt-4 inline-block text-sm text-navy underline">
+        <p className="text-stone">We couldn&apos;t find that piece. Have a look at the shop for something similar.</p>
+        <Link href="/shop" className="mt-4 inline-block text-body text-navy underline">
           Back to shop
         </Link>
       </div>

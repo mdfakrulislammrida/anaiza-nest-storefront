@@ -51,14 +51,14 @@ export default function OrderConfirmationPage() {
   if (!order) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
-        <h1 className="font-serif text-3xl text-ink">No recent order found</h1>
-        <p className="mt-3 text-muted">
-          We couldn&apos;t find an order to show. If you just placed one, check
-          your phone for a confirmation, or track it from the Track Order page.
+        <h1 className="font-serif text-charcoal text-h1">No recent order found</h1>
+        <p className="mt-4 text-body text-stone">
+          We couldn&apos;t find a recent order to show. If you just placed one, check your phone for a
+          confirmation, or look it up on the Track order page.
         </p>
         <Link
           href="/shop"
-          className="mt-8 inline-flex items-center justify-center rounded-full bg-navy px-8 py-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="mt-8 inline-flex items-center justify-center rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90"
         >
           Continue shopping
         </Link>
@@ -68,55 +68,53 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-navy">
-        Order confirmed
-      </p>
-      <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">
+      <p className="text-caption font-medium text-navy">Order confirmed</p>
+      <h1 className="mt-2 font-serif text-charcoal text-h1">
         Thank you, {order.customer.name.split(" ")[0]}.
       </h1>
-      <p className="mt-3 text-ink/70">
-        Order <span className="font-semibold text-ink">#{order.id}</span> has
-        been placed and will be paid via{" "}
-        <span className="font-semibold text-ink">{paymentMethodLabel(order.payment_method)}</span>.
+      {/* The kit's order-confirmed line, said as the host. */}
+      <p className="mt-4 text-body text-charcoal/80">
+        Order <span className="font-semibold text-charcoal">#{order.id}</span> is confirmed. Your order is being
+        packed by hand and will be with you soon.
       </p>
 
-      <div className="mt-10 rounded-xl border border-line p-6">
-        <h2 className="font-serif text-xl text-ink">Order details</h2>
+      <div className="mt-10 rounded-xl border border-linen p-6">
+        <h2 className="font-serif text-charcoal text-h2">Order details</h2>
 
-        <ul className="mt-4 divide-y divide-line">
+        <ul className="mt-4 divide-y divide-linen">
           {order.items.map((item) => (
-            <li key={item.id} className="flex justify-between py-3 text-sm">
-              <span className="text-ink/70">
+            <li key={item.id} className="flex justify-between py-4 text-body">
+              <span className="text-charcoal/70">
                 {item.product_name}
                 {item.variant_name ? ` (${item.variant_name}: ${item.variant_value})` : ""}{" "}
                 &times; {item.quantity}
               </span>
-              <span className="font-medium text-ink">{formatPrice(item.price * item.quantity)}</span>
+              <span className="font-medium text-charcoal">{formatPrice(item.price * item.quantity)}</span>
             </li>
           ))}
         </ul>
 
-        <div className="mt-4 space-y-2 border-t border-line pt-4 text-sm text-ink/70">
+        <div className="mt-4 space-y-2 border-t border-linen pt-4 text-body text-charcoal/70">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span className="font-medium text-ink">{formatPrice(order.subtotal)}</span>
+            <span className="font-medium text-charcoal">{formatPrice(order.subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span>Delivery</span>
-            <span className="font-medium text-ink">
+            <span className="font-medium text-charcoal">
               {order.delivery_fee === 0 ? "Free" : formatPrice(order.delivery_fee)}
             </span>
           </div>
         </div>
 
-        <div className="mt-4 flex justify-between border-t border-line pt-4 text-base font-semibold text-ink">
+        <div className="mt-4 flex justify-between border-t border-linen pt-4 text-base font-semibold text-charcoal">
           <span>Total</span>
           <span>{formatPrice(order.total)}</span>
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-line p-6 text-sm text-ink/70">
-        <h2 className="font-serif text-lg text-ink">Shipping to</h2>
+      <div className="mt-6 rounded-xl border border-linen p-6 text-body text-charcoal/70">
+        <h2 className="font-serif text-charcoal text-h2">Shipping to</h2>
         <p className="mt-2">{order.customer.name}</p>
         <p>{order.customer.address}</p>
         <p>
@@ -126,19 +124,19 @@ export default function OrderConfirmationPage() {
         <p>{order.customer.phone}</p>
       </div>
 
-      <section className="mt-6 rounded-xl border border-line p-6">
-        <h2 className="font-serif text-xl text-ink">What happens next</h2>
-        <ol className="mt-4 space-y-4 text-sm text-ink/70">
+      <section className="mt-6 rounded-xl border border-linen p-6">
+        <h2 className="font-serif text-charcoal text-h2">What happens next</h2>
+        <ol className="mt-4 space-y-4 text-body text-charcoal/70">
           <li>
-            <span className="font-medium text-ink">Keep your order number.</span> It is #{order.id}. With the phone
+            <span className="font-medium text-charcoal">Keep your order number.</span> It is #{order.id}. With the phone
             number you ordered with, it lets you follow this order on the{" "}
             <Link href="/track-order" className="underline hover:text-navy">
-              Track Order
+              Track order
             </Link>{" "}
             page.
           </li>
           <li>
-            <span className="font-medium text-ink">Delivery.</span> Orders to{" "}
+            <span className="font-medium text-charcoal">Delivery.</span> Orders to{" "}
             {order.customer.division === "Dhaka" ? "addresses inside Dhaka" : "addresses outside Dhaka"} usually take{" "}
             {formatDays(
               order.customer.division === "Dhaka" ? policy.delivery_days_dhaka : policy.delivery_days_outside_dhaka,
@@ -146,13 +144,13 @@ export default function OrderConfirmationPage() {
             business days.
           </li>
           <li>
-            <span className="font-medium text-ink">Payment.</span>{" "}
+            <span className="font-medium text-charcoal">Payment.</span>{" "}
             {order.payment_method === "cod"
               ? `Pay ${formatPrice(order.total)} in cash when your order arrives.`
               : `You chose ${paymentMethodLabel(order.payment_method)} for ${formatPrice(order.total)}.`}
           </li>
           <li>
-            <span className="font-medium text-ink">Questions?</span>{" "}
+            <span className="font-medium text-charcoal">Questions?</span>{" "}
             {supportPhone ? (
               <>
                 Call{" "}
@@ -183,16 +181,16 @@ export default function OrderConfirmationPage() {
         </ol>
       </section>
 
-      <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-wrap gap-4">
         <Link
           href="/shop"
-          className="inline-flex items-center justify-center rounded-full bg-navy px-8 py-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="inline-flex items-center justify-center rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90"
         >
           Continue shopping
         </Link>
         <Link
           href="/track-order"
-          className="inline-flex items-center justify-center rounded-full border border-line px-8 py-3.5 text-sm font-medium text-ink hover:bg-pill"
+          className="inline-flex items-center justify-center rounded-btn border border-stone/80 px-8 py-4 text-button text-charcoal hover:bg-linen"
         >
           Track this order
         </Link>

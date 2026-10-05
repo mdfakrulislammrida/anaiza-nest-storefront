@@ -104,12 +104,12 @@ export default function ProductListing({
 
   return (
     <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-xs text-muted sm:px-6">
+      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">{breadcrumbLabel}</span>
+        <span className="text-charcoal">{breadcrumbLabel}</span>
       </nav>
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
@@ -120,18 +120,18 @@ export default function ProductListing({
 
           <div className="flex-1">
             <div className="mb-6 flex items-center justify-between">
-              <p className="text-sm text-muted">
+              <p className="text-body text-stone">
                 {showSkeleton ? "Loading…" : `${meta?.total ?? 0} products`}
               </p>
               <SortDropdown />
             </div>
 
             {showSkeleton ? (
-              <p className="py-20 text-center text-muted">Loading products…</p>
+              <p className="py-20 text-center text-stone">One moment, setting out the collection…</p>
             ) : products.length > 0 ? (
               <ProductGrid products={products} dimmed={loading} />
             ) : (
-              <p className="py-20 text-center text-muted">No products match these filters.</p>
+              <p className="py-20 text-center text-stone">Nothing matches those filters yet. Try loosening them, or let the Gift finder help you find the right gift.</p>
             )}
 
             {meta && meta.last_page > 1 && (
@@ -140,8 +140,8 @@ export default function ProductListing({
                   <Link
                     key={page}
                     href={buildHref({ page })}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                      page === meta.current_page ? "bg-navy text-white" : "text-ink/70 hover:bg-pill"
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-body font-medium transition-colors ${
+                      page === meta.current_page ? "bg-navy text-ivory" : "text-charcoal/70 hover:bg-linen"
                     }`}
                   >
                     {page}

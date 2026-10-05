@@ -100,8 +100,8 @@ export default function SearchableSelect({
   }
 
   const triggerClass =
-    "mt-1 flex w-full items-center justify-between rounded-lg border border-line bg-ivory px-3 py-2.5 text-left text-base text-ink focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-pill disabled:text-muted";
-  const labelClass = "text-xs font-semibold uppercase tracking-widest text-muted";
+    "mt-1 flex w-full items-center justify-between rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-left text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
+  const labelClass = "text-caption font-semibold text-stone";
 
   return (
     <div>
@@ -118,15 +118,15 @@ export default function SearchableSelect({
         aria-describedby={error ? errorId : undefined}
         className={triggerClass}
       >
-        <span className={value ? "" : "text-muted"}>
+        <span className={value ? "" : "text-stone"}>
           {value || (disabled ? disabledHint : placeholder)}
         </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 shrink-0 text-muted">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 shrink-0 text-stone">
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
       {error && (
-        <p id={errorId} className="mt-1 text-xs text-red-600">
+        <p id={errorId} className="mt-1 text-caption text-burgundy">
           {error}
         </p>
       )}
@@ -134,26 +134,26 @@ export default function SearchableSelect({
       {open &&
         createPortal(
           <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={label}>
-            <div className="absolute inset-0 bg-black/40" onClick={close} />
+            <div className="absolute inset-0 bg-deepink/40" onClick={close} />
 
             <div
-              className="absolute inset-x-0 bottom-0 flex max-h-[70vh] flex-col rounded-t-2xl bg-ivory shadow-xl sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+              className="absolute inset-x-0 bottom-0 flex max-h-[70vh] flex-col rounded-t-2xl border border-linen bg-ivory sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
             >
-              <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                <p className="font-serif text-lg text-ink">{label}</p>
+              <div className="flex items-center justify-between border-b border-linen px-4 py-4">
+                <p className="font-serif text-body text-charcoal">{label}</p>
                 <button
                   type="button"
                   onClick={close}
                   aria-label="Close"
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-pill"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal hover:bg-linen"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
                     <path d="M18 6 6 18M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="border-b border-line px-4 py-3">
+              <div className="border-b border-linen px-4 py-4">
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -162,13 +162,13 @@ export default function SearchableSelect({
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={searchPlaceholder}
                   aria-controls={listId}
-                  className="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-base text-ink focus:border-navy focus:outline-none"
+                  className="w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
                 />
               </div>
 
               <ul id={listId} className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
                 {filtered.length === 0 ? (
-                  <li className="px-4 py-6 text-center text-sm text-muted">No matches found.</li>
+                  <li className="px-4 py-6 text-center text-body text-stone">No matches found.</li>
                 ) : (
                   filtered.map((option) => {
                     const selected = option === value;
@@ -178,12 +178,12 @@ export default function SearchableSelect({
                           type="button"
                           onClick={() => select(option)}
                           className={`flex min-h-[48px] w-full items-center justify-between px-4 text-left text-base ${
-                            selected ? "bg-pill font-medium text-navy" : "text-ink hover:bg-pill/60"
+                            selected ? "bg-linen font-medium text-navy" : "text-charcoal hover:bg-linen/60"
                           }`}
                         >
                           {option}
                           {selected && (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 shrink-0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 shrink-0">
                               <path d="M5 13l4 4L19 7" />
                             </svg>
                           )}

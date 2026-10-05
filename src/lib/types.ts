@@ -293,8 +293,10 @@ export interface HomepageSection {
   type: HomepageSectionType;
   position: number;
   custom_title: string | null;
+  // Editable subtitle for the built-in sections (absent on an older API).
+  custom_subtitle?: string | null;
   custom_html: string | null;
-  // Hot Deals only: when the offer really ends. Null/absent means no countdown.
+  // Special prices (hot_deals) only: when the offer really ends. Null/absent means no countdown.
   deal_ends_at?: string | null;
 }
 
@@ -345,6 +347,15 @@ export interface HomepageWording {
 export interface SiteSetting {
   site_name: string;
   logo_url: string | null;
+  // Brand kit logo masters; each is null until uploaded (fall back to logo_url, then the name).
+  logo_navy?: string | null;
+  logo_ivory?: string | null;
+  monogram?: string | null;
+  // The line under the logo; null when the admin cleared it.
+  tagline?: string | null;
+  low_stock_threshold?: number;
+  // False when the admin has switched cash on delivery off in Payment Settings.
+  cod_enabled?: boolean;
   contact_phone: string | null;
   contact_email: string | null;
   address: string | null;

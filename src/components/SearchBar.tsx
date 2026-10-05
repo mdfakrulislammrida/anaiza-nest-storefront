@@ -31,8 +31,8 @@ export default function SearchBar({
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth={1.8}
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+          strokeWidth={1.5}
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone"
         >
           <circle cx="11" cy="11" r="7" />
           <path d="m21 21-4.3-4.3" />
@@ -43,8 +43,8 @@ export default function SearchBar({
           onChange={(event) => setValue(event.target.value)}
           placeholder="Search for tea sets, ceramics, gift boxes..."
           autoFocus={autoFocus}
-          // text-base (not text-sm): avoids iOS Safari's auto-zoom on focus.
-          className="w-full rounded-full border border-line bg-pill py-2.5 pl-10 pr-4 text-base text-ink placeholder:text-muted focus:border-navy focus:outline-none"
+          // text-base (not text-body): avoids iOS Safari's auto-zoom on focus.
+          className="w-full rounded-btn border border-stone/80 bg-ivory py-2 pl-10 pr-4 text-base text-charcoal placeholder:text-stone focus:border-navy focus:outline-none"
         />
       </div>
     </form>

@@ -48,17 +48,17 @@ export default function Modal({
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-deepink/40"
       />
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-ivory shadow-xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-linen bg-ivory">
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm hover:bg-white"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-ivory/90 text-charcoal hover:bg-ivory"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>

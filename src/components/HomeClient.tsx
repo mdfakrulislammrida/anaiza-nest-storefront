@@ -60,13 +60,21 @@ export default function HomeClient({
               </Fragment>
             );
           case "hot_deals":
-            return <HotDealsSection key={section.id} products={catalog.hotDeals} endsAt={section.deal_ends_at} />;
+            return (
+              <HotDealsSection
+                key={section.id}
+                products={catalog.hotDeals}
+                endsAt={section.deal_ends_at}
+                {...(section.custom_title ? { title: section.custom_title } : {})}
+                {...(section.custom_subtitle ? { subtitle: section.custom_subtitle } : {})}
+              />
+            );
           case "bestsellers":
             return (
               <ProductSection
                 key={section.id}
-                title="Bestsellers"
-                subtitle="What Anaiza Nest shoppers are loving right now."
+                title={section.custom_title || "Featured gifts"}
+                subtitle={section.custom_subtitle || "A few pieces to give, packed by hand and ready to go."}
                 products={catalog.bestsellers}
               />
             );
@@ -74,13 +82,13 @@ export default function HomeClient({
             return (
               <ProductSection
                 key={section.id}
-                title="New Arrivals"
-                subtitle="Fresh in this week."
+                title={section.custom_title || "New arrivals"}
+                subtitle={section.custom_subtitle || "Recently added to the collection."}
                 products={catalog.newArrivals}
               />
             );
           case "newsletter":
-            return <NewsletterBanner key={section.id} />;
+            return <NewsletterBanner key={section.id} title={section.custom_title} subtitle={section.custom_subtitle} />;
           case "custom_html":
             return (
               <CustomHtmlSection key={section.id} title={section.custom_title} html={section.custom_html} />

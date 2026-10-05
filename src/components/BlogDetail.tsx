@@ -15,7 +15,7 @@ export default function BlogDetail({ article }: { article: Article }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <nav className="mb-6 text-xs text-muted">
+      <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
@@ -24,20 +24,20 @@ export default function BlogDetail({ article }: { article: Article }) {
           Blog
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">{article.title}</span>
+        <span className="text-charcoal">{article.title}</span>
       </nav>
 
       {article.published_at && (
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+        <p className="text-caption font-semibold text-stone">
           {formatDate(article.published_at)}
         </p>
       )}
-      <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">{article.title}</h1>
+      <h1 className="mt-2 font-serif text-charcoal text-h1">{article.title}</h1>
 
-      <p className="mt-3 text-sm text-muted">
+      <p className="mt-4 text-body text-stone">
         {authorName && (
           <>
-            By <span className="font-medium text-ink">{authorName}</span>
+            By <span className="font-medium text-charcoal">{authorName}</span>
             {" · "}
           </>
         )}
@@ -45,7 +45,7 @@ export default function BlogDetail({ article }: { article: Article }) {
       </p>
 
       {article.featured_image && (
-        <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl bg-pill">
+        <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl bg-linen">
           <Image
             src={article.featured_image}
             alt={article.title}
@@ -58,9 +58,9 @@ export default function BlogDetail({ article }: { article: Article }) {
       )}
 
       {body && body.toc.length >= 2 && (
-        <nav aria-label="Table of contents" className="mt-8 rounded-xl border border-line bg-cream p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">In this article</p>
-          <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm">
+        <nav aria-label="Table of contents" className="mt-8 rounded-xl border border-linen bg-linen p-6">
+          <p className="text-caption font-semibold text-stone">In this article</p>
+          <ol className="mt-4 list-decimal space-y-1.5 pl-6 text-body">
             {body.toc.map((item) => (
               <li key={item.id}>
                 <a href={`#${item.id}`} className="text-navy hover:underline">
@@ -75,21 +75,21 @@ export default function BlogDetail({ article }: { article: Article }) {
       {body && (
         <div
           // scroll-mt keeps an anchored heading clear of the sticky header.
-          className={`mt-8 space-y-4 text-sm leading-relaxed text-ink/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:scroll-mt-24 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:text-ink [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-xl [&_h3]:text-ink [&_img]:rounded-lg [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:text-ink [&_ul]:list-disc ${RICH_TABLE_CLASSES}`}
+          className={`mt-8 space-y-4 text-body leading-relaxed text-charcoal/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:scroll-mt-24 [&_h2]:font-serif [&_h2]:text-h2 [&_h2]:text-charcoal [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-h2 [&_h3]:text-charcoal [&_img]:rounded-lg [&_li]:ml-6 [&_ol]:list-decimal [&_strong]:text-charcoal [&_ul]:list-disc ${RICH_TABLE_CLASSES}`}
           dangerouslySetInnerHTML={{ __html: body.html }}
         />
       )}
 
       {authorName && authorBio && (
-        <aside className="mt-12 rounded-xl border border-line p-5 text-sm">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">About the author</p>
-          <p className="mt-2 font-medium text-ink">{authorName}</p>
-          <p className="mt-1 leading-relaxed text-ink/80">{authorBio}</p>
+        <aside className="mt-12 rounded-xl border border-linen p-6 text-body">
+          <p className="text-caption font-semibold text-stone">About the author</p>
+          <p className="mt-2 font-medium text-charcoal">{authorName}</p>
+          <p className="mt-1 leading-relaxed text-charcoal/80">{authorBio}</p>
         </aside>
       )}
 
-      <div className="mt-12 border-t border-line pt-8">
-        <Link href="/blog" className="text-sm font-medium text-navy hover:underline">
+      <div className="mt-12 border-t border-linen pt-8">
+        <Link href="/blog" className="text-body font-medium text-navy hover:underline">
           ← Back to Blog
         </Link>
       </div>

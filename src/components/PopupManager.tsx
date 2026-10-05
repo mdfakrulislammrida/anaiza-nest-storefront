@@ -6,6 +6,7 @@ import Link from "next/link";
 import Modal from "./Modal";
 import { getPopupSettings, subscribeToNewsletter } from "@/lib/api";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { CTA } from "@/lib/brand";
 import { resolveWording } from "@/lib/homepageWording";
 import type { PopupConfig, PopupPage, PopupSettings } from "@/lib/types";
 
@@ -165,31 +166,31 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
     <div>
       <PopupImage src={image} alt="Newsletter" />
       <div className="p-6 text-center">
-        <h2 className="font-serif text-xl text-ink">{wording.newsletter_headline}</h2>
-        <p className="mt-2 text-sm text-muted">{wording.newsletter_text}</p>
+        <h2 className="font-serif text-charcoal text-h2">{wording.newsletter_headline}</h2>
+        <p className="mt-2 text-body text-stone">{wording.newsletter_text}</p>
 
         {status === "done" ? (
-          <p className="mt-5 text-sm font-medium text-ink">Thanks — you&apos;re on the list.</p>
+          <p className="mt-6 text-body font-medium text-charcoal">Thanks — you&apos;re on the list.</p>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-5 space-y-2">
+          <form onSubmit={handleSubmit} className="mt-6 space-y-2">
             <input
               type="email"
               name="email"
               required
               placeholder="you@example.com"
-              className="w-full rounded-full border border-line bg-white px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:border-navy focus:outline-none"
+              className="w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-body text-charcoal placeholder:text-stone focus:border-navy focus:outline-none"
             />
             <button
               type="submit"
               disabled={status === "loading"}
-              className="w-full rounded-full bg-navy px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-btn bg-navy px-6 py-2 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Subscribe
             </button>
           </form>
         )}
         {status === "error" && (
-          <p className="mt-2 text-xs text-red-600">Something went wrong. Please try again.</p>
+          <p className="mt-2 text-caption text-burgundy">Sorry, that did not go through. Please try again in a moment.</p>
         )}
       </div>
     </div>
@@ -199,11 +200,11 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
 function GiftFinderPopupContent({ image, onNavigate }: { image: string | null; onNavigate: () => void }) {
   return (
     <div>
-      <PopupImage src={image} alt="Gift Finder" />
+      <PopupImage src={image} alt="Gift finder" />
       <div className="p-6 text-center">
-        <h2 className="font-serif text-xl text-ink">Not sure what to get?</h2>
-        <p className="mt-2 text-sm text-muted">
-          Answer three quick questions and we&apos;ll match you with the perfect gift.
+        <h2 className="font-serif text-charcoal text-h2">Not sure what to give?</h2>
+        <p className="mt-2 text-body text-stone">
+          Answer three quick questions and we will suggest a few thoughtful gifts.
         </p>
         {/* Same close path as the X button (marks the 24h cooldown too) --
             clicking through counts as "seen it", so it won't immediately
@@ -211,9 +212,9 @@ function GiftFinderPopupContent({ image, onNavigate }: { image: string | null; o
         <Link
           href="/gift-finder"
           onClick={onNavigate}
-          className="mt-5 block rounded-full bg-navy px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="mt-6 block rounded-btn bg-navy px-6 py-2 text-button text-ivory transition-opacity hover:opacity-90"
         >
-          Try the Gift Finder
+          {CTA.findGift}
         </Link>
       </div>
     </div>
@@ -250,7 +251,7 @@ export default function PopupManager() {
       <PopupController
         config={settings.gift_finder}
         storageKey="popup-dismissed-giftfinder"
-        ariaLabel="Gift Finder"
+        ariaLabel="Gift finder"
         canShow={activePopup === null}
         onShown={() => setActivePopup("gift_finder")}
         onClosed={() => setActivePopup(null)}

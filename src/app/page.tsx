@@ -20,7 +20,7 @@ export default async function Home() {
         />
       ) : (
         <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
-          <p className="text-muted">
+          <p className="text-stone">
             We couldn&apos;t reach the catalog right now. Please make sure the
             Anaiza Nest API is running and refresh.
           </p>

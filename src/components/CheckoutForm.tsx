@@ -17,13 +17,15 @@ import {
   type BdDivision,
 } from "@/lib/bangladesh-geography";
 import SearchableSelect from "./SearchableSelect";
+import Seal from "./Seal";
+import { CTA } from "@/lib/brand";
 import type { CreateOrderPayload, PaymentMethod, PaymentSetting } from "@/lib/types";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; initial: string }[] = [
   { value: "bkash", label: "bKash", initial: "b" },
   { value: "nagad", label: "Nagad", initial: "N" },
   { value: "rocket", label: "Rocket", initial: "R" },
-  { value: "cod", label: "Cash on Delivery", initial: "C" },
+  { value: "cod", label: "Cash on delivery", initial: "C" },
 ];
 
 // Field names the form shows an inline error for. Any other validation key (the server's
@@ -99,13 +101,13 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   if (items.length === 0 && !orderPlaced) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
-        <h1 className="font-serif text-3xl text-ink">Nothing to check out</h1>
-        <p className="mt-3 text-muted">Your cart is currently empty.</p>
+        <h1 className="font-serif text-charcoal text-h1">Nothing to check out</h1>
+        <p className="mt-4 text-body text-stone">Your cart is empty. Browse the collection and find something worth keeping.</p>
         <Link
-          href="/shop"
-          className="mt-8 inline-flex items-center justify-center rounded-full bg-navy px-8 py-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          href="/shop?search=tea%20sets"
+          className="mt-8 inline-flex items-center justify-center rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90"
         >
-          Shop the collection
+          {CTA.shopTeaSets}
         </Link>
       </div>
     );
@@ -170,7 +172,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
               : error.message || "We couldn't place your order. Please try again.",
         );
       } else {
-        setFormError("Something went wrong placing your order. Please try again.");
+        setFormError("Sorry, we could not place your order just now. Please try again in a moment.");
       }
       setRevealCount((count) => count + 1);
     } finally {
@@ -180,18 +182,18 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
   function errorFor(field: string) {
     const message = fieldErrors[field]?.[0];
-    return message ? <p className="mt-1 text-xs text-red-600">{message}</p> : null;
+    return message ? <p className="mt-1 text-caption text-burgundy">{message}</p> : null;
   }
 
-  // text-base (not text-sm): iOS Safari auto-zooms the page when a focused
-  // input's font is under 16px, which text-sm's 14px would trigger.
+  // text-base (not text-body): iOS Safari auto-zooms the page when a focused
+  // input's font is under 16px, which text-body's 14px would trigger.
   const inputClass =
-    "mt-1 w-full rounded-lg border border-line bg-ivory px-3 py-2.5 text-base text-ink focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-pill disabled:text-muted";
-  const labelClass = "text-xs font-semibold uppercase tracking-widest text-muted";
+    "mt-1 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
+  const labelClass = "text-caption font-medium text-stone";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <nav className="mb-6 text-xs text-muted">
+      <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
           Home
         </Link>
@@ -200,10 +202,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
           Cart
         </Link>
         <span className="mx-1.5">/</span>
-        <span className="text-ink">Checkout</span>
+        <span className="text-charcoal">Checkout</span>
       </nav>
 
-      <h1 className="font-serif text-3xl text-ink sm:text-4xl">Checkout</h1>
+      <h1 className="font-serif text-charcoal text-h1">Checkout</h1>
 
       <div className="mt-8 flex flex-col gap-10 lg:flex-row">
         <form id="checkout-form" onSubmit={handleSubmit} className="flex-1 space-y-8">
@@ -212,17 +214,17 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
               ref={alertRef}
               role="alert"
               tabIndex={-1}
-              className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 focus:outline-none"
+              className="rounded-btn border border-burgundy/30 bg-linen p-4 text-body text-burgundy focus:outline-none"
             >
               <p className="font-medium">{formError}</p>
               {orderProblems.length > 0 && (
                 <>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <ul className="mt-2 list-disc space-y-1 pl-6">
                     {orderProblems.map((problem) => (
                       <li key={problem}>{problem}</li>
                     ))}
                   </ul>
-                  <p className="mt-3">
+                  <p className="mt-4">
                     <Link href="/cart" className="font-medium underline">
                       Review your cart
                     </Link>{" "}
@@ -231,7 +233,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                 </>
               )}
               {supportPhone && (
-                <p className="mt-3">
+                <p className="mt-4">
                   Need a hand? Call{" "}
                   <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-medium underline">
                     {supportPhone}
@@ -252,7 +254,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
           )}
 
           <fieldset className="space-y-4">
-            <legend className="font-serif text-xl text-ink">Shipping details</legend>
+            <legend className="font-serif text-h2 text-charcoal">Shipping details</legend>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -383,30 +385,30 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
               {errorFor("customer_address")}
             </div>
 
-            <p className="text-xs text-muted">
+            <p className="text-caption text-stone">
               Select your division, district and thana/area to calculate delivery
               area and shipping.
             </p>
 
             <div>
               <label htmlFor={`${uid}-notes`} className={labelClass}>
-                Order notes (optional)
+                Gift note (optional)
               </label>
               <textarea id={`${uid}-notes`} name="gift_note" rows={3} autoComplete="off" className={inputClass} />
             </div>
           </fieldset>
 
-          <fieldset className="space-y-3">
-            <legend className="font-serif text-xl text-ink">Payment method</legend>
-            <p className="text-sm text-muted">
-              Pay instantly with a mobile wallet, or choose Cash on Delivery.
+          <fieldset className="space-y-4">
+            <legend className="font-serif text-h2 text-charcoal">Payment method</legend>
+            <p className="text-body text-stone">
+              {paymentSettings?.cod_enabled === false ? "Pay with a mobile wallet." : "Pay with a mobile wallet, or choose cash on delivery."}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {paymentMethods.map((method) => (
                 <label
                   key={method.value}
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
-                    paymentMethod === method.value ? "border-navy bg-pill" : "border-line hover:border-navy"
+                  className={`flex cursor-pointer items-center gap-4 rounded-btn border px-4 py-4 text-button transition-colors ${
+                    paymentMethod === method.value ? "border-navy bg-linen" : "border-stone/80 hover:border-navy"
                   }`}
                 >
                   <input
@@ -420,7 +422,7 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                     }}
                     className="sr-only"
                   />
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-xs font-semibold text-white">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-caption font-semibold text-ivory">
                     {method.initial}
                   </span>
                   {method.label}
@@ -429,82 +431,85 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
             </div>
 
             {paymentMethod === "bkash" && paymentSettings?.bkash_number && (
-              <p className="text-sm text-ink/70">
+              <p className="text-body text-charcoal/70">
                 Send payment to bKash number{" "}
-                <span className="font-semibold text-ink">{paymentSettings.bkash_number}</span>.
+                <span className="font-semibold text-charcoal">{paymentSettings.bkash_number}</span>.
               </p>
             )}
             {paymentMethod === "nagad" && paymentSettings?.nagad_number && (
-              <p className="text-sm text-ink/70">
+              <p className="text-body text-charcoal/70">
                 Send payment to Nagad number{" "}
-                <span className="font-semibold text-ink">{paymentSettings.nagad_number}</span>.
+                <span className="font-semibold text-charcoal">{paymentSettings.nagad_number}</span>.
               </p>
             )}
             {paymentMethod === "rocket" && paymentSettings?.rocket_number && (
-              <p className="text-sm text-ink/70">
+              <p className="text-body text-charcoal/70">
                 Send payment to Rocket number{" "}
-                <span className="font-semibold text-ink">{paymentSettings.rocket_number}</span>.
+                <span className="font-semibold text-charcoal">{paymentSettings.rocket_number}</span>.
               </p>
             )}
             {paymentMethod === "cod" && (
-              <p className="text-sm text-ink/70">Pay when your order arrives.</p>
+              <p className="text-body text-charcoal/70">Pay when your order arrives.</p>
             )}
           </fieldset>
         </form>
 
         <aside className="lg:w-80">
-          <div className="rounded-xl border border-line p-6">
-            <h2 className="font-serif text-xl text-ink">Order Summary</h2>
+          <div className="rounded-xl border border-linen p-6">
+            <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
 
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 space-y-4">
               {items.map((item) => (
-                <li key={item.key} className="flex justify-between text-sm text-ink/70">
+                <li key={item.key} className="flex justify-between text-body text-charcoal/70">
                   <span>
                     {item.name}
                     {item.variantLabel ? ` (${item.variantLabel})` : ""} &times; {item.quantity}
                   </span>
-                  <span className="whitespace-nowrap font-medium text-ink">
+                  <span className="whitespace-nowrap font-medium text-charcoal">
                     {formatPrice(item.price * item.quantity)}
                   </span>
                 </li>
               ))}
             </ul>
 
-            <div className="mt-6 space-y-2 border-t border-line pt-4 text-sm text-ink/70">
+            <div className="mt-6 space-y-2 border-t border-linen pt-4 text-body text-charcoal/70">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-medium text-ink">{formatPrice(subtotal)}</span>
+                <span className="font-medium text-charcoal">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delivery</span>
-                <span className="font-medium text-ink">
+                <span className="font-medium text-charcoal">
                   {deliveryFee === null ? "Calculated at address" : formatPrice(deliveryFee)}
                 </span>
               </div>
             </div>
 
-            <div className="mt-4 flex justify-between border-t border-line pt-4 text-base font-semibold text-ink">
+            <div className="mt-4 flex justify-between border-t border-linen pt-4 text-base font-semibold text-charcoal">
               <span>Total</span>
               <span>{formatPrice(subtotal + (deliveryFee ?? 0))}</span>
             </div>
 
-            <button
-              type="submit"
-              form="checkout-form"
-              disabled={submitting}
-              className="mt-6 w-full rounded-full bg-navy px-8 py-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {submitting ? "Placing order..." : "Place Order"}
-            </button>
+            <div className="mt-6 flex items-center gap-4">
+              {paymentSettings?.cod_enabled !== false && <Seal message="Cash on delivery" />}
+              <button
+                type="submit"
+                form="checkout-form"
+                disabled={submitting}
+                className="w-full flex-1 rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting ? "Placing your order..." : paymentMethod === "cod" ? CTA.order : "Place order"}
+              </button>
+            </div>
 
-            <p className="mt-3 text-center text-xs text-muted">
+            <p className="mt-4 text-center text-caption text-stone">
               By placing this order you agree to our{" "}
               <Link href="/pages/terms" className="underline hover:text-navy">
                 Terms
               </Link>{" "}
               and{" "}
               <Link href="/pages/returns" className="underline hover:text-navy">
-                Return Policy
+                Return policy
               </Link>
               .
             </p>
