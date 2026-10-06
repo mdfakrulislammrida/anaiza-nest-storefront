@@ -9,6 +9,8 @@ import NewsletterBanner from "./NewsletterBanner";
 import HotDealsSection from "./HotDealsSection";
 import ProductSection from "./ProductSection";
 import CustomHtmlSection from "./CustomHtmlSection";
+import OccasionsSection from "./OccasionsSection";
+import WhyUsSection from "./WhyUsSection";
 
 // Seeded directly from the statically-built catalog/section order, so first
 // render already shows real content -- no loading state. On mount we
@@ -89,6 +91,24 @@ export default function HomeClient({
             );
           case "newsletter":
             return <NewsletterBanner key={section.id} title={section.custom_title} subtitle={section.custom_subtitle} />;
+          case "occasions":
+            return (
+              <OccasionsSection
+                key={section.id}
+                title={section.custom_title}
+                subtitle={section.custom_subtitle}
+                tiles={section.tiles ?? []}
+              />
+            );
+          case "why_us":
+            return (
+              <WhyUsSection
+                key={section.id}
+                title={section.custom_title}
+                subtitle={section.custom_subtitle}
+                reasons={section.reasons ?? []}
+              />
+            );
           case "custom_html":
             return (
               <CustomHtmlSection key={section.id} title={section.custom_title} html={section.custom_html} />

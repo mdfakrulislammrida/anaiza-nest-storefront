@@ -34,6 +34,9 @@ export default function ProductDetail({ product, related }: { product: Product; 
   const regularPrice = selectedVariant?.price ?? product.price;
   const stockQuantity = selectedVariant?.stock_quantity ?? product.stock_quantity;
   const onSale = discountPercent !== null;
+  // Both sections are hidden when empty.
+  const boxContents = (product.box_contents ?? []).filter((line) => line.trim() !== "");
+  const careInstructions = product.care_instructions?.trim() || null;
 
   return (
     // Extra bottom padding on mobile clears the fixed Add to Cart / Buy Now
@@ -70,7 +73,12 @@ export default function ProductDetail({ product, related }: { product: Product; 
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            <span className="text-h2 font-semibold text-charcoal">{formatPrice(effectivePrice)}</span>
+            <span className="text-h2 font-semibold text-charcoal">
+              {formatPrice(effectivePrice)}
+              {product.gift_box_included && (
+                <span className="text-body font-normal text-charcoal/80">, gift box included</span>
+              )}
+            </span>
             {onSale && (
               <>
                 <span className="text-body text-stone line-through">{formatPrice(regularPrice)}</span>
@@ -142,7 +150,25 @@ export default function ProductDetail({ product, related }: { product: Product; 
         </section>
       )}
 
+      {boxContents.length > 0 && (
+        <section className="mt-16 max-w-3xl">
+          <h2 className="mb-4 font-serif text-charcoal text-h2">What is in the box?</h2>
+          <ul className="ml-6 list-disc space-y-1 text-body text-charcoal/80">
+            {boxContents.map((line, index) => (
+              <li key={`${index}-${line}`}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <ProductSpecs specifications={product.specifications ?? []} />
+
+      {careInstructions && (
+        <section className="mt-16 max-w-3xl">
+          <h2 className="mb-4 font-serif text-charcoal text-h2">How do I care for it?</h2>
+          <p className="whitespace-pre-line text-body leading-relaxed text-charcoal/80">{careInstructions}</p>
+        </section>
+      )}
 
       {product.faqs && product.faqs.length > 0 && (
         <section className="mt-16 max-w-3xl">

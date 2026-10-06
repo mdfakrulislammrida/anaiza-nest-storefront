@@ -124,6 +124,17 @@ export default function OrderConfirmationPage() {
         <p>{order.customer.phone}</p>
       </div>
 
+      {order.is_gift && (
+        <div className="mt-6 rounded-xl border border-linen p-6 text-body text-charcoal/70">
+          <h2 className="font-serif text-charcoal text-h2">Your gift note</h2>
+          {order.gift_message ? (
+            <p className="mt-2 whitespace-pre-line break-words text-charcoal">{order.gift_message}</p>
+          ) : (
+            <p className="mt-2">This order is marked as a gift. You did not add a message.</p>
+          )}
+        </div>
+      )}
+
       <section className="mt-6 rounded-xl border border-linen p-6">
         <h2 className="font-serif text-charcoal text-h2">What happens next</h2>
         <ol className="mt-4 space-y-4 text-body text-charcoal/70">

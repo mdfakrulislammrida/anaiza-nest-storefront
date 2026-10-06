@@ -40,6 +40,7 @@ const FORM_FIELDS = [
   "thana",
   "payment_method",
   "gift_note",
+  "gift_message",
 ];
 
 export default function CheckoutForm({ paymentSettings }: { paymentSettings: PaymentSetting | null }) {
@@ -64,6 +65,8 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   const [district, setDistrict] = useState("Dhaka");
   const [thana, setThana] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(paymentMethods[0]?.value ?? "cod");
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   // Server messages that belong to no single field, e.g. "Insufficient stock for ...".
@@ -141,6 +144,8 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
       thana,
       payment_method: paymentMethod,
       gift_note: String(form.get("gift_note") ?? "") || null,
+      is_gift: isGift,
+      gift_message: isGift ? giftMessage.trim() || null : null,
       items: items.map((item) => ({
         product_id: item.productId,
         quantity: item.quantity,
@@ -392,9 +397,44 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
 
             <div>
               <label htmlFor={`${uid}-notes`} className={labelClass}>
-                Gift note (optional)
+                Order notes (optional)
               </label>
               <textarea id={`${uid}-notes`} name="gift_note" rows={3} autoComplete="off" className={inputClass} />
+              {errorFor("gift_note")}
+            </div>
+
+            <div className="rounded-btn border border-linen bg-linen/50 p-4">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body font-medium text-charcoal">
+                <input
+                  type="checkbox"
+                  checked={isGift}
+                  onChange={(event) => setIsGift(event.target.checked)}
+                  className="h-5 w-5 accent-navy"
+                />
+                This is a gift
+              </label>
+              <p className="text-caption text-stone">Free, and it does not change your total.</p>
+              {isGift && (
+                <div className="mt-3">
+                  <label htmlFor={`${uid}-gift`} className={labelClass}>
+                    Gift message (optional)
+                  </label>
+                  <textarea
+                    id={`${uid}-gift`}
+                    name="gift_message"
+                    rows={3}
+                    maxLength={200}
+                    value={giftMessage}
+                    onChange={(event) => setGiftMessage(event.target.value)}
+                    autoComplete="off"
+                    className={inputClass}
+                  />
+                  <p className="mt-1 text-right text-caption text-stone" aria-live="polite">
+                    {giftMessage.length}/200
+                  </p>
+                  {errorFor("gift_message")}
+                </div>
+              )}
             </div>
           </fieldset>
 

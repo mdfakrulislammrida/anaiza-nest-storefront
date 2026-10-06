@@ -8,7 +8,7 @@ export const dynamic = "force-static";
 
 // Static-export compatible: this runs once at build time, same as
 // generateStaticParams, and Next writes the result to sitemap.xml.
-const STATIC_ROUTES = ["/", "/shop", "/hot-deals", "/gift-finder", "/contact", "/faq", "/track-order", "/blog"];
+const STATIC_ROUTES = ["/", "/shop", "/hot-deals", "/gift-finder", "/corporate-gifting", "/contact", "/faq", "/track-order", "/blog"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, categories, pages, articles] = await Promise.all([

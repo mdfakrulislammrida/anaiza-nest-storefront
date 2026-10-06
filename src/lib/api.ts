@@ -11,6 +11,7 @@ import type {
   CategoryDetail,
   CategorySummary,
   ContactSubmissionPayload,
+  CorporateEnquiryPayload,
   CreateOrderPayload,
   Faq,
   HomepageSection,
@@ -294,6 +295,13 @@ export async function subscribeToNewsletter(email: string): Promise<void> {
 
 export async function submitContactForm(payload: ContactSubmissionPayload): Promise<void> {
   await apiFetch<{ message: string }>("/contact-submissions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitCorporateEnquiry(payload: CorporateEnquiryPayload): Promise<void> {
+  await apiFetch<{ message: string }>("/corporate-enquiries", {
     method: "POST",
     body: JSON.stringify(payload),
   });

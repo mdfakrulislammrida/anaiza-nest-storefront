@@ -119,6 +119,11 @@ export interface Product {
   short_description: string | null;
   summary: string | null;
   specifications: ProductSpec[];
+  // What is in the box, one short line each; empty hides the section. Absent on an older API.
+  box_contents?: string[];
+  care_instructions?: string | null;
+  // True only when the admin switched it on: the price then reads "৳1,450, gift box included".
+  gift_box_included?: boolean;
   gtin: string | null;
   mpn: string | null;
   seo?: ProductSeo;
@@ -197,6 +202,9 @@ export interface CreateOrderPayload {
   thana: string;
   payment_method: PaymentMethod;
   gift_note?: string | null;
+  // A gift: free, and it never changes the price. The message is up to 200 characters.
+  is_gift?: boolean;
+  gift_message?: string | null;
   items: OrderItemPayload[];
   utm_source?: string;
   utm_medium?: string;
@@ -235,6 +243,9 @@ export interface Order {
   delivery_fee: number;
   total: number;
   gift_note: string | null;
+  // Absent on an older API.
+  is_gift?: boolean;
+  gift_message?: string | null;
   created_at: string;
   customer: OrderCustomer;
   items: OrderItem[];
@@ -286,7 +297,22 @@ export type HomepageSectionType =
   | "bestsellers"
   | "new_arrivals"
   | "newsletter"
+  | "occasions"
+  | "why_us"
   | "custom_html";
+
+// Shop by occasion: the API sends only tiles that are switched on and have somewhere to go.
+export interface OccasionTile {
+  label: string;
+  image: string | null;
+  href: string;
+}
+
+// Why Anaiza Nest: a line, with an optional short title. Up to five.
+export interface WhyUsReason {
+  title: string | null;
+  line: string;
+}
 
 export interface HomepageSection {
   id: number;
@@ -298,6 +324,9 @@ export interface HomepageSection {
   custom_html: string | null;
   // Special prices (hot_deals) only: when the offer really ends. Null/absent means no countdown.
   deal_ends_at?: string | null;
+  // Shop by occasion (occasions) and Why Anaiza Nest (why_us) only.
+  tiles?: OccasionTile[] | null;
+  reasons?: WhyUsReason[] | null;
 }
 
 export interface Faq {
@@ -354,6 +383,8 @@ export interface SiteSetting {
   // The line under the logo; null when the admin cleared it.
   tagline?: string | null;
   low_stock_threshold?: number;
+  // The intro on /corporate-gifting; null means the built-in sentence.
+  corporate_intro?: string | null;
   // False when the admin has switched cash on delivery off in Payment Settings.
   cod_enabled?: boolean;
   contact_phone: string | null;
@@ -385,6 +416,19 @@ export interface PaymentSetting {
   nagad_number: string | null;
   rocket_number: string | null;
   cod_enabled: boolean;
+}
+
+export interface CorporateEnquiryPayload {
+  name: string;
+  company: string;
+  phone: string;
+  email: string;
+  quantity: number;
+  needed_by?: string | null;
+  products_of_interest?: string | null;
+  message?: string | null;
+  // Honeypot: always empty from a real visitor.
+  website?: string;
 }
 
 export interface ContactSubmissionPayload {
