@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ApiError, lookupOrder } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import type { Order } from "@/lib/types";
+import PaymentStateNotice from "@/components/PaymentStateNotice";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -89,6 +90,12 @@ export default function TrackOrderPage() {
               {statusLabel(order.status)}
             </span>
           </div>
+
+          {order.payment_status && order.payment_status !== "cod" && (
+            <div className="mt-4">
+              <PaymentStateNotice status={order.payment_status} />
+            </div>
+          )}
 
           <ul className="mt-4 divide-y divide-linen">
             {order.items.map((item) => (

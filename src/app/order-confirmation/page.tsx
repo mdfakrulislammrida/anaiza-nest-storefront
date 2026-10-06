@@ -8,6 +8,7 @@ import { formatDays, resolvePolicy } from "@/lib/policy";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { trackPurchase } from "@/lib/tracking";
 import type { Order } from "@/lib/types";
+import PaymentStateNotice from "@/components/PaymentStateNotice";
 
 const TRACKED_ORDERS_KEY = "anaiza-purchase-tracked";
 
@@ -66,17 +67,33 @@ export default function OrderConfirmationPage() {
     );
   }
 
+  // A wallet order is not confirmed until its payment has been checked.
+  const waitingOnPayment = order.payment_status === "awaiting_verification" || order.payment_status === "failed";
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-      <p className="text-caption font-medium text-navy">Order confirmed</p>
+      <p className="text-caption font-medium text-navy">{waitingOnPayment ? "Order received" : "Order confirmed"}</p>
       <h1 className="mt-2 font-serif text-charcoal text-h1">
         Thank you, {order.customer.name.split(" ")[0]}.
       </h1>
       {/* The kit's order-confirmed line, said as the host. */}
       <p className="mt-4 text-body text-charcoal/80">
-        Order <span className="font-semibold text-charcoal">#{order.id}</span> is confirmed. Your order is being
-        packed by hand and will be with you soon.
+        {waitingOnPayment ? (
+          <>
+            Order <span className="font-semibold text-charcoal">#{order.id}</span> is received.
+          </>
+        ) : (
+          <>
+            Order <span className="font-semibold text-charcoal">#{order.id}</span> is confirmed. Your order is being
+            packed by hand and will be with you soon.
+          </>
+        )}
       </p>
+      {order.payment_status && order.payment_status !== "cod" && (
+        <div className="mt-6">
+          <PaymentStateNotice status={order.payment_status} />
+        </div>
+      )}
 
       <div className="mt-10 rounded-xl border border-linen p-6">
         <h2 className="font-serif text-charcoal text-h2">Order details</h2>

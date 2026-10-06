@@ -205,6 +205,9 @@ export interface CreateOrderPayload {
   // A gift: free, and it never changes the price. The message is up to 200 characters.
   is_gift?: boolean;
   gift_message?: string | null;
+  // Wallet payments only: the number paid from and the transaction ID, checked by hand by the shop.
+  payment_sender_number?: string;
+  payment_trx_id?: string;
   items: OrderItemPayload[];
   utm_source?: string;
   utm_medium?: string;
@@ -239,6 +242,8 @@ export interface Order {
   id: number;
   status: string;
   payment_method: PaymentMethod;
+  // cod, awaiting_verification, verified or failed. Absent on an older API.
+  payment_status?: string;
   subtotal: number;
   delivery_fee: number;
   total: number;
@@ -416,6 +421,14 @@ export interface PaymentSetting {
   nagad_number: string | null;
   rocket_number: string | null;
   cod_enabled: boolean;
+  // The admin's steps per wallet (HTML with {{amount}} and {{number}}) and an optional logo URL.
+  // Absent on an older API.
+  bkash_instructions?: string;
+  nagad_instructions?: string;
+  rocket_instructions?: string;
+  bkash_logo?: string | null;
+  nagad_logo?: string | null;
+  rocket_logo?: string | null;
 }
 
 export interface CorporateEnquiryPayload {

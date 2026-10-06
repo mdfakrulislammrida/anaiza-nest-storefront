@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "rea
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { ApiError, createOrder } from "@/lib/api";
+import { ApiError, createOrder, getPaymentSettings } from "@/lib/api";
 import { getStoredUtmParams } from "@/lib/attribution";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
@@ -18,6 +18,8 @@ import {
 } from "@/lib/bangladesh-geography";
 import SearchableSelect from "./SearchableSelect";
 import Seal from "./Seal";
+import WalletPaymentPanel from "./WalletPaymentPanel";
+import { isWalletMethod, normalizeBdNumber, walletFieldProblems, type WalletMethod } from "@/lib/payment";
 import { CTA } from "@/lib/brand";
 import type { CreateOrderPayload, PaymentMethod, PaymentSetting } from "@/lib/types";
 
@@ -41,9 +43,19 @@ const FORM_FIELDS = [
   "payment_method",
   "gift_note",
   "gift_message",
+  "payment_sender_number",
+  "payment_trx_id",
 ];
 
-export default function CheckoutForm({ paymentSettings }: { paymentSettings: PaymentSetting | null }) {
+// Used only if an older API sends no steps of its own.
+const DEFAULT_STEPS =
+  "<ol><li>Send {{amount}} to {{number}}.</li><li>Copy the transaction ID from the confirmation message.</li><li>Enter the number you paid from and the transaction ID below, then place your order.</li></ol>";
+
+function logoFor(settings: PaymentSetting | null, method: PaymentMethod): string | null {
+  return method === "cod" || !settings ? null : (settings[`${method as WalletMethod}_logo`] ?? null);
+}
+
+export default function CheckoutForm({ paymentSettings: initialPaymentSettings }: { paymentSettings: PaymentSetting | null }) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   // The order summary shows a live estimate from the editable delivery settings;
@@ -54,8 +66,32 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   const uid = useId();
   const alertRef = useRef<HTMLDivElement>(null);
 
+  // Seeded from the build, then refreshed once on load: a merchant number or step the shop has just changed
+  // must never wait for a rebuild, because customers send real money to it.
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSetting | null>(initialPaymentSettings);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPaymentSettings()
+      .then((fresh) => {
+        if (!cancelled) setPaymentSettings(fresh);
+      })
+      .catch(() => {
+        // Keep what the build had.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // A wallet is offered only when the shop has published a number to pay to; cash on delivery unless switched off.
   const paymentMethods = useMemo(
-    () => PAYMENT_METHODS.filter((method) => method.value !== "cod" || paymentSettings?.cod_enabled !== false),
+    () =>
+      PAYMENT_METHODS.filter((method) =>
+        method.value === "cod"
+          ? paymentSettings?.cod_enabled !== false
+          : Boolean(paymentSettings?.[`${method.value}_number` as const]?.trim()),
+      ),
     [paymentSettings],
   );
 
@@ -64,7 +100,10 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
   const [division, setDivision] = useState<BdDivision | "">("Dhaka");
   const [district, setDistrict] = useState("Dhaka");
   const [thana, setThana] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(paymentMethods[0]?.value ?? "cod");
+  const [chosenMethod, setChosenMethod] = useState<PaymentMethod | null>(null);
+  // The visitor's choice if it is still on offer, otherwise the first method that is.
+  const paymentMethod: PaymentMethod | null =
+    paymentMethods.find((method) => method.value === chosenMethod)?.value ?? paymentMethods[0]?.value ?? null;
   const [isGift, setIsGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -129,9 +168,28 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
       return;
     }
 
-    setSubmitting(true);
+    if (!paymentMethod) {
+      setFormError("There is no way to pay online just now. Please contact us and we will help you order.");
+      setRevealCount((count) => count + 1);
+      return;
+    }
 
     const form = new FormData(formElement);
+    const senderNumber = String(form.get("payment_sender_number") ?? "");
+    const trxId = String(form.get("payment_trx_id") ?? "");
+
+    // A wallet payment is checked against the number and transaction ID, so a typo is caught here, not after the order.
+    if (isWalletMethod(paymentMethod)) {
+      const problems = walletFieldProblems(senderNumber, trxId);
+      if (Object.keys(problems).length > 0) {
+        setFieldErrors(problems);
+        setFormError("Please check the highlighted fields and try again.");
+        setRevealCount((count) => count + 1);
+        return;
+      }
+    }
+
+    setSubmitting(true);
     const email = String(form.get("customer_email") ?? "").trim();
 
     const payload: CreateOrderPayload = {
@@ -143,6 +201,9 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
       district,
       thana,
       payment_method: paymentMethod,
+      ...(isWalletMethod(paymentMethod)
+        ? { payment_sender_number: normalizeBdNumber(senderNumber.trim()), payment_trx_id: trxId.trim().toUpperCase() }
+        : {}),
       gift_note: String(form.get("gift_note") ?? "") || null,
       is_gift: isGift,
       gift_message: isGift ? giftMessage.trim() || null : null,
@@ -457,36 +518,44 @@ export default function CheckoutForm({ paymentSettings }: { paymentSettings: Pay
                     value={method.value}
                     checked={paymentMethod === method.value}
                     onChange={() => {
-                      setPaymentMethod(method.value);
+                      setChosenMethod(method.value);
                       trackAddPaymentInfo(items, subtotal, method.value);
                     }}
                     className="sr-only"
                   />
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-caption font-semibold text-ivory">
-                    {method.initial}
-                  </span>
+                  {logoFor(paymentSettings, method.value) ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
+                    <img src={logoFor(paymentSettings, method.value) ?? undefined} alt="" height={28} loading="lazy" decoding="async" className="h-7 w-auto" />
+                  ) : (
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-caption font-semibold text-ivory">
+                      {method.initial}
+                    </span>
+                  )}
                   {method.label}
                 </label>
               ))}
             </div>
 
-            {paymentMethod === "bkash" && paymentSettings?.bkash_number && (
+            {paymentMethods.length === 0 && (
               <p className="text-body text-charcoal/70">
-                Send payment to bKash number{" "}
-                <span className="font-semibold text-charcoal">{paymentSettings.bkash_number}</span>.
+                There is no way to pay online just now. Please{" "}
+                <Link href="/contact" className="underline hover:text-navy">
+                  contact us
+                </Link>{" "}
+                and we will help you order.
               </p>
             )}
-            {paymentMethod === "nagad" && paymentSettings?.nagad_number && (
-              <p className="text-body text-charcoal/70">
-                Send payment to Nagad number{" "}
-                <span className="font-semibold text-charcoal">{paymentSettings.nagad_number}</span>.
-              </p>
-            )}
-            {paymentMethod === "rocket" && paymentSettings?.rocket_number && (
-              <p className="text-body text-charcoal/70">
-                Send payment to Rocket number{" "}
-                <span className="font-semibold text-charcoal">{paymentSettings.rocket_number}</span>.
-              </p>
+            {paymentMethod && isWalletMethod(paymentMethod) && paymentSettings && (
+              <WalletPaymentPanel
+                key={paymentMethod}
+                method={paymentMethod}
+                label={PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label ?? paymentMethod}
+                number={(paymentSettings[`${paymentMethod}_number`] ?? "").trim()}
+                amount={deliveryFee === null ? null : subtotal + deliveryFee}
+                instructionsHtml={paymentSettings[`${paymentMethod}_instructions`] || DEFAULT_STEPS}
+                logo={logoFor(paymentSettings, paymentMethod)}
+                errors={fieldErrors}
+              />
             )}
             {paymentMethod === "cod" && (
               <p className="text-body text-charcoal/70">Pay when your order arrives.</p>
