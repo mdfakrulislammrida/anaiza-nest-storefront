@@ -6,7 +6,6 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import SearchBar from "./SearchBar";
-import ThemeToggle from "./ThemeToggle";
 import Logo from "./Logo";
 import { resolveTagline } from "@/lib/brand";
 import { getCategories } from "@/lib/api";
@@ -139,7 +138,6 @@ export default function Header({ categories: initialCategories = [] }: { categor
                 </svg>
               )}
             </button>
-            <ThemeToggle />
             <Link href="/account" aria-label="Account" className={ICON_BUTTON_CLASS}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                 <circle cx="12" cy="8" r="4" />
