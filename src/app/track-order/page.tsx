@@ -97,6 +97,13 @@ export default function TrackOrderPage() {
             </div>
           )}
 
+          {(order.courier_name || order.tracking_number) && (
+            <p className="mt-4 rounded-btn bg-linen p-4 text-body text-charcoal">
+              {order.courier_name && <span className="block">Courier: {order.courier_name}</span>}
+              {order.tracking_number && <span className="block">Tracking number: {order.tracking_number}</span>}
+            </p>
+          )}
+
           <ul className="mt-4 divide-y divide-linen">
             {order.items.map((item) => (
               <li key={item.id} className="flex justify-between py-4 text-body">

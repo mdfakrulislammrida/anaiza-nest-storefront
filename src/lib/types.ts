@@ -247,6 +247,9 @@ export interface Order {
   payment_method: PaymentMethod;
   // cod, awaiting_verification, verified or failed. Absent on an older API.
   payment_status?: string;
+  // Set by the shop when the order ships; null until then. Absent on an older API.
+  courier_name?: string | null;
+  tracking_number?: string | null;
   subtotal: number;
   delivery_fee: number;
   total: number;
