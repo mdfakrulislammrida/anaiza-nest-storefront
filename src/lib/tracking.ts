@@ -208,7 +208,26 @@ export function trackAddPaymentInfo(items: CartItem[], value: number, paymentMet
   });
 }
 
+// bKash, Nagad and Rocket orders are paid by sending money and having the shop confirm it (see the payment
+// settings). They are not a sale until that is confirmed.
+function isWalletOrder(order: Order): boolean {
+  return order.payment_method === "bkash" || order.payment_method === "nagad" || order.payment_method === "rocket";
+}
+
+// Cash on delivery counts as a sale when it is placed. A wallet order does not: a payment that cannot be matched
+// must never show up as revenue. So for a wallet order this reports only that an order is waiting for its payment
+// (no value, no items, nothing a platform could read as a purchase), and the shop's server sends the Purchase to Meta
+// and TikTok itself once the payment has been verified.
 export function trackPurchase(order: Order) {
+  if (isWalletOrder(order)) {
+    pushDataLayer({
+      event: "order_pending_payment",
+      order_id: String(order.id),
+      payment_type: order.payment_method,
+    });
+    return;
+  }
+
   const ga4Items = order.items.map((item) => ({
     item_id: String(item.product_id),
     item_name: item.product_name,
