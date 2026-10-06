@@ -2,15 +2,25 @@
 
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { BRAND, resolveTagline } from "@/lib/brand";
+import { openCookieSettings } from "@/lib/consent";
+import type { FooterColumn } from "@/lib/types";
 import Logo from "./Logo";
 
-const FALLBACK_FOOTER_LINKS = [
-  { label: "Track order", url: "/track-order" },
-  { label: "Shipping policy", url: "/pages/shipping" },
-  { label: "Returns & refunds", url: "/pages/returns" },
-  { label: "FAQs", url: "/faq" },
-  { label: "Contact us", url: "/contact" },
+const FALLBACK_FOOTER_COLUMNS: FooterColumn[] = [
+  {
+    title: "Customer care",
+    items: [
+      { label: "Track order", url: "/track-order" },
+      { label: "Shipping policy", url: "/pages/shipping" },
+      { label: "Returns & refunds", url: "/pages/returns" },
+      { label: "FAQs", url: "/faq" },
+      { label: "Contact us", url: "/contact" },
+    ],
+  },
 ];
+
+// Columns of links plus the About and Get in touch blocks: the grid is as wide as it needs to be.
+const GRID_COLUMNS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
 const FALLBACK_COPYRIGHT_TEXT = "All rights reserved.";
 
@@ -74,20 +84,28 @@ function SocialIcon({ platform }: { platform: string }) {
   );
 }
 
-export default function Footer() {
+// The columns from the admin; an older API that only sends one flat list gets it as a single column.
+function footerColumns(settings: ReturnType<typeof useSiteSettings>["siteSettings"]): FooterColumn[] {
+  if (settings?.footer_columns?.length) return settings.footer_columns;
+  if (settings?.footer_links?.length) return [{ title: "Customer care", items: settings.footer_links }];
+  return FALLBACK_FOOTER_COLUMNS;
+}
+
+// cookieBanner: whether the cookie banner is on, which is when the "Cookie settings" link is shown.
+export default function Footer({ cookieBanner = false }: { cookieBanner?: boolean }) {
   const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
   const about = siteSettings?.footer_about || BRAND.oneLine;
   const tagline = resolveTagline(siteSettings);
   const paymentMethods = siteSettings?.cod_enabled === false ? WALLET_METHODS : [...WALLET_METHODS, "Cash on delivery"];
-  const footerLinks = siteSettings?.footer_links?.length ? siteSettings.footer_links : FALLBACK_FOOTER_LINKS;
+  const columns = footerColumns(siteSettings);
   const socialLinks = siteSettings?.social_links ?? [];
   const copyrightText = siteSettings?.footer_copyright_text ?? FALLBACK_COPYRIGHT_TEXT;
 
   return (
     // A deep ink area: ivory logo, ivory text, champagne for the small accents (never gold text).
     <footer className="bg-deepink text-ivory">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-3 sm:px-6">
+      <div className={`mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 ${GRID_COLUMNS[Math.min(5, columns.length + 2)] ?? "lg:grid-cols-3"}`}>
         <div>
           <Logo variant="ivory" />
           {tagline && <p className="mt-2 text-caption text-champagne">{tagline}</p>}
@@ -110,20 +128,22 @@ export default function Footer() {
           )}
         </div>
 
-        <div>
-          <p className="text-caption font-medium text-champagne">Customer care</p>
-          <ul className="mt-4 space-y-2 text-body text-ivory/80">
-            {footerLinks.map((link) => (
-              <li key={link.url}>
-                {/* A plain <a>, not next/link: these URLs are admin-editable
-                    (site-settings) rather than known at build time. */}
-                <a href={link.url} className="transition-colors hover:text-champagne">
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {columns.map((column, index) => (
+          <div key={`${column.title}-${index}`}>
+            <p className="text-caption font-medium text-champagne">{column.title}</p>
+            <ul className="mt-4 space-y-1 text-body text-ivory/80">
+              {column.items.map((link) => (
+                <li key={link.url}>
+                  {/* A plain <a>, not next/link: these URLs are admin-editable
+                      (site-settings) rather than known at build time. */}
+                  <a href={link.url} className="inline-flex min-h-9 items-center transition-colors hover:text-champagne">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
 
         <div>
           <p className="text-caption font-medium text-champagne">Get in touch</p>
@@ -145,8 +165,19 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-ivory/20 px-4 py-6 text-center text-caption text-ivory/70 sm:px-6">
-        © {new Date().getFullYear()} {siteName}. {copyrightText}
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-ivory/20 px-4 py-4 text-center text-caption text-ivory/70 sm:px-6">
+        <span>
+          © {new Date().getFullYear()} {siteName}. {copyrightText}
+        </span>
+        {cookieBanner && (
+          <button
+            type="button"
+            onClick={openCookieSettings}
+            className="inline-flex min-h-11 items-center underline transition-colors hover:text-champagne"
+          >
+            Cookie settings
+          </button>
+        )}
       </div>
     </footer>
   );

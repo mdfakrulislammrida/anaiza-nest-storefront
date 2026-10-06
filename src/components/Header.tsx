@@ -1,17 +1,18 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import SearchBar from "./SearchBar";
 import Logo from "./Logo";
+import MainNav, { type MenuItem } from "./MainNav";
 import { resolveTagline } from "@/lib/brand";
 import { getCategories } from "@/lib/api";
-import type { CategorySummary } from "@/lib/types";
+import type { CategorySummary, NavLink } from "@/lib/types";
 
-const FALLBACK_NAV_LINKS = [
+const FALLBACK_NAV_LINKS: NavLink[] = [
   { label: "Home", url: "/" },
   { label: "Shop", url: "/shop" },
   { label: "Special prices", url: "/hot-deals" },
@@ -30,7 +31,6 @@ export default function Header({ categories: initialCategories = [] }: { categor
   const tagline = resolveTagline(siteSettings);
   const navLinks = siteSettings?.nav_links?.length ? siteSettings.nav_links : FALLBACK_NAV_LINKS;
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   // Seeded from the categories known at build time, so the menu is in the static HTML; then
   // refreshed once from the API so hiding, reordering or adding a category in the admin shows up
   // without a rebuild. (A category added since the build opens through the /category fallback
@@ -53,52 +53,28 @@ export default function Header({ categories: initialCategories = [] }: { categor
       cancelled = true;
     };
   }, []);
-  const navRef = useRef<HTMLDivElement>(null);
 
   // Admin-controlled: a site-wide switch, plus a per-category "show in menu" flag. Hidden entirely
   // when nothing is left to list, so an empty menu never appears.
   const menuCategories =
     siteSettings?.show_categories_menu === false ? [] : categories.filter((category) => category.show_in_menu !== false);
 
-  useEffect(() => {
-    if (!categoriesOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!navRef.current?.contains(event.target as Node)) setCategoriesOpen(false);
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setCategoriesOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+  // The menu as one list: the admin's items (each with its sub-items), plus the built-in Categories dropdown right
+  // after Shop -- unless "Auto-list all categories under Shop" is on, which puts them under Shop itself.
+  const items: MenuItem[] = navLinks.map((link) => ({
+    label: link.label,
+    url: link.url,
+    children: link.children?.map((child) => ({ label: child.label, url: child.url })),
+  }));
+  if (menuCategories.length > 0 && !siteSettings?.nav_auto_categories) {
+    const categoriesItem: MenuItem = {
+      label: "Categories",
+      children: menuCategories.map((category) => ({ label: category.name, url: `/category/${category.slug}` })),
     };
-  }, [categoriesOpen]);
-
-  const categoriesButton = menuCategories.length > 0 && (
-    <button
-      key="categories-menu"
-      type="button"
-      onClick={() => setCategoriesOpen((open) => !open)}
-      aria-expanded={categoriesOpen}
-      aria-controls="categories-menu-panel"
-      className="flex items-center gap-1 whitespace-nowrap py-1 transition-colors hover:text-navy"
-    >
-      Categories
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        className={`h-3.5 w-3.5 transition-transform ${categoriesOpen ? "rotate-180" : ""}`}
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
-    </button>
-  );
+    const shopIndex = items.findIndex((item) => item.url === "/shop");
+    // No Shop link in the admin's menu: put it last instead.
+    items.splice(shopIndex >= 0 ? shopIndex + 1 : items.length, 0, categoriesItem);
+  }
 
   return (
     <>
@@ -185,46 +161,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
         )}
       </header>
 
-      <div ref={navRef}>
-        <nav className="border-b border-t border-linen bg-ivory">
-          <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-4 py-2 text-body font-medium text-charcoal sm:px-6">
-            {navLinks.map((link) => (
-              <Fragment key={link.url}>
-                {/* A plain <a>, not next/link: these URLs are admin-editable
-                    (site-settings) rather than known at build time, and may be
-                    relative paths or full external URLs. */}
-                <a href={link.url} className="whitespace-nowrap py-1 transition-colors hover:text-navy">
-                  {link.label}
-                </a>
-                {/* Right after Shop, so it is on screen on a phone rather than at the end of the scrolling row. */}
-                {link.url === "/shop" && categoriesButton}
-              </Fragment>
-            ))}
-            {/* No Shop link in the admin's menu: put it last instead. */}
-            {!navLinks.some((link) => link.url === "/shop") && categoriesButton}
-          </div>
-        </nav>
-
-        {/* Always rendered, merely hidden while closed, so the category links are in the static HTML
-            that crawlers read -- not only after someone opens the menu. */}
-        {menuCategories.length > 0 && (
-          <div id="categories-menu-panel" hidden={!categoriesOpen} className="border-b border-linen bg-ivory">
-            <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 px-4 py-2 sm:grid-cols-3 sm:px-6 lg:grid-cols-4">
-              {menuCategories.map((category) => (
-                <li key={category.id}>
-                  {/* Plain <a>: category pages are static files, so a real navigation. */}
-                  <a
-                    href={`/category/${category.slug}`}
-                    className="flex min-h-11 items-center text-body text-charcoal transition-colors hover:text-navy"
-                  >
-                    {category.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <MainNav items={items} />
     </>
   );
 }

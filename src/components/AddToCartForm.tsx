@@ -127,7 +127,7 @@ export default function AddToCartForm({
           up, where there's no need for it. Carries its own compact quantity
           stepper on mobile (desktop keeps using the in-flow one above,
           unchanged) so quantity can be adjusted without scrolling. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(42,38,34,0.08)] sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:shadow-none sm:flex-row">
+      <div data-bottom-bar className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(42,38,34,0.08)] sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:shadow-none sm:flex-row">
         <div className="flex items-center justify-between gap-4 sm:hidden">
           {/* The bar hides the price and the option pills on a phone's first screen, so it states
               both: the price being paid and which option is selected. */}

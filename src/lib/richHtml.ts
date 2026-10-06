@@ -6,10 +6,10 @@
 // wrapTables(): the wrapper scrolls sideways on a narrow screen while the
 // table keeps a readable minimum width, so the page itself never overflows.
 export const RICH_TABLE_CLASSES =
-  "[&_.table-scroll]:my-4 [&_.table-scroll]:overflow-x-auto [&_.table-scroll]:rounded-lg [&_.table-scroll]:border [&_.table-scroll]:border-line " +
+  "[&_.table-scroll]:my-4 [&_.table-scroll]:overflow-x-auto [&_.table-scroll]:rounded-lg [&_.table-scroll]:border [&_.table-scroll]:border-linen " +
   "[&_table]:w-full [&_table]:min-w-[28rem] [&_table]:border-collapse [&_table]:text-left " +
-  "[&_th]:bg-pill [&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold [&_th]:text-ink " +
-  "[&_td]:border-t [&_td]:border-line [&_td]:px-3 [&_td]:py-2";
+  "[&_th]:bg-linen [&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold [&_th]:text-charcoal " +
+  "[&_td]:border-t [&_td]:border-linen [&_td]:px-3 [&_td]:py-2";
 
 // Wraps every <table> in a scroll container.
 export function wrapTables(html: string): string {

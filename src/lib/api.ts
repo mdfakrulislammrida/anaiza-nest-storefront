@@ -11,6 +11,7 @@ import type {
   CategoryDetail,
   CategorySummary,
   ContactSubmissionPayload,
+  CookieConsentSettings,
   CorporateEnquiryPayload,
   CreateOrderPayload,
   Faq,
@@ -272,6 +273,11 @@ export async function getMarketingSettings(): Promise<MarketingSetting> {
 
 export async function getPaymentSettings(): Promise<PaymentSetting> {
   const { data } = await apiFetch<{ data: PaymentSetting }>("/payment-settings");
+  return data;
+}
+
+export async function getCookieConsentSettings(): Promise<CookieConsentSettings> {
+  const { data } = await apiFetch<{ data: CookieConsentSettings }>("/cookie-consent");
   return data;
 }
 

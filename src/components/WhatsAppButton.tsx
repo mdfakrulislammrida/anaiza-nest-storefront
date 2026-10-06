@@ -21,8 +21,12 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noreferrer noopener"
       aria-label="Chat with us on WhatsApp"
-      className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-champagne text-navy transition-transform hover:scale-105 sm:bottom-5 ${
-        isProductPage ? "bottom-40" : "bottom-5"
+      // --cookie-top is how far the cookie banner reaches up from the bottom of the screen (0 when it is not
+      // showing), so this bubble sits above it instead of behind it.
+      className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-champagne text-navy transition-transform hover:scale-105 sm:bottom-[max(1.25rem,calc(var(--cookie-top,0px)+0.75rem))] ${
+        isProductPage
+          ? "bottom-[max(10rem,calc(var(--cookie-top,0px)+0.75rem))]"
+          : "bottom-[max(1.25rem,calc(var(--cookie-top,0px)+0.75rem))]"
       }`}
     >
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">

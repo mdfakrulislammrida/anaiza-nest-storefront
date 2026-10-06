@@ -16,5 +16,12 @@ export default function UtmCapture() {
     captureUtmParams(window.location.search);
   }, [pathname]);
 
+  // A visitor who allows marketing after landing on a tagged link still gets credited for it.
+  useEffect(() => {
+    const onConsent = () => captureUtmParams(window.location.search);
+    window.addEventListener("anaiza:consent", onConsent);
+    return () => window.removeEventListener("anaiza:consent", onConsent);
+  }, []);
+
   return null;
 }

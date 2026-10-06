@@ -11,7 +11,7 @@ import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import PopupManager from "@/components/PopupManager";
-import { getCategories, getMarketingSettings, getSiteSettings } from "@/lib/api";
+import { getCategories, getCookieConsentSettings, getMarketingSettings, getSiteSettings } from "@/lib/api";
 import { BRAND } from "@/lib/brand";
 import { SITE_URL } from "@/lib/config";
 import { siteJsonLd } from "@/lib/jsonld";
@@ -19,6 +19,7 @@ import { siteRobots } from "@/lib/seo";
 import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
 import RouteChangeTracker from "@/components/RouteChangeTracker";
 import UtmCapture from "@/components/UtmCapture";
+import CookieConsent from "@/components/CookieConsent";
 
 // Brand kit type: Fraunces 300/400/500 for headings (italic 300 only for the one emotional line),
 // Inter 400/500/600 for text. Both are variable fonts, so every weight the kit uses (300/400/500 and 400/500/600) is one file each.
@@ -118,6 +119,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // this build-time copy only needs to be roughly right, not live.
   const siteSettings = await getSiteSettings().catch(() => null);
   const marketing = await getMarketingSettings().catch(() => null);
+  // The cookie banner's mode and on/off switch are built into the page head (they decide what loads and when), so
+  // changing them needs a rebuild; its wording refreshes on its own.
+  const cookieConsent = await getCookieConsentSettings().catch(() => null);
   // The header's Categories menu is built from the categories as of this build; a category added
   // later is linked only after the next build, because its page doesn't exist until then.
   const categories = await getCategories().catch(() => []);
@@ -132,10 +136,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd(siteSettings)) }}
         />
-        <MarketingHeadScripts marketing={marketing} />
+        <MarketingHeadScripts marketing={marketing} consent={cookieConsent} />
       </head>
       <body className="flex min-h-full flex-col bg-ivory text-charcoal">
-        <MarketingBodyNoscript marketing={marketing} />
+        <MarketingBodyNoscript marketing={marketing} consent={cookieConsent} />
         <RouteChangeTracker />
         <UtmCapture />
         <SiteSettingsProvider initialSettings={siteSettings}>
@@ -145,10 +149,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <TopPromoBar />
                 <Header categories={categories} />
                 <main className="flex-1">{children}</main>
-                <Footer />
+                <Footer cookieBanner={Boolean(cookieConsent?.enabled)} />
                 <CartDrawer />
                 <WhatsAppButton />
                 <PopupManager />
+                <CookieConsent initial={cookieConsent} />
               </WishlistProvider>
             </CartProvider>
           </AuthProvider>

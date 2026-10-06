@@ -19,6 +19,7 @@ import {
 import SearchableSelect from "./SearchableSelect";
 import Seal from "./Seal";
 import WalletPaymentPanel from "./WalletPaymentPanel";
+import { marketingAllowed } from "@/lib/consent";
 import { isWalletMethod, normalizeBdNumber, walletFieldProblems, type WalletMethod } from "@/lib/payment";
 import { CTA } from "@/lib/brand";
 import type { CreateOrderPayload, PaymentMethod, PaymentSetting } from "@/lib/types";
@@ -206,6 +207,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
         : {}),
       gift_note: String(form.get("gift_note") ?? "") || null,
       is_gift: isGift,
+      marketing_consent: marketingAllowed(),
       gift_message: isGift ? giftMessage.trim() || null : null,
       items: items.map((item) => ({
         product_id: item.productId,
@@ -605,7 +607,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
                 type="submit"
                 form="checkout-form"
                 disabled={submitting}
-                className="w-full flex-1 rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full flex-1 scroll-mb-[calc(var(--cookie-top,0px)+1rem)] rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? "Placing your order..." : paymentMethod === "cod" ? CTA.order : "Place order"}
               </button>

@@ -208,6 +208,9 @@ export interface CreateOrderPayload {
   // Wallet payments only: the number paid from and the transaction ID, checked by hand by the shop.
   payment_sender_number?: string;
   payment_trx_id?: string;
+  // Whether the visitor allowed marketing cookies when they ordered. In opt-in cookie mode the server only
+  // sends the sale to Meta and TikTok when this is true.
+  marketing_consent?: boolean;
   items: OrderItemPayload[];
   utm_source?: string;
   utm_medium?: string;
@@ -344,6 +347,23 @@ export interface Faq {
 export interface NavLink {
   label: string;
   url: string;
+  // Header items only: one level of sub-items (a dropdown on desktop, an accordion on phones).
+  children?: NavLink[];
+}
+
+export interface FooterColumn {
+  title: string;
+  items: NavLink[];
+}
+
+// The cookie banner, as the admin set it up.
+export interface CookieConsentSettings {
+  enabled: boolean;
+  mode: "notice" | "opt_in";
+  banner_text: string;
+  privacy_url: string | null;
+  privacy_label: string;
+  labels: { accept: string; reject: string; customize: string; save: string };
 }
 
 export interface SocialLink {
@@ -398,8 +418,12 @@ export interface SiteSetting {
   promo_text: string;
   // Master switch for the header's Categories menu (absent on an older API = on).
   show_categories_menu?: boolean;
+  // True when every menu category is listed under the Shop item (the API has already put them there).
+  nav_auto_categories?: boolean;
   nav_links: NavLink[];
   footer_about: string;
+  // Up to three titled link columns; absent on an older API, which sends footer_links instead.
+  footer_columns?: FooterColumn[];
   footer_links: NavLink[];
   social_links: SocialLink[];
   footer_copyright_text: string;

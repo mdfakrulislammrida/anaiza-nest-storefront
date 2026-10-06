@@ -1,3 +1,5 @@
+import { marketingAllowed } from "./consent";
+
 const STORAGE_KEY = "anaiza-utm-attribution";
 const EXPIRY_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -17,6 +19,8 @@ interface StoredAttribution extends UtmValues {
 // the customer back to buy.
 export function captureUtmParams(search: string): void {
   if (typeof window === "undefined" || !search) return;
+  // In opt-in cookie mode nothing is stored until the visitor allows marketing.
+  if (!marketingAllowed()) return;
 
   const params = new URLSearchParams(search);
   const values: UtmValues = {};

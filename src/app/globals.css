@@ -191,3 +191,11 @@ h4 {
 @utility shadow-warm {
   box-shadow: 0 12px 28px -14px rgba(42, 38, 34, 0.35);
 }
+
+/* The product page's Add to Cart bar is fixed to the bottom of a phone screen. Its parent spaces children with
+   a bottom margin, which would lift a fixed bar off the bottom edge, so the bar ignores it there. */
+@media (max-width: 639px) {
+  [data-bottom-bar] {
+    margin-bottom: 0;
+  }
+}
