@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ArticleGrid from "./ArticleGrid";
+import EmptyState from "./EmptyState";
 import type { ArticleListResponse } from "@/lib/types";
 
 // Suspense fallback around BlogListing -- see ProductListingFallback for why
@@ -21,7 +22,12 @@ export default function BlogListingFallback({ result }: { result: ArticleListRes
         {result.data.length > 0 ? (
           <ArticleGrid articles={result.data} />
         ) : (
-          <p className="py-20 text-center text-stone">No articles published yet — check back soon.</p>
+          <EmptyState
+            title="No articles yet"
+            text="We have not published anything here yet. Please check back soon."
+            linkHref="/shop"
+            linkLabel="See the collection"
+          />
         )}
       </div>
     </div>

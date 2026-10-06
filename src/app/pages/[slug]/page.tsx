@@ -3,14 +3,15 @@ import type { Metadata } from "next";
 import { ApiError, getPage, getPages } from "@/lib/api";
 import { breadcrumbJsonLd, pageMetaFromCms } from "@/lib/jsonld";
 import CmsPageClient from "@/components/CmsPageClient";
+import NotFound from "@/app/not-found";
+import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
 
 // Static export needs every CMS page slug enumerated at build time. A slug
 // that doesn't appear here (added after this build) isn't 404 though --
 // public/.htaccess falls back to the client-only shell at /pages for any
 // /pages/<slug> request that doesn't match a file this generated.
 export async function generateStaticParams() {
-  const pages = await getPages();
-  return pages.map((page) => ({ slug: page.slug }));
+  return staticParamsOrPlaceholder(await getPages());
 }
 
 export async function generateMetadata({
@@ -19,6 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === PLACEHOLDER_SLUG) return PLACEHOLDER_METADATA;
   const page = await getPage(slug).catch(() => null);
   if (!page) return {};
 
@@ -44,6 +46,8 @@ export default async function CmsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  // The empty-catalogue placeholder: the calm not-found page, rendered into the HTML itself (noindex via generateMetadata).
+  if (slug === PLACEHOLDER_SLUG) return <NotFound />;
 
   const page = await getPage(slug).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) {

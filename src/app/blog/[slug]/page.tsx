@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { ApiError, getAllArticles, getArticle } from "@/lib/api";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import BlogDetailClient from "@/components/BlogDetailClient";
+import NotFound from "@/app/not-found";
+import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
 
 // Static export needs every published article slug enumerated at build
 // time. A slug that doesn't appear here (published after the last build)
@@ -10,18 +12,7 @@ import BlogDetailClient from "@/components/BlogDetailClient";
 // at /article for any /blog/<slug> request that doesn't match a file this
 // generated.
 export async function generateStaticParams() {
-  const articles = await getAllArticles();
-
-  if (articles.length === 0) {
-    // output: "export" requires at least one route to be generated for a
-    // dynamic segment, but a brand new blog legitimately starts with zero
-    // articles. This placeholder slug is never a real article's, so it
-    // renders the same notFound() below as any other unknown slug -- once
-    // real articles exist, this branch stops being hit.
-    return [{ slug: "__placeholder__" }];
-  }
-
-  return articles.map((article) => ({ slug: article.slug }));
+  return staticParamsOrPlaceholder(await getAllArticles());
 }
 
 export async function generateMetadata({
@@ -30,6 +21,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === PLACEHOLDER_SLUG) return PLACEHOLDER_METADATA;
   const article = await getArticle(slug).catch(() => null);
   if (!article) return {};
 
@@ -59,6 +51,8 @@ export default async function BlogArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  // The empty-catalogue placeholder: the calm not-found page, rendered into the HTML itself (noindex via generateMetadata).
+  if (slug === PLACEHOLDER_SLUG) return <NotFound />;
 
   const article = await getArticle(slug).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) {

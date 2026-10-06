@@ -32,13 +32,21 @@ export default async function HotDealsPage() {
 
       <Suspense
         fallback={
-          <ProductListingFallback result={initialResult} breadcrumbLabel="Special prices" basePath="/hot-deals" />
+          <ProductListingFallback result={initialResult} breadcrumbLabel="Special prices"
+            basePath="/hot-deals"
+            emptyTitle="No special prices right now"
+            emptyText="Nothing is marked down at the moment. Have a look at the full collection, or check back soon."
+            emptyLink={{ href: "/shop", label: "See all gifts" }}
+          />
         }
       >
         <ProductListing
           fixedParams={{ on_sale: true }}
           breadcrumbLabel="Special prices"
           initialResult={initialResult}
+          emptyTitle="No special prices right now"
+          emptyText="Nothing is marked down at the moment. Have a look at the full collection, or check back soon."
+          emptyLink={{ href: "/shop", label: "See all gifts" }}
         />
       </Suspense>
     </div>

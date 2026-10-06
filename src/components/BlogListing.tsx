@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getArticles } from "@/lib/api";
 import ArticleGrid from "./ArticleGrid";
+import EmptyState from "./EmptyState";
 import type { ArticleListResponse } from "@/lib/types";
 
 export default function BlogListing({
@@ -19,6 +20,7 @@ export default function BlogListing({
 
   const [result, setResult] = useState<ArticleListResponse | null>(initialResult ?? null);
   const [loading, setLoading] = useState(!initialResult);
+  const [failed, setFailed] = useState(false);
   const refreshQuietlyOnce = useRef(Boolean(initialResult));
 
   useEffect(() => {
@@ -30,7 +32,13 @@ export default function BlogListing({
 
     getArticles({ page: currentPage, per_page: 12 })
       .then((res) => {
-        if (!cancelled) setResult(res);
+        if (!cancelled) {
+          setResult(res);
+          setFailed(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
       })
       .finally(() => {
         if (!cancelled && !quiet) setLoading(false);
@@ -68,7 +76,16 @@ export default function BlogListing({
         ) : articles.length > 0 ? (
           <ArticleGrid articles={articles} dimmed={loading} />
         ) : (
-          <p className="py-20 text-center text-stone">No articles published yet — check back soon.</p>
+          <EmptyState
+            title={failed && !result ? "We could not load the articles" : "No articles yet"}
+            text={
+              failed && !result
+                ? "Something went wrong on our side. Please refresh in a moment."
+                : "We have not published anything here yet. Please check back soon."
+            }
+            linkHref="/shop"
+            linkLabel="See the collection"
+          />
         )}
 
         {meta && meta.last_page > 1 && (

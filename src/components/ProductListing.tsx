@@ -8,6 +8,7 @@ import { trackViewItemList } from "@/lib/tracking";
 import ProductGrid from "./ProductGrid";
 import PriceFilterPanel from "./PriceFilterPanel";
 import SortDropdown from "./SortDropdown";
+import EmptyState from "./EmptyState";
 import type { ProductListParams, ProductListResponse, ProductSort } from "@/lib/types";
 
 const VALID_SORTS: ProductSort[] = ["newest", "price_asc", "price_desc"];
@@ -16,9 +17,16 @@ export default function ProductListing({
   fixedParams,
   breadcrumbLabel,
   initialResult,
+  emptyTitle,
+  emptyText,
+  emptyLink,
 }: {
   fixedParams?: Partial<ProductListParams>;
   breadcrumbLabel: string;
+  // What to say when the list has nothing in it (no filters applied), e.g. a new shop or no special prices.
+  emptyTitle?: string;
+  emptyText?: string;
+  emptyLink?: { href: string; label: string };
   // First page (default sort, no filters) fetched at build time by the server
   // page -- the same data the static fallback already put in the HTML.
   initialResult?: ProductListResponse | null;
@@ -40,6 +48,7 @@ export default function ProductListing({
 
   const [result, setResult] = useState<ProductListResponse | null>(initialResult ?? null);
   const [loading, setLoading] = useState(!initialResult);
+  const [failed, setFailed] = useState(false);
 
   // The build-time data only describes the unfiltered first page, so it can
   // stand in for the first fetch only when the URL asks for exactly that.
@@ -67,8 +76,12 @@ export default function ProductListing({
       .then((res) => {
         if (!cancelled) {
           setResult(res);
+          setFailed(false);
           trackViewItemList(res.data, breadcrumbLabel);
         }
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
       })
       .finally(() => {
         if (!cancelled && !quiet) setLoading(false);
@@ -101,6 +114,46 @@ export default function ProductListing({
   const products = result?.data ?? [];
   const meta = result?.meta;
   const showSkeleton = loading && !result;
+  const filtersActive = Boolean(search) || minPrice !== undefined || maxPrice !== undefined;
+
+  // Nothing to filter or sort: say so calmly instead of showing a toolbar over an empty grid.
+  if (!showSkeleton && !result && failed) {
+    return (
+      <div>
+      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
+        <Link href="/" className="hover:text-navy">
+          Home
+        </Link>
+        <span className="mx-1.5">/</span>
+        <span className="text-charcoal">{breadcrumbLabel}</span>
+      </nav>
+        <EmptyState
+          title="We could not load the collection"
+          text="Something went wrong on our side. Please refresh in a moment, or get in touch and we will help you."
+        />
+      </div>
+    );
+  }
+
+  if (!showSkeleton && products.length === 0 && !filtersActive) {
+    return (
+      <div>
+      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
+        <Link href="/" className="hover:text-navy">
+          Home
+        </Link>
+        <span className="mx-1.5">/</span>
+        <span className="text-charcoal">{breadcrumbLabel}</span>
+      </nav>
+        <EmptyState
+          title={emptyTitle}
+          text={emptyText}
+          linkHref={emptyLink?.href}
+          linkLabel={emptyLink?.label}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>

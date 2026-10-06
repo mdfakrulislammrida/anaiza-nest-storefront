@@ -1,6 +1,7 @@
 import Link from "next/link";
 import PriceFilterPanel from "./PriceFilterPanel";
 import ProductGrid from "./ProductGrid";
+import EmptyState from "./EmptyState";
 import type { ProductListResponse } from "@/lib/types";
 
 // Rendered as the <Suspense fallback> around ProductListing. ProductListing
@@ -14,13 +15,35 @@ export default function ProductListingFallback({
   result,
   breadcrumbLabel,
   basePath,
+  emptyTitle,
+  emptyText,
+  emptyLink,
 }: {
   result: ProductListResponse | null;
   breadcrumbLabel: string;
   basePath: string;
+  emptyTitle?: string;
+  emptyText?: string;
+  emptyLink?: { href: string; label: string };
 }) {
   // The build-time fetch failed: same placeholder as before this existed.
   if (!result) return <div className="py-20 text-center text-stone">One moment…</div>;
+
+  // An empty list in the static HTML is an empty shelf (the static view never has filters).
+  if (result.data.length === 0) {
+    return (
+      <div>
+      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
+        <Link href="/" className="hover:text-navy">
+          Home
+        </Link>
+        <span className="mx-1.5">/</span>
+        <span className="text-charcoal">{breadcrumbLabel}</span>
+      </nav>
+        <EmptyState title={emptyTitle} text={emptyText} linkHref={emptyLink?.href} linkLabel={emptyLink?.label} />
+      </div>
+    );
+  }
 
   const buildHref = (overrides: { min_price?: number; max_price?: number }) => {
     const params = new URLSearchParams();
@@ -51,11 +74,7 @@ export default function ProductListingFallback({
               <p className="text-body text-stone">{result.meta.total} products</p>
             </div>
 
-            {result.data.length > 0 ? (
-              <ProductGrid products={result.data} />
-            ) : (
-              <p className="py-20 text-center text-stone">Nothing matches those filters yet. Try loosening them, or let the Gift finder help you find the right gift.</p>
-            )}
+            <ProductGrid products={result.data} />
           </div>
         </div>
       </div>

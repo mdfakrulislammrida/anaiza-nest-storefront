@@ -3,14 +3,15 @@ import type { Metadata } from "next";
 import { ApiError, getAllProducts, getProduct, getProducts, getSiteSettings } from "@/lib/api";
 import { breadcrumbJsonLd, faqPageJsonLd, productJsonLd } from "@/lib/jsonld";
 import ProductDetailClient from "@/components/ProductDetailClient";
+import NotFound from "@/app/not-found";
+import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
 
 // Static export needs every product slug enumerated at build time. A slug
 // that doesn't appear here (added after this build) isn't 404 though --
 // public/.htaccess falls back to the client-only shell at /product for any
 // /product/<slug> request that doesn't match a file this generated.
 export async function generateStaticParams() {
-  const products = await getAllProducts();
-  return products.map((product) => ({ slug: product.slug }));
+  return staticParamsOrPlaceholder(await getAllProducts());
 }
 
 export async function generateMetadata({
@@ -19,6 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === PLACEHOLDER_SLUG) return PLACEHOLDER_METADATA;
   const product = await getProduct(slug).catch(() => null);
   if (!product) return {};
 
@@ -47,6 +49,8 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  // The empty-catalogue placeholder: the calm not-found page, rendered into the HTML itself (noindex via generateMetadata).
+  if (slug === PLACEHOLDER_SLUG) return <NotFound />;
 
   const product = await getProduct(slug).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) {

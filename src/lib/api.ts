@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchJsonStrict } from "./buildFetch";
 import type {
   ApiValidationError,
   Article,
@@ -40,7 +41,34 @@ export class ApiError extends Error {
   }
 }
 
+// Server-side code only runs at build time here (the site is a static export), so "production on the
+// server" means "the build is reading the API". There, a failed read must stop the build -- see
+// buildFetch.ts -- instead of letting a page's own .catch() turn it into an empty list. `next dev`
+// stays forgiving.
+const IS_BUILD = typeof window === "undefined" && process.env.NODE_ENV === "production";
+
+function abortBuild(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(
+    `\n[anaiza-nest build] ${message}\n[anaiza-nest build] Stopping: this site is built from the API, so it is not built from a partial answer.\n`,
+  );
+  process.exit(1);
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+
+  if (IS_BUILD && method === "GET") {
+    try {
+      return (await fetchJsonStrict(`${API_BASE_URL}${path}`, {
+        ...init,
+        headers: { Accept: "application/json", ...init?.headers },
+      })) as T;
+    } catch (error) {
+      abortBuild(error);
+    }
+  }
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {

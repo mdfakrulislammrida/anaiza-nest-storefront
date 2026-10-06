@@ -55,6 +55,9 @@ export default function CategoryDetail({
               result={initialProducts}
               breadcrumbLabel={category.name}
               basePath={`/category/${category.slug}`}
+              emptyTitle="Nothing in this category just yet"
+              emptyText="We are still setting this category out. Please check back soon, or have a look at the rest of the collection."
+              emptyLink={{ href: "/shop", label: "See all gifts" }}
             />
           }
         >
@@ -62,6 +65,9 @@ export default function CategoryDetail({
             fixedParams={{ category: category.slug }}
             breadcrumbLabel={category.name}
             initialResult={initialProducts}
+            emptyTitle="Nothing in this category just yet"
+              emptyText="We are still setting this category out. Please check back soon, or have a look at the rest of the collection."
+              emptyLink={{ href: "/shop", label: "See all gifts" }}
           />
         </Suspense>
       </div>

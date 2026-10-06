@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { ApiError, getCategories, getCategory, getProducts } from "@/lib/api";
 import { breadcrumbJsonLd, categoryMetaFromApi, faqPageJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import CategoryDetailClient from "@/components/CategoryDetailClient";
+import NotFound from "@/app/not-found";
+import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
 
 // Static export needs every category slug enumerated at build time. A slug
 // that doesn't appear here (added after this build) isn't 404 though -- see
@@ -10,8 +12,7 @@ import CategoryDetailClient from "@/components/CategoryDetailClient";
 // categories don't have a flat-shell fallback yet since there are far fewer
 // of them and they change far less often than products.
 export async function generateStaticParams() {
-  const categories = await getCategories();
-  return categories.map((category) => ({ slug: category.slug }));
+  return staticParamsOrPlaceholder(await getCategories());
 }
 
 export async function generateMetadata({
@@ -20,6 +21,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === PLACEHOLDER_SLUG) return PLACEHOLDER_METADATA;
   const category = await getCategory(slug).catch(() => null);
   if (!category) return {};
 
@@ -45,6 +47,8 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  // The empty-catalogue placeholder: the calm not-found page, rendered into the HTML itself (noindex via generateMetadata).
+  if (slug === PLACEHOLDER_SLUG) return <NotFound />;
 
   const category = await getCategory(slug).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) {
