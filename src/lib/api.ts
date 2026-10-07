@@ -12,6 +12,7 @@ import type {
   CategorySummary,
   ContactSubmissionPayload,
   CookieConsentSettings,
+  ReviewsPage,
   CorporateEnquiryPayload,
   CreateOrderPayload,
   Faq,
@@ -220,6 +221,25 @@ export async function getProduct(slug: string): Promise<Product> {
     `/products/${encodeURIComponent(slug)}`,
   );
   return data;
+}
+
+export async function getProductReviews(slug: string, page = 1): Promise<ReviewsPage> {
+  return apiFetch<ReviewsPage>(`/products/${encodeURIComponent(slug)}/reviews?page=${page}`);
+}
+
+// A multipart form (the photos are files), so it is sent without the JSON content type. A signed-in customer's token
+// lets the server find the order for them; anyone else gives an order number and phone number in the form.
+export async function submitProductReview(slug: string, form: FormData, token?: string | null): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(slug)}/reviews`, {
+    method: "POST",
+    body: form,
+    headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as ApiValidationError | null;
+    throw new ApiError(body?.message ?? `Request failed with status ${res.status}`, res.status, body?.errors);
+  }
 }
 
 export async function createOrder(payload: CreateOrderPayload): Promise<Order> {

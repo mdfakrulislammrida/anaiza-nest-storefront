@@ -1,4 +1,4 @@
-import type { Article, CategoryDetail, DayRange, Faq, Page, Product, ProductSpec, SiteSetting, StorePolicy } from "./types";
+import type { Article, CategoryDetail, DayRange, Faq, Page, Product, ProductSpec, ReviewsPage, SiteSetting, StorePolicy } from "./types";
 import { SITE_URL } from "./config";
 import { BD_DIVISIONS } from "./bangladesh-geography";
 
@@ -180,7 +180,34 @@ function specProperties(specs: ProductSpec[] | undefined) {
   };
 }
 
-export function productJsonLd(product: Product, policy?: StorePolicy | null) {
+// aggregateRating and review come only from approved reviews of real purchases, and only when there is at least one. A
+// product with none carries neither, so nothing in the markup ever promises a rating that does not exist.
+export function reviewProperties(reviews?: ReviewsPage | null) {
+  const count = reviews?.summary.rating_count ?? 0;
+  const average = reviews?.summary.rating_average ?? null;
+
+  if (!reviews || count < 1 || average === null || reviews.data.length === 0) return {};
+
+  return {
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: average,
+      reviewCount: count,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    review: reviews.data.map((review) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: review.name },
+      ...(review.created_at ? { datePublished: review.created_at.slice(0, 10) } : {}),
+      ...(review.title ? { name: review.title } : {}),
+      reviewBody: review.body,
+      reviewRating: { "@type": "Rating", ratingValue: review.rating, bestRating: 5, worstRating: 1 },
+    })),
+  };
+}
+
+export function productJsonLd(product: Product, policy?: StorePolicy | null, reviews?: ReviewsPage | null) {
   const image = product.images?.[0]?.url ?? product.seo?.og_image ?? undefined;
   const url = absoluteUrl(`/product/${product.slug}`);
 
@@ -230,7 +257,7 @@ export function productJsonLd(product: Product, policy?: StorePolicy | null) {
     ...(image ? { image } : {}),
     url,
     offers,
-    // No aggregateRating / review: the API has no real product review data.
+    ...reviewProperties(reviews),
   };
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getProduct, getProducts } from "@/lib/api";
 import { trackViewItem } from "@/lib/tracking";
 import ProductDetail from "./ProductDetail";
-import type { Product } from "@/lib/types";
+import type { Product, ReviewsPage } from "@/lib/types";
 
 // Seeded from the statically-built product/related data, so first render is
 // already the real page -- no loading state. On mount we silently refetch
@@ -13,9 +13,11 @@ import type { Product } from "@/lib/types";
 export default function ProductDetailClient({
   initialProduct,
   initialRelated,
+  initialReviews = null,
 }: {
   initialProduct: Product;
   initialRelated: Product[];
+  initialReviews?: ReviewsPage | null;
 }) {
   const [product, setProduct] = useState(initialProduct);
   const [related, setRelated] = useState(initialRelated);
@@ -49,5 +51,5 @@ export default function ProductDetailClient({
     };
   }, [initialProduct.slug]);
 
-  return <ProductDetail product={product} related={related} />;
+  return <ProductDetail product={product} related={related} reviews={initialReviews} />;
 }

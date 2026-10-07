@@ -14,12 +14,23 @@ import Seal from "@/components/Seal";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { formatDays, resolvePolicy } from "@/lib/policy";
 import { RICH_TABLE_CLASSES, wrapTables } from "@/lib/richHtml";
-import type { Product, ProductVariant } from "@/lib/types";
+import ProductReviews from "@/components/ProductReviews";
+import RatingSummary from "@/components/RatingSummary";
+import type { Product, ProductVariant, ReviewsPage } from "@/lib/types";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper, so both render identical
 // markup regardless of which one is currently supplying the data.
-export default function ProductDetail({ product, related }: { product: Product; related: Product[] }) {
+export default function ProductDetail({
+  product,
+  related,
+  reviews = null,
+}: {
+  product: Product;
+  related: Product[];
+  // The first page of approved reviews, built into the page (null where it is not known, such as the client-only shell).
+  reviews?: ReviewsPage | null;
+}) {
   const { siteSettings } = useSiteSettings();
   const policy = resolvePolicy(siteSettings);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
@@ -65,6 +76,9 @@ export default function ProductDetail({ product, related }: { product: Product; 
         <div>
           <p className="text-caption text-stone">SKU: {selectedVariant?.sku ?? product.sku}</p>
           <h1 className="mt-2 font-serif text-charcoal text-h1">{product.name}</h1>
+          <div className="mt-2">
+            <RatingSummary average={product.rating_average} count={product.rating_count} href="#reviews" />
+          </div>
           {product.summary && (
             <ClampedText text={product.summary} className="mt-4 max-w-xl text-body leading-relaxed text-charcoal/80" />
           )}
@@ -169,6 +183,8 @@ export default function ProductDetail({ product, related }: { product: Product; 
           <p className="whitespace-pre-line text-body leading-relaxed text-charcoal/80">{careInstructions}</p>
         </section>
       )}
+
+      <ProductReviews slug={product.slug} initial={reviews} />
 
       {product.faqs && product.faqs.length > 0 && (
         <section className="mt-16 max-w-3xl">

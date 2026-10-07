@@ -40,7 +40,7 @@ export default function OrderConfirmationPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrder(parsed);
       if (parsed && !alreadyTrackedPurchase(parsed.id)) {
-        trackPurchase(parsed);
+        void trackPurchase(parsed);
       }
     } catch {
       setOrder(null);

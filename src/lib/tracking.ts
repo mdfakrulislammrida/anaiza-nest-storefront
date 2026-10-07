@@ -1,6 +1,7 @@
 import type { CartAddableProduct } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import type { Order, PaymentMethod, Product } from "./types";
+import { buildUserData, type MetaUserData } from "./userData.ts";
 
 // All three platforms' scripts are injected conditionally (only when an
 // admin has actually set that ID -- see layout.tsx), so every function here
@@ -218,7 +219,20 @@ function isWalletOrder(order: Order): boolean {
 // must never show up as revenue. So for a wallet order this reports only that an order is waiting for its payment
 // (no value, no items, nothing a platform could read as a purchase), and the shop's server sends the Purchase to Meta
 // and TikTok itself once the payment has been verified.
-export function trackPurchase(order: Order) {
+// Whether marketing cookies and pixels may be used right now: the visitor's saved choice, or the default for the cookie
+// mode (everything in notice mode, nothing in opt-in mode until they choose). Mirrors marketingAllowed() in consent.ts.
+function marketingAllowedNow(): boolean {
+  return typeof window === "undefined" ? false : window.anaizaConsent ? window.anaizaConsent.effective().m : true;
+}
+
+// Meta advanced matching: the same hashed fields as the server's Purchase event, handed to the pixel just before it.
+function fbqAdvancedMatching(userData: MetaUserData) {
+  const pixelId = typeof window === "undefined" ? null : (window.anaizaConsent?.config?.meta ?? null);
+  if (!pixelId || typeof window.fbq !== "function") return;
+  window.fbq("init", pixelId, userData);
+}
+
+export async function trackPurchase(order: Order): Promise<void> {
   if (isWalletOrder(order)) {
     pushDataLayer({
       event: "order_pending_payment",
@@ -227,6 +241,10 @@ export function trackPurchase(order: Order) {
     });
     return;
   }
+
+  // Enhanced conversions and advanced matching, only when the visitor's cookie choice allows marketing. Hashed in the
+  // browser, so no raw email, phone number or name is ever pushed.
+  const userData = marketingAllowedNow() ? await buildUserData(order.customer).catch(() => null) : null;
 
   const ga4Items = order.items.map((item) => ({
     item_id: String(item.product_id),
@@ -250,7 +268,9 @@ export function trackPurchase(order: Order) {
       shipping: order.delivery_fee,
       items: ga4Items,
     },
+    ...(userData ? { user_data: userData.google } : {}),
   });
+  if (userData) fbqAdvancedMatching(userData.meta);
   fbqTrack(
     "Purchase",
     {

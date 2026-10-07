@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ApiError, getAllProducts, getProduct, getProducts, getSiteSettings } from "@/lib/api";
+import { ApiError, getAllProducts, getProduct, getProductReviews, getProducts, getSiteSettings } from "@/lib/api";
 import { breadcrumbJsonLd, faqPageJsonLd, productJsonLd } from "@/lib/jsonld";
 import ProductDetailClient from "@/components/ProductDetailClient";
 import NotFound from "@/app/not-found";
@@ -62,6 +62,9 @@ export default async function ProductPage({
   // Delivery/returns in the product schema come from the editable store policy.
   const siteSettings = await getSiteSettings().catch(() => null);
 
+  // The first page of approved reviews goes into the static page, so they are in the HTML (and the structured data).
+  const reviews = await getProductReviews(product.slug).catch(() => null);
+
   const related = await getProducts({ category: product.category.slug, per_page: 5 })
     .then((res) => res.data.filter((p) => p.id !== product.id).slice(0, 4))
     .catch(() => []);
@@ -76,7 +79,7 @@ export default async function ProductPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product, siteSettings?.policy)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product, siteSettings?.policy, reviews)) }}
       />
       <script
         type="application/ld+json"
@@ -88,7 +91,7 @@ export default async function ProductPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(product.faqs)) }}
         />
       )}
-      <ProductDetailClient initialProduct={product} initialRelated={related} />
+      <ProductDetailClient initialProduct={product} initialRelated={related} initialReviews={reviews} />
     </>
   );
 }

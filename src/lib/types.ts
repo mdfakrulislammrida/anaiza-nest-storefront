@@ -124,6 +124,9 @@ export interface Product {
   care_instructions?: string | null;
   // True only when the admin switched it on: the price then reads "৳1,450, gift box included".
   gift_box_included?: boolean;
+  // From approved reviews only; the average is null (and the count 0) until there is one. Absent on an older API.
+  rating_count?: number;
+  rating_average?: number | null;
   gtin: string | null;
   mpn: string | null;
   seo?: ProductSeo;
@@ -456,6 +459,25 @@ export interface PaymentSetting {
   bkash_logo?: string | null;
   nagad_logo?: string | null;
   rocket_logo?: string | null;
+}
+
+// An approved review, as the API serves it.
+export interface Review {
+  id: number;
+  name: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  photos: { url: string; thumb: string }[];
+  verified_purchase: boolean;
+  admin_reply: string | null;
+  created_at: string | null;
+}
+
+export interface ReviewsPage {
+  data: Review[];
+  summary: { rating_count: number; rating_average: number | null };
+  meta: { current_page: number; last_page: number; per_page: number; total: number };
 }
 
 export interface CorporateEnquiryPayload {

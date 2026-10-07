@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --no-warnings --test src/lib/buildFetch.test.ts src/lib/payment.test.ts src/lib/consent.test.ts src/lib/tracking.test.ts"
+    "test": "node --no-warnings --test src/lib/buildFetch.test.ts src/lib/payment.test.ts src/lib/consent.test.ts src/lib/tracking.test.ts src/lib/userData.test.ts"
   },
   "dependencies": {
     "next": "16.3.1",

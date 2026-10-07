@@ -5,6 +5,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import ResponsiveImage from "@/components/ResponsiveImage";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
+import RatingSummary from "@/components/RatingSummary";
 
 export default function ProductCard({
   product,
@@ -57,6 +58,8 @@ export default function ProductCard({
           <h3 className={`line-clamp-2 text-body font-medium ${dark ? "text-ivory" : "text-charcoal"}`}>
             {product.name}
           </h3>
+          {/* Nothing at all unless the product has an approved review. */}
+          <RatingSummary average={product.rating_average} count={product.rating_count} compact dark={dark} />
           <div className="flex flex-wrap items-center gap-2">
             <span className={`text-body font-semibold ${dark ? "text-ivory" : "text-charcoal"}`}>
               {formatPrice(product.effective_price)}
