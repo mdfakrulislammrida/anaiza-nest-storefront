@@ -46,7 +46,7 @@ function WishlistRow({
   item,
   onRemove,
 }: {
-  item: { productId: number; slug: string; name: string; image: string | null; price: number };
+  item: { productId: number; slug: string; name: string; image: string | null; price: number; sku?: string | null };
   onRemove: () => void;
 }) {
   const { addItem } = useCart();
@@ -74,6 +74,7 @@ function WishlistRow({
               name: item.name,
               images: item.image ? [{ url: item.image }] : [],
               effective_price: item.price,
+              sku: item.sku,
               stock_quantity: 99,
             },
             null,

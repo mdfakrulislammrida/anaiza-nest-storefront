@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { trackAddToCart, trackRemoveFromCart } from "@/lib/tracking";
+import { feedItemId, trackAddToCart, trackRemoveFromCart } from "@/lib/tracking";
 import type { ProductVariant } from "@/lib/types";
 
 // Only the fields addItem actually reads — lets callers that don't have a
@@ -20,6 +20,8 @@ export interface CartAddableProduct {
   name: string;
   effective_price: number;
   stock_quantity: number;
+  // The product's SKU, which is its id in the product feeds (the product id stands in when it has none).
+  sku?: string | null;
   images?: { url: string }[];
 }
 
@@ -32,6 +34,9 @@ export interface CartItem {
   image: string | null;
   variantId: number | null;
   variantLabel: string | null;
+  // The SKU of this exact piece (the variant's, when it has its own): the id the pixels report. Carts saved before this
+  // was kept have none, and report the product id.
+  sku?: string | null;
   quantity: number;
   stock: number;
 }
@@ -89,7 +94,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback(
     (product: CartAddableProduct, variant: ProductVariant | null, quantity: number) => {
-      trackAddToCart(product, quantity);
+      trackAddToCart(product, quantity, variant);
       const key = cartKey(product.id, variant?.id ?? null);
       setItems((prev) => {
         const existing = prev.find((item) => item.key === key);
@@ -114,6 +119,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             image: product.images?.[0]?.url ?? null,
             variantId: variant?.id ?? null,
             variantLabel: variant ? `${variant.name}: ${variant.value}` : null,
+            sku: feedItemId(product, variant),
             quantity,
             stock: product.stock_quantity,
           },

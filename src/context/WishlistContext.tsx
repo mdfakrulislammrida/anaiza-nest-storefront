@@ -17,6 +17,8 @@ export interface WishlistItem {
   name: string;
   image: string | null;
   price: number;
+  // For the id the pixels report; saved lists from before this have none.
+  sku?: string | null;
 }
 
 interface WishlistContextValue {
@@ -68,6 +70,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
           name: product.name,
           image: product.images?.[0]?.url ?? null,
           price: product.effective_price,
+          sku: product.sku,
         },
       ];
     });

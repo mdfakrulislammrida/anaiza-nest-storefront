@@ -1,8 +1,8 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import { getHomeCatalog, getHomepageSections, type HomeCatalog } from "@/lib/api";
-import type { HomepageSection } from "@/lib/types";
+import { getBannerSlider, getHomeCatalog, getHomepageSections, type HomeCatalog } from "@/lib/api";
+import type { BannerSlider, HomepageSection } from "@/lib/types";
 import Hero from "./Hero";
 import TrustBadges from "./TrustBadges";
 import NewsletterBanner from "./NewsletterBanner";
@@ -21,12 +21,15 @@ import WhyUsSection from "./WhyUsSection";
 export default function HomeClient({
   initialCatalog,
   initialSections,
+  initialSlider = null,
 }: {
   initialCatalog: HomeCatalog;
   initialSections: HomepageSection[];
+  initialSlider?: BannerSlider | null;
 }) {
   const [catalog, setCatalog] = useState(initialCatalog);
   const [sections, setSections] = useState(initialSections);
+  const [slider, setSlider] = useState(initialSlider);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +42,15 @@ export default function HomeClient({
       })
       .catch(() => {
         // Static content already rendered is still correct enough to show.
+      });
+
+    // The slider is refreshed on its own so a slide that ended, or a new one, shows without waiting for a rebuild.
+    getBannerSlider()
+      .then((fresh) => {
+        if (!cancelled) setSlider(fresh);
+      })
+      .catch(() => {
+        // The slides already rendered stay.
       });
 
     return () => {
@@ -57,7 +69,7 @@ export default function HomeClient({
             // needing a 7th type of its own.
             return (
               <Fragment key={section.id}>
-                <Hero />
+                <Hero slider={slider} />
                 <TrustBadges />
               </Fragment>
             );

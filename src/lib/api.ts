@@ -7,6 +7,7 @@ import type {
   AuthCustomer,
   AuthResponse,
   Banner,
+  BannerSlider,
   Brand,
   CategoryDetail,
   CategorySummary,
@@ -269,6 +270,20 @@ export async function getPage(slug: string): Promise<Page> {
 export async function getBanners(): Promise<Banner[]> {
   const { data } = await apiFetch<{ data: Banner[] }>("/banners");
   return data;
+}
+
+// The homepage slider: the live slides and its settings. An API that predates the settings answers with slides only,
+// which reads as autoplay off.
+export async function getBannerSlider(): Promise<BannerSlider> {
+  const body = await apiFetch<{ data: Banner[]; settings?: Partial<BannerSlider["settings"]> }>("/banners");
+
+  return {
+    slides: body.data,
+    settings: {
+      autoplay: body.settings?.autoplay === true,
+      interval_seconds: body.settings?.interval_seconds ?? 7,
+    },
+  };
 }
 
 export async function getFaqs(): Promise<Faq[]> {

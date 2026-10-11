@@ -58,9 +58,33 @@ export function trackPageView() {
   }
 }
 
-function ga4Item(product: { sku?: string; id: number; name: string; effective_price?: number; price?: number; category?: { name: string } }, quantity = 1) {
+// The id every platform knows a product by: the same one the product feeds use (the SKU, else the product id), so a
+// dynamic ad and a pixel event point at the same catalogue item. A variant with a SKU of its own is its own item in the
+// feeds, so it is reported by that SKU; a variant sharing the product's SKU (or with none) is the product.
+export function feedItemId(product: { id: number; sku?: string | null }, variant?: { sku?: string | null } | null): string {
+  const own = product.sku?.trim() || null;
+  const variantSku = variant?.sku?.trim() || null;
+
+  if (variantSku && variantSku !== own) return variantSku;
+
+  return own ?? String(product.id);
+}
+
+// The same id for a cart line or an order line, which hold the SKU of the exact piece (the variant's, when it has one).
+function lineItemId(line: { sku?: string | null }, productId: number): string {
+  return line.sku?.trim() || String(productId);
+}
+
+type TrackedProduct = { sku?: string | null; id: number; name: string; effective_price?: number; price?: number; category?: { name: string }; variants?: { sku?: string | null }[] };
+
+// What the product page has selected when it opens: the first variant, as the page itself does.
+function pageVariant(product: TrackedProduct) {
+  return product.variants?.[0] ?? null;
+}
+
+function ga4Item(product: TrackedProduct, quantity = 1, variant: { sku?: string | null } | null = pageVariant(product)) {
   return {
-    item_id: product.sku ?? String(product.id),
+    item_id: feedItemId(product, variant),
     item_name: product.name,
     price: product.effective_price ?? product.price ?? 0,
     ...(product.category ? { item_category: product.category.name } : {}),
@@ -78,14 +102,14 @@ export function trackViewItem(product: Product) {
     },
   });
   fbqTrack("ViewContent", {
-    content_ids: [product.sku ?? String(product.id)],
+    content_ids: [feedItemId(product, pageVariant(product))],
     content_name: product.name,
     content_type: "product",
     currency: CURRENCY,
     value: product.effective_price,
   });
   ttqTrack("ViewContent", {
-    content_id: product.sku ?? String(product.id),
+    content_id: feedItemId(product, pageVariant(product)),
     content_name: product.name,
     content_type: "product",
     currency: CURRENCY,
@@ -104,25 +128,26 @@ export function trackViewItemList(products: Product[], listName: string) {
   });
 }
 
-export function trackAddToCart(product: CartAddableProduct, quantity: number) {
+export function trackAddToCart(product: CartAddableProduct, quantity: number, variant: { sku?: string | null } | null = null) {
   const value = product.effective_price * quantity;
+  const id = feedItemId(product, variant);
   pushDataLayer({
     event: "add_to_cart",
     ecommerce: {
       currency: CURRENCY,
       value,
-      items: [ga4Item(product, quantity)],
+      items: [{ ...ga4Item(product, quantity, variant), item_id: id }],
     },
   });
   fbqTrack("AddToCart", {
-    content_ids: [String(product.id)],
+    content_ids: [id],
     content_name: product.name,
     content_type: "product",
     currency: CURRENCY,
     value,
   });
   ttqTrack("AddToCart", {
-    content_id: String(product.id),
+    content_id: id,
     content_name: product.name,
     content_type: "product",
     currency: CURRENCY,
@@ -138,7 +163,7 @@ export function trackRemoveFromCart(item: CartItem) {
       value: item.price * item.quantity,
       items: [
         {
-          item_id: String(item.productId),
+          item_id: lineItemId(item, item.productId),
           item_name: item.name,
           price: item.price,
           quantity: item.quantity,
@@ -151,7 +176,7 @@ export function trackRemoveFromCart(item: CartItem) {
 export function trackBeginCheckout(items: CartItem[], value: number) {
   if (items.length === 0) return;
   const ga4Items = items.map((item) => ({
-    item_id: String(item.productId),
+    item_id: lineItemId(item, item.productId),
     item_name: item.name,
     price: item.price,
     quantity: item.quantity,
@@ -162,7 +187,7 @@ export function trackBeginCheckout(items: CartItem[], value: number) {
     ecommerce: { currency: CURRENCY, value, items: ga4Items },
   });
   fbqTrack("InitiateCheckout", {
-    content_ids: items.map((item) => String(item.productId)),
+    content_ids: ga4Items.map((item) => item.item_id),
     contents: ga4Items.map((item) => ({ id: item.item_id, quantity: item.quantity })),
     currency: CURRENCY,
     value,
@@ -183,7 +208,7 @@ export function trackAddShippingInfo(items: CartItem[], value: number, shippingT
       value,
       shipping_tier: shippingTier,
       items: items.map((item) => ({
-        item_id: String(item.productId),
+        item_id: lineItemId(item, item.productId),
         item_name: item.name,
         price: item.price,
         quantity: item.quantity,
@@ -200,7 +225,7 @@ export function trackAddPaymentInfo(items: CartItem[], value: number, paymentMet
       value,
       payment_type: paymentMethod,
       items: items.map((item) => ({
-        item_id: String(item.productId),
+        item_id: lineItemId(item, item.productId),
         item_name: item.name,
         price: item.price,
         quantity: item.quantity,
@@ -247,7 +272,7 @@ export async function trackPurchase(order: Order): Promise<void> {
   const userData = marketingAllowedNow() ? await buildUserData(order.customer).catch(() => null) : null;
 
   const ga4Items = order.items.map((item) => ({
-    item_id: String(item.product_id),
+    item_id: lineItemId(item, item.product_id),
     item_name: item.product_name,
     price: item.price,
     quantity: item.quantity,
@@ -286,7 +311,7 @@ export async function trackPurchase(order: Order): Promise<void> {
   ttqTrack(
     "CompletePayment",
     {
-      content_id: String(order.id),
+      content_type: "product",
       contents: ga4Items.map((item) => ({ content_id: item.item_id, quantity: item.quantity, price: item.price })),
       currency: CURRENCY,
       value: order.total,

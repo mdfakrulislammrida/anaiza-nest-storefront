@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { beforeEach, describe, it } from "node:test";
-import { trackPurchase } from "./tracking.ts";
+import { feedItemId, trackAddToCart, trackBeginCheckout, trackPurchase, trackViewItem } from "./tracking.ts";
 import type { Order } from "./types.ts";
 
 type Call = unknown[];
@@ -157,5 +157,77 @@ describe("trackPurchase: wallet payments", () => {
     for (const forbidden of ['"purchase"', "value", "items", "680", "sha256", "user_data"]) {
       assert.ok(!everything.includes(forbidden), `${forbidden} must not appear`);
     }
+  });
+});
+
+// What a dynamic ad matches on is the feed's id: the SKU, else the product id; a variant with its own SKU is its own item.
+describe("ids match the product feeds", () => {
+  const product = { id: 7, sku: "MUG-RED", name: "Red mug", effective_price: 600, variants: [] as { sku: string }[] };
+
+  it("uses the SKU, else the product id", () => {
+    assert.equal(feedItemId({ id: 7, sku: "MUG-RED" }), "MUG-RED");
+    assert.equal(feedItemId({ id: 7, sku: "  MUG-RED " }), "MUG-RED");
+    assert.equal(feedItemId({ id: 7, sku: "" }), "7");
+    assert.equal(feedItemId({ id: 7, sku: null }), "7");
+  });
+
+  it("uses a variant's own SKU, and the product's when the variant shares it or has none", () => {
+    assert.equal(feedItemId({ id: 7, sku: "MUG" }, { sku: "MUG-BLUE" }), "MUG-BLUE");
+    assert.equal(feedItemId({ id: 7, sku: "MUG" }, { sku: "MUG" }), "MUG");
+    assert.equal(feedItemId({ id: 7, sku: "MUG" }, { sku: null }), "MUG");
+    assert.equal(feedItemId({ id: 7, sku: "" }, { sku: "" }), "7");
+  });
+
+  it("reports the same id to the data layer, Meta and TikTok when a product is viewed", () => {
+    trackViewItem({ ...product, variants: [{ sku: "MUG-RED-L" }] } as never);
+
+    const view = layer()[0] as { ecommerce: { items: { item_id: string }[] } };
+    assert.equal(view.ecommerce.items[0].item_id, "MUG-RED-L");
+    assert.deepEqual((fbqCalls.find((c) => c[1] === "ViewContent")?.[2] as { content_ids: string[] }).content_ids, ["MUG-RED-L"]);
+    assert.equal((ttqCalls.find((c) => c[0] === "ViewContent")?.[1] as { content_id: string }).content_id, "MUG-RED-L");
+  });
+
+  it("reports the variant's SKU on add to cart, everywhere", () => {
+    trackAddToCart({ id: 7, sku: "MUG", slug: "mug", name: "Mug", effective_price: 600, stock_quantity: 5 }, 2, { sku: "MUG-BLUE" });
+
+    const add = layer()[0] as { ecommerce: { items: { item_id: string; quantity: number }[] } };
+    assert.deepEqual([add.ecommerce.items[0].item_id, add.ecommerce.items[0].quantity], ["MUG-BLUE", 2]);
+    assert.deepEqual((fbqCalls.find((c) => c[1] === "AddToCart")?.[2] as { content_ids: string[] }).content_ids, ["MUG-BLUE"]);
+    assert.equal((ttqCalls.find((c) => c[0] === "AddToCart")?.[1] as { content_id: string }).content_id, "MUG-BLUE");
+  });
+
+  it("falls back to the product id on add to cart when there is no SKU", () => {
+    trackAddToCart({ id: 7, sku: "", slug: "mug", name: "Mug", effective_price: 600, stock_quantity: 5 }, 1);
+
+    assert.deepEqual((fbqCalls.find((c) => c[1] === "AddToCart")?.[2] as { content_ids: string[] }).content_ids, ["7"]);
+  });
+
+  it("reports cart lines by their SKU at checkout", () => {
+    trackBeginCheckout(
+      [{ key: "7:base", productId: 7, slug: "mug", name: "Mug", price: 600, image: null, variantId: null, variantLabel: null, sku: "MUG-RED", quantity: 1, stock: 5 }],
+      600,
+    );
+
+    assert.deepEqual((fbqCalls.find((c) => c[1] === "InitiateCheckout")?.[2] as { content_ids: string[] }).content_ids, ["MUG-RED"]);
+  });
+
+  it("reports an order's SKU on purchase to the data layer, Meta and TikTok", async () => {
+    await trackPurchase(order("cod"));
+
+    const purchase = layer()[0] as { ecommerce: { items: { item_id: string }[] } };
+    assert.equal(purchase.ecommerce.items[0].item_id, "M-1");
+    assert.deepEqual((fbqCalls.find((c) => c[1] === "Purchase")?.[2] as { content_ids: string[] }).content_ids, ["M-1"]);
+    const complete = ttqCalls.find((c) => c[0] === "CompletePayment")?.[1] as { contents: { content_id: string }[]; content_id?: string };
+    assert.equal(complete.contents[0].content_id, "M-1");
+    assert.equal("content_id" in complete, false, "an order id is not a catalogue id");
+  });
+
+  it("falls back to the product id for an order line with no SKU", async () => {
+    const noSku = order("cod");
+    noSku.items[0].sku = null;
+
+    await trackPurchase(noSku);
+
+    assert.equal((layer()[0] as { ecommerce: { items: { item_id: string }[] } }).ecommerce.items[0].item_id, "7");
   });
 });

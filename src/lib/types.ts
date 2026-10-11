@@ -296,13 +296,35 @@ export interface ArticleListResponse {
   meta: PaginationMeta;
 }
 
+// One picture of a slide: the shop's WebP copy and its size (size is null on pictures uploaded before conversion existed).
+export interface BannerPicture {
+  url: string | null;
+  width: number | null;
+  height: number | null;
+}
+
 export interface Banner {
   id: number;
   image_url: string;
   headline: string | null;
   subtext: string | null;
   link: string | null;
+  // Absent on an API that predates the slider.
+  button_text?: string | null;
   sort_order: number;
+  desktop?: BannerPicture & { url_1280: string | null; url_640: string | null };
+  mobile?: (BannerPicture & { auto_generated: boolean }) | null;
+}
+
+export interface BannerSliderSettings {
+  autoplay: boolean;
+  interval_seconds: number;
+}
+
+// The homepage slider as the API sends it: the live slides (five at most) and how to move through them.
+export interface BannerSlider {
+  slides: Banner[];
+  settings: BannerSliderSettings;
 }
 
 export type HomepageSectionType =

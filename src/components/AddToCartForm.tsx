@@ -50,6 +50,7 @@ export default function AddToCartForm({
       name: product.name,
       effective_price: selectedVariant?.effective_price ?? product.effective_price,
       stock_quantity: stockQuantity,
+      sku: product.sku,
       images: selectedVariant?.image ? [{ url: selectedVariant.image.url }] : product.images,
     };
   }

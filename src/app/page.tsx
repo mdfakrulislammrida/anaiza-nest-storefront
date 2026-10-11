@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getHomeCatalog, getHomepageSections } from "@/lib/api";
+import { getBannerSlider, getHomeCatalog, getHomepageSections } from "@/lib/api";
 import { DEFAULT_HOMEPAGE_SECTIONS } from "@/lib/defaultHomepageSections";
 import HomeClient from "@/components/HomeClient";
 
@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default async function Home() {
   const catalog = await getHomeCatalog().catch(() => null);
   const sections = await getHomepageSections().catch(() => null);
+  const slider = await getBannerSlider().catch(() => null);
 
   return (
     <div>
@@ -17,6 +18,7 @@ export default async function Home() {
         <HomeClient
           initialCatalog={catalog}
           initialSections={sections && sections.length > 0 ? sections : DEFAULT_HOMEPAGE_SECTIONS}
+          initialSlider={slider}
         />
       ) : (
         <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">

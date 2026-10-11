@@ -4,12 +4,25 @@ import Link from "next/link";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { BRAND, CTA } from "@/lib/brand";
 import { resolveWording } from "@/lib/homepageWording";
+import type { BannerSlider } from "@/lib/types";
 import GiftFrame from "./GiftFrame";
+import HeroSlider from "./HeroSlider";
 import PourLine from "./PourLine";
 
-export default function Hero() {
+// With live slides the slider sits above the hero; without any, the hero is exactly what it was. The gift frame and the one
+// pour line are the hero's, so the slider carries neither.
+export default function Hero({ slider = null }: { slider?: BannerSlider | null }) {
   const wording = resolveWording(useSiteSettings().siteSettings);
 
+  return (
+    <>
+      {slider && slider.slides.length > 0 && <HeroSlider slides={slider.slides} settings={slider.settings} />}
+      <HeroPanel wording={wording} />
+    </>
+  );
+}
+
+function HeroPanel({ wording }: { wording: ReturnType<typeof resolveWording> }) {
   return (
     <section className="mx-auto grid max-w-7xl grid-cols-1 gap-0.5 px-0 sm:grid-cols-3">
       <div className="relative flex min-h-[26rem] flex-col justify-end gap-6 overflow-hidden bg-deepink p-8 text-ivory sm:col-span-2 sm:p-16">
