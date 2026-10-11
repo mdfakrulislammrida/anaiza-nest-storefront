@@ -1,5 +1,7 @@
 import { API_BASE_URL } from "./config";
 import { fetchJsonStrict } from "./buildFetch";
+import type { RecoveredCart } from "./cartRecovery";
+import type { SessionPayload } from "./recovery";
 import type {
   ApiValidationError,
   Article,
@@ -249,6 +251,52 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
     body: JSON.stringify(payload),
   });
   return data;
+}
+
+// Where a visitor has got to, for cart recovery. Fire and forget: the answer is always empty, and a failure is never shown.
+export async function reportCheckoutSession(payload: SessionPayload): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/checkout-sessions`, {
+      method: "POST",
+      keepalive: true,
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Silent on purpose.
+  }
+}
+
+export interface CouponPreview {
+  valid: true;
+  code: string;
+  value_label: string;
+  discount: number;
+  subtotal: number;
+  valid_until_text: string | null;
+}
+
+// What a code would take off this cart. A preview only: the server checks the code again when the order is placed.
+export async function validateCoupon(body: {
+  code: string;
+  email?: string | null;
+  phone?: string | null;
+  items: { product_id: number; variant_id: number | null; quantity: number }[];
+}): Promise<CouponPreview> {
+  return apiFetch<CouponPreview>("/coupons/validate", { method: "POST", body: JSON.stringify(body) });
+}
+
+// A saved cart, for the link in a reminder.
+export async function getRecoveredCart(token: string): Promise<RecoveredCart> {
+  return apiFetch<RecoveredCart>(`/recover/${encodeURIComponent(token)}`);
+}
+
+// What a review link says: whether it is still good, and the name to start the review with.
+export async function getReviewLink(
+  slug: string,
+  token: string,
+): Promise<{ valid: boolean; name?: string | null; reason?: "ended" | "used" }> {
+  return apiFetch(`/products/${encodeURIComponent(slug)}/review-link?token=${encodeURIComponent(token)}`);
 }
 
 export async function lookupOrder(orderId: string, phone: string): Promise<Order> {

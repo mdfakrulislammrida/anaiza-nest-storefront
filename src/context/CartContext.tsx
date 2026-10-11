@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { feedItemId, trackAddToCart, trackRemoveFromCart } from "@/lib/tracking";
+import type { RestoreLine } from "@/lib/cartRecovery";
 import type { ProductVariant } from "@/lib/types";
 
 // Only the fields addItem actually reads — lets callers that don't have a
@@ -57,6 +58,8 @@ interface CartContextValue {
   updateQuantity: (key: string, quantity: number) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
+  // Puts a saved cart back (from a reminder's link). Not an add to cart, so it fires no add-to-cart event.
+  restoreItems: (lines: RestoreLine[]) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -151,6 +154,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  const restoreItems = useCallback((lines: RestoreLine[]) => {
+    if (lines.length === 0) return;
+
+    setItems((prev) => {
+      const next = [...prev];
+
+      for (const line of lines) {
+        const key = cartKey(line.productId, line.variantId);
+        const at = next.findIndex((item) => item.key === key);
+
+        if (at >= 0) {
+          // Already in the cart: keep the larger quantity, never more than is in stock.
+          next[at] = { ...next[at], price: line.price, quantity: Math.min(Math.max(next[at].quantity, line.quantity), maxQuantityFor({ stock: line.stock })), stock: line.stock };
+        } else {
+          next.push({
+            key,
+            productId: line.productId,
+            slug: line.slug,
+            name: line.name,
+            price: line.price,
+            image: line.image,
+            variantId: line.variantId,
+            variantLabel: line.variantLabel,
+            sku: line.sku,
+            quantity: line.quantity,
+            stock: line.stock,
+          });
+        }
+      }
+
+      return next;
+    });
+  }, []);
+
   const itemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
     [items],
@@ -173,6 +210,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       updateQuantity,
       removeItem,
       clearCart,
+      restoreItems,
     }),
     [
       items,
@@ -185,6 +223,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       updateQuantity,
       removeItem,
       clearCart,
+      restoreItems,
     ],
   );
 

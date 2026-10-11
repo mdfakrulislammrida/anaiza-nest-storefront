@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getProduct, getProducts } from "@/lib/api";
+import { noteViewed } from "@/lib/checkoutSession";
 import { trackViewItem } from "@/lib/tracking";
 import ProductDetail from "./ProductDetail";
 import type { Product, ReviewsPage } from "@/lib/types";
@@ -24,6 +25,7 @@ export default function ProductDetailClient({
 
   useEffect(() => {
     trackViewItem(initialProduct);
+    noteViewed(initialProduct.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once for the product this page loaded with, not again after the background refresh below
   }, [initialProduct.slug]);
 

@@ -2,22 +2,25 @@
 
 import { usePathname } from "next/navigation";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { isPathHidden, resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 
-function digitsOnly(value: string) {
-  return value.replace(/[^\d]/g, "");
-}
-
+// The number, the first message, the on/off switch and the pages that hide it all come from Site Settings (built into the
+// page, then refreshed live), so changing any of them needs no rebuild.
 export default function WhatsAppButton() {
   const { siteSettings } = useSiteSettings();
-  const number = digitsOnly(siteSettings?.contact_phone ?? "+8801886004421");
+  const whatsapp = resolveWhatsApp(siteSettings);
+  const href = whatsappLink(whatsapp.number, whatsapp.message);
+  const pathname = usePathname();
   // Only product pages carry the fixed Add to Cart / Buy Now bar on mobile, so only there does the
   // bubble need lifting above it (the bar is two rows tall: quantity + price, then the buttons).
   // Everywhere else it sits in the corner and stays out of the way of cards and order totals.
-  const isProductPage = usePathname().startsWith("/product");
+  const isProductPage = pathname.startsWith("/product");
+
+  if (!whatsapp.showBubble || href === null || isPathHidden(pathname, whatsapp.hiddenPaths)) return null;
 
   return (
     <a
-      href={`https://wa.me/${number}`}
+      href={href}
       target="_blank"
       rel="noreferrer noopener"
       aria-label="Chat with us on WhatsApp"

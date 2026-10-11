@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import TopPromoBar from "@/components/TopPromoBar";
 import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import CheckoutSessionReporter from "@/components/CheckoutSessionReporter";
 import PopupManager from "@/components/PopupManager";
 import { getCategories, getCookieConsentSettings, getMarketingSettings, getSiteSettings } from "@/lib/api";
 import { BRAND } from "@/lib/brand";
@@ -151,6 +152,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <main className="flex-1">{children}</main>
                 <Footer cookieBanner={Boolean(cookieConsent?.enabled)} />
                 <CartDrawer />
+                <CheckoutSessionReporter />
                 <WhatsAppButton />
                 <PopupManager />
                 <CookieConsent initial={cookieConsent} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { ApiError, getProductReviews, submitProductReview } from "@/lib/api";
+import { ApiError, getProductReviews, getReviewLink, submitProductReview } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { Review, ReviewsPage } from "@/lib/types";
 import Stars from "./Stars";
@@ -61,7 +61,7 @@ function ReviewItem({ review }: { review: Review }) {
   );
 }
 
-function ReviewForm({ slug, onDone }: { slug: string; onDone: () => void }) {
+function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug: string; onDone: () => void; reviewToken?: string | null; startName?: string }) {
   const uid = useId();
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
@@ -87,6 +87,8 @@ function ReviewForm({ slug, onDone }: { slug: string; onDone: () => void }) {
 
     const form = new FormData(event.currentTarget);
     form.set("rating", String(rating || ""));
+    // The link in a review request proves the purchase, so no order number or phone is sent with it.
+    if (reviewToken) form.set("review_token", reviewToken);
     // An empty file input still sends one empty part; drop it.
     const photos = form.getAll("photos").filter((file) => file instanceof File && file.size > 0);
     form.delete("photos");
@@ -172,7 +174,7 @@ function ReviewForm({ slug, onDone }: { slug: string; onDone: () => void }) {
         <label htmlFor={`${uid}-name`} className={labelClass}>
           Name to show
         </label>
-        <input id={`${uid}-name`} name="name" required maxLength={80} autoComplete="given-name" className={inputClass} />
+        <input id={`${uid}-name`} name="name" required maxLength={80} autoComplete="given-name" defaultValue={startName} className={inputClass} />
         {error("name")}
       </div>
 
@@ -196,7 +198,7 @@ function ReviewForm({ slug, onDone }: { slug: string; onDone: () => void }) {
         )}
       </div>
 
-      {!signedIn && (
+      {!signedIn && !reviewToken && (
         <div className="space-y-4 rounded-btn bg-linen/60 p-4">
           <p className="text-caption text-charcoal/80">
             Reviews come from people who have ordered this piece. Give the order number and the phone number on that order,
@@ -249,6 +251,39 @@ export default function ProductReviews({ slug, initial }: { slug: string; initia
   const [page, setPage] = useState(initial?.meta.current_page ?? 1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  // A review link (?review=TOKEN) from a review request email opens the form and proves the purchase.
+  const [reviewToken, setReviewToken] = useState<string | null>(null);
+  const [startName, setStartName] = useState("");
+  const [linkNote, setLinkNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("review");
+    if (!token) return;
+
+    let cancelled = false;
+
+    getReviewLink(slug, token)
+      .then((link) => {
+        if (cancelled) return;
+
+        if (link.valid) {
+          setReviewToken(token);
+          setStartName(link.name ?? "");
+          setFormOpen(true);
+        } else if (link.reason === "used") {
+          setLinkNote("Thank you, you have already reviewed this piece.");
+        } else {
+          setLinkNote("That review link has ended. You can still review this piece with your order number and phone number.");
+        }
+      })
+      .catch(() => {
+        // Without an answer the ordinary way (order number and phone) is still there.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -319,8 +354,14 @@ export default function ProductReviews({ slug, initial }: { slug: string; initia
         </button>
       )}
 
+      {linkNote && (
+        <p role="status" className="mt-6 rounded-btn border border-linen bg-linen p-4 text-body text-charcoal">
+          {linkNote}
+        </p>
+      )}
+
       {formOpen ? (
-        <ReviewForm slug={slug} onDone={() => setFormOpen(false)} />
+        <ReviewForm slug={slug} onDone={() => setFormOpen(false)} reviewToken={reviewToken} startName={startName} />
       ) : (
         <button
           type="button"

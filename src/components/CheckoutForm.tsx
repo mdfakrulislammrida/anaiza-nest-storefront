@@ -4,7 +4,11 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "rea
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { ApiError, createOrder, getPaymentSettings } from "@/lib/api";
+import { ApiError, createOrder, getPaymentSettings, validateCoupon } from "@/lib/api";
+import { currentSessionToken, endSession, noteContact, noteStage } from "@/lib/checkoutSession";
+import { clearCouponCode, clearRecoveryToken, readCouponCode, readRecoveryToken, saveCouponCode, type AppliedCoupon } from "@/lib/coupon";
+import { mayStoreIdentified, validEmail, validPhone } from "@/lib/recovery";
+import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import { getStoredUtmParams } from "@/lib/attribution";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
@@ -46,6 +50,7 @@ const FORM_FIELDS = [
   "gift_message",
   "payment_sender_number",
   "payment_trx_id",
+  "coupon_code",
 ];
 
 // Used only if an older API sends no steps of its own.
@@ -64,6 +69,8 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
   const { siteSettings } = useSiteSettings();
   const policy = resolvePolicy(siteSettings);
   const supportPhone = siteSettings?.contact_phone ?? null;
+  const whatsapp = resolveWhatsApp(siteSettings);
+  const whatsappHref = whatsappLink(whatsapp.number, whatsapp.message);
   const uid = useId();
   const alertRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +127,22 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
   // the fold, next to a button the visitor had already scrolled past.
   const [revealCount, setRevealCount] = useState(0);
 
+  // A coupon: only the code is kept here. What it takes off is decided by the server, for the preview and again when the
+  // order is placed.
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  // Whether the line about a reminder email is true: notice mode keeps identified carts; opt-in mode only once marketing is allowed.
+  const [reminderMayBeSent, setReminderMayBeSent] = useState(true);
+
+  useEffect(() => {
+    const update = () => setReminderMayBeSent(mayStoreIdentified(window.anaizaConsent?.optIn === true, marketingAllowed()));
+    update();
+    window.addEventListener("anaiza:consent", update);
+    return () => window.removeEventListener("anaiza:consent", update);
+  }, []);
+
   useEffect(() => {
     if (revealCount === 0) return;
     const firstInvalid = document
@@ -140,6 +163,112 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
     if (items.length > 0) trackBeginCheckout(items, subtotal);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once when the checkout page is first reached with items in the cart, not on every subtotal change
   }, []);
+
+  useEffect(() => {
+    noteStage("checkout_started");
+  }, []);
+
+  // Details from a reminder's link start the form filled in (only fields still empty), and its coupon is checked. The cart
+  // is read from storage after the first render, so this waits until there is a cart (and so a form) to fill.
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startedRef.current || items.length === 0) return;
+    startedRef.current = true;
+
+    try {
+      const raw = window.sessionStorage.getItem("anaiza-recovered-contact");
+      if (raw) {
+        const saved = JSON.parse(raw) as { name?: string | null; email?: string | null; phone?: string | null };
+        const form = document.getElementById("checkout-form") as HTMLFormElement | null;
+        const fill = (field: string, value: string | null | undefined) => {
+          const input = form?.elements.namedItem(field) as HTMLInputElement | null;
+          if (input && value && input.value === "") input.value = value;
+        };
+        fill("customer_name", saved.name);
+        fill("customer_email", saved.email);
+        fill("customer_phone", saved.phone);
+      }
+    } catch {
+      // Checkout simply starts empty.
+    }
+
+    const stored = readCouponCode();
+    if (stored) {
+      // One-time sync from storage on mount -- window is unavailable during the static render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCouponInput(stored);
+      void applyCoupon(stored, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the cart first has something in it
+  }, [items.length]);
+
+  // The cart changed after a code was applied: ask again, so the figure shown is the server's.
+  useEffect(() => {
+    if (coupon) void applyCoupon(coupon.code, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follows the cart's value only
+  }, [subtotal]);
+
+  function contactFromForm() {
+    const form = document.getElementById("checkout-form") as HTMLFormElement | null;
+    const data = form ? new FormData(form) : null;
+
+    return {
+      name: String(data?.get("customer_name") ?? ""),
+      email: String(data?.get("customer_email") ?? ""),
+      phone: String(data?.get("customer_phone") ?? ""),
+      whatsappOptIn: data?.get("whatsapp_optin") === "on",
+    };
+  }
+
+  // A field was left. Only a complete, valid email or phone number is passed on; nothing is sent from here directly.
+  function handleContactBlur() {
+    const contact = contactFromForm();
+    noteContact({
+      name: contact.name,
+      email: validEmail(contact.email),
+      phone: validPhone(contact.phone),
+      whatsappOptIn: contact.whatsappOptIn,
+    });
+  }
+
+  async function applyCoupon(code: string, quiet = false) {
+    const trimmed = code.trim();
+    if (trimmed === "" || items.length === 0) return;
+
+    const contact = contactFromForm();
+    setCouponBusy(true);
+    if (!quiet) setCouponError(null);
+
+    try {
+      const preview = await validateCoupon({
+        code: trimmed,
+        email: validEmail(contact.email),
+        phone: validPhone(contact.phone),
+        items: items.map((item) => ({ product_id: item.productId, variant_id: item.variantId, quantity: item.quantity })),
+      });
+      setCoupon({ code: preview.code, value_label: preview.value_label, discount: preview.discount, valid_until_text: preview.valid_until_text });
+      saveCouponCode(preview.code);
+      setCouponError(null);
+    } catch (error) {
+      setCoupon(null);
+      if (error instanceof ApiError && error.status === 422) {
+        setCouponError(error.message);
+        clearCouponCode();
+      } else if (!quiet) {
+        setCouponError("We could not check that code just now. Please try again in a moment.");
+      }
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    setCouponInput("");
+    setCouponError(null);
+    clearCouponCode();
+  }
 
   if (items.length === 0 && !orderPlaced) {
     return (
@@ -215,17 +344,36 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
         variant_id: item.variantId,
       })),
       ...getStoredUtmParams(),
+      ...(coupon ? { coupon_code: coupon.code } : {}),
+      ...(currentSessionToken() ? { checkout_session: currentSessionToken() as string } : {}),
     };
+
+    // An order that came back through a reminder says so (the server marks it from the token as well).
+    const recoveryToken = readRecoveryToken();
+    if (recoveryToken) {
+      payload.recovery_token = recoveryToken;
+      payload.utm_source = "cart_recovery";
+      payload.utm_medium = "email";
+      payload.utm_campaign = "abandoned_cart";
+    }
 
     try {
       const order = await createOrder(payload);
       window.sessionStorage.setItem("anaiza-last-order", JSON.stringify(order));
       setOrderPlaced(true);
+      endSession();
+      clearCouponCode();
+      clearRecoveryToken();
       clearCart();
       router.push("/order-confirmation");
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
         setFieldErrors(error.errors);
+        if (error.errors.coupon_code) {
+          setCoupon(null);
+          setCouponError(error.errors.coupon_code[0]);
+          clearCouponCode();
+        }
         const unplaced = Object.entries(error.errors)
           .filter(([key]) => !FORM_FIELDS.includes(key))
           .flatMap(([, messages]) => messages);
@@ -276,7 +424,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
       <h1 className="font-serif text-charcoal text-h1">Checkout</h1>
 
       <div className="mt-8 flex flex-col gap-10 lg:flex-row">
-        <form id="checkout-form" onSubmit={handleSubmit} className="flex-1 space-y-8">
+        <form id="checkout-form" onSubmit={handleSubmit} onBlur={handleContactBlur} className="flex-1 space-y-8">
           {formError && (
             <div
               ref={alertRef}
@@ -300,21 +448,23 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
                   </p>
                 </>
               )}
-              {supportPhone && (
+              {(supportPhone || whatsappHref) && (
                 <p className="mt-4">
-                  Need a hand? Call{" "}
-                  <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-medium underline">
-                    {supportPhone}
-                  </a>{" "}
-                  or{" "}
-                  <a
-                    href={`https://wa.me/${supportPhone.replace(/[^\d]/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="font-medium underline"
-                  >
-                    message us on WhatsApp
-                  </a>
+                  Need a hand?{" "}
+                  {supportPhone && (
+                    <>
+                      Call{" "}
+                      <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-medium underline">
+                        {supportPhone}
+                      </a>
+                    </>
+                  )}
+                  {supportPhone && whatsappHref && " or "}
+                  {whatsappHref && (
+                    <a href={whatsappHref} target="_blank" rel="noreferrer noopener" className="font-medium underline">
+                      {supportPhone ? "message us on WhatsApp" : "Message us on WhatsApp"}
+                    </a>
+                  )}
                   .
                 </p>
               )}
@@ -371,7 +521,17 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
                 className={inputClass}
               />
               {errorFor("customer_email")}
+              {reminderMayBeSent && (
+                <p className="mt-2 text-caption text-stone">
+                  If you leave without ordering, we may email you a reminder. You can unsubscribe any time.
+                </p>
+              )}
             </div>
+
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body text-charcoal">
+              <input type="checkbox" name="whatsapp_optin" onChange={handleContactBlur} className="h-5 w-5 accent-navy" />
+              Send me updates and offers on WhatsApp
+            </label>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <SearchableSelect
@@ -553,7 +713,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
                 method={paymentMethod}
                 label={PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label ?? paymentMethod}
                 number={(paymentSettings[`${paymentMethod}_number`] ?? "").trim()}
-                amount={deliveryFee === null ? null : subtotal + deliveryFee}
+                amount={deliveryFee === null ? null : subtotal - (coupon?.discount ?? 0) + deliveryFee}
                 instructionsHtml={paymentSettings[`${paymentMethod}_instructions`] || DEFAULT_STEPS}
                 logo={logoFor(paymentSettings, paymentMethod)}
                 errors={fieldErrors}
@@ -588,6 +748,12 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
                 <span>Subtotal</span>
                 <span className="font-medium text-charcoal">{formatPrice(subtotal)}</span>
               </div>
+              {coupon && (
+                <div className="flex justify-between">
+                  <span>Code {coupon.code}</span>
+                  <span className="font-medium text-charcoal">&minus;{formatPrice(coupon.discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Delivery</span>
                 <span className="font-medium text-charcoal">
@@ -598,7 +764,58 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
 
             <div className="mt-4 flex justify-between border-t border-linen pt-4 text-base font-semibold text-charcoal">
               <span>Total</span>
-              <span>{formatPrice(subtotal + (deliveryFee ?? 0))}</span>
+              <span>{formatPrice(Math.max(0, subtotal - (coupon?.discount ?? 0)) + (deliveryFee ?? 0))}</span>
+            </div>
+
+            <div className="mt-6">
+              {coupon ? (
+                <div className="rounded-btn border border-linen bg-linen/60 p-3 text-body text-charcoal">
+                  <p>
+                    <span className="font-medium">{coupon.code}</span> is applied: {coupon.value_label} off
+                    {coupon.valid_until_text ? `, until ${coupon.valid_until_text}` : ""}.
+                  </p>
+                  <button type="button" onClick={removeCoupon} className="mt-1 min-h-11 text-caption font-medium text-navy underline">
+                    Remove code
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor={`${uid}-coupon`} className={labelClass}>
+                    Have a code?
+                  </label>
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      id={`${uid}-coupon`}
+                      value={couponInput}
+                      onChange={(event) => setCouponInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void applyCoupon(couponInput);
+                        }
+                      }}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      aria-invalid={couponError ? true : undefined}
+                      className="w-full min-w-0 rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void applyCoupon(couponInput)}
+                      disabled={couponBusy || couponInput.trim() === ""}
+                      className="min-h-11 shrink-0 rounded-btn bg-navy px-5 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      {couponBusy ? "Checking..." : "Apply"}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <p role="alert" className="mt-1 text-caption text-burgundy">
+                      {couponError}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex items-center gap-4">

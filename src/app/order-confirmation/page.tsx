@@ -7,6 +7,7 @@ import { paymentMethodLabel } from "@/lib/payment";
 import { formatDays, resolvePolicy } from "@/lib/policy";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { trackPurchase } from "@/lib/tracking";
+import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import type { Order } from "@/lib/types";
 import PaymentStateNotice from "@/components/PaymentStateNotice";
 
@@ -31,6 +32,8 @@ export default function OrderConfirmationPage() {
   const { siteSettings } = useSiteSettings();
   const policy = resolvePolicy(siteSettings);
   const supportPhone = siteSettings?.contact_phone ?? null;
+  const whatsapp = resolveWhatsApp(siteSettings);
+  const whatsappHref = whatsappLink(whatsapp.number, whatsapp.message);
 
   useEffect(() => {
     try {
@@ -116,6 +119,12 @@ export default function OrderConfirmationPage() {
             <span>Subtotal</span>
             <span className="font-medium text-charcoal">{formatPrice(order.subtotal)}</span>
           </div>
+          {(order.discount_amount ?? 0) > 0 && (
+            <div className="flex justify-between">
+              <span>Code {order.coupon_code}</span>
+              <span className="font-medium text-charcoal">&minus;{formatPrice(order.discount_amount ?? 0)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span>Delivery</span>
             <span className="font-medium text-charcoal">
@@ -179,21 +188,22 @@ export default function OrderConfirmationPage() {
           </li>
           <li>
             <span className="font-medium text-charcoal">Questions?</span>{" "}
-            {supportPhone ? (
+            {supportPhone || whatsappHref ? (
               <>
-                Call{" "}
-                <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="underline hover:text-navy">
-                  {supportPhone}
-                </a>{" "}
-                or{" "}
-                <a
-                  href={`https://wa.me/${supportPhone.replace(/[^\d]/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="underline hover:text-navy"
-                >
-                  message us on WhatsApp
-                </a>
+                {supportPhone && (
+                  <>
+                    Call{" "}
+                    <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="underline hover:text-navy">
+                      {supportPhone}
+                    </a>
+                  </>
+                )}
+                {supportPhone && whatsappHref && " or "}
+                {whatsappHref && (
+                  <a href={whatsappHref} target="_blank" rel="noreferrer noopener" className="underline hover:text-navy">
+                    {supportPhone ? "message us on WhatsApp" : "Message us on WhatsApp"}
+                  </a>
+                )}
                 , and mention order #{order.id}.
               </>
             ) : (

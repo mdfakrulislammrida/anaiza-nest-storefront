@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 import CartLineItem from "@/components/CartLineItem";
+import CartRecoveryRestore from "@/components/CartRecoveryRestore";
 import { CTA } from "@/lib/brand";
 
 export default function CartPage() {
@@ -11,6 +12,8 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
+      <>
+        <CartRecoveryRestore />
       <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
         <h1 className="font-serif text-charcoal text-h1">Your cart is empty</h1>
         <p className="mt-4 text-body text-stone">Browse the collection and find something worth keeping.</p>
@@ -21,10 +24,13 @@ export default function CartPage() {
           {CTA.shopTeaSets}
         </Link>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+      <CartRecoveryRestore />
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
@@ -79,5 +85,6 @@ export default function CartPage() {
         </aside>
       </div>
     </div>
+    </>
   );
 }

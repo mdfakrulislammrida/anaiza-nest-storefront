@@ -214,6 +214,10 @@ export interface CreateOrderPayload {
   // Whether the visitor allowed marketing cookies when they ordered. In opt-in cookie mode the server only
   // sends the sale to Meta and TikTok when this is true.
   marketing_consent?: boolean;
+  // A coupon code (the server checks it again), this browser's cart-recovery session, and the token from a reminder's link.
+  coupon_code?: string;
+  checkout_session?: string;
+  recovery_token?: string;
   items: OrderItemPayload[];
   utm_source?: string;
   utm_medium?: string;
@@ -255,6 +259,9 @@ export interface Order {
   tracking_number?: string | null;
   subtotal: number;
   delivery_fee: number;
+  // What a coupon took off, and its code (absent on an older API, zero and null when none was used).
+  discount_amount?: number;
+  coupon_code?: string | null;
   total: number;
   gift_note: string | null;
   // Absent on an older API.
@@ -440,6 +447,14 @@ export interface SiteSetting {
   corporate_intro?: string | null;
   // False when the admin has switched cash on delivery off in Payment Settings.
   cod_enabled?: boolean;
+  // The WhatsApp bubble and every chat link. The number is the contact phone when no WhatsApp number is set. Absent on an
+  // older API (the contact phone is then used, and the bubble stays on).
+  whatsapp?: {
+    number: string | null;
+    message: string;
+    show_bubble: boolean;
+    hidden_paths: string[];
+  };
   contact_phone: string | null;
   contact_email: string | null;
   address: string | null;
