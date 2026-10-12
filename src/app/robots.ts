@@ -24,6 +24,7 @@ const PRIVATE_PATHS = [
   "/account",
   "/wishlist",
   "/track-order",
+  "/reset-password",
   "/order-confirmation",
   "/auth/",
 ];

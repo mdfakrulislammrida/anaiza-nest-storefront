@@ -410,6 +410,26 @@ export async function loginCustomer(payload: LoginPayload): Promise<AuthResponse
   });
 }
 
+// Asks for a link to choose a new password. The answer is the same whether or not there is an account.
+export async function requestPasswordReset(emailOrPhone: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email: emailOrPhone }),
+  });
+}
+
+// Whether a reset link is still good, so the page can say so before anyone types.
+export async function checkPasswordResetToken(token: string): Promise<{ valid: boolean }> {
+  return apiFetch<{ valid: boolean }>(`/auth/reset-password/check?token=${encodeURIComponent(token)}`);
+}
+
+export async function resetPassword(payload: { token: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // Used to hydrate the customer profile after a social login redirect hands
 // back only a bearer token (see /auth/callback).
 export async function getCustomer(token: string): Promise<AuthCustomer> {

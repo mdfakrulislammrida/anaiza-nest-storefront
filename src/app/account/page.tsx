@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
-import { ApiError } from "@/lib/api";
+import { ApiError, requestPasswordReset } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
 import { enabledProviders, showSocialDivider } from "@/lib/socialLogin";
 
@@ -21,7 +21,9 @@ export default function AccountPage() {
   // Built into the page, then refreshed live: switching a provider on or off in the admin needs no rebuild.
   const { siteSettings } = useSiteSettings();
   const providers = enabledProviders(siteSettings?.social_login);
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
+  // The shop's answer to a request for a reset link (the same whoever asks).
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +40,27 @@ export default function AccountPage() {
       router.push("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sorry, that did not go through. Please try again in a moment.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleForgot(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const form = new FormData(event.currentTarget);
+    try {
+      const answer = await requestPasswordReset(String(form.get("email") ?? "").trim());
+      setForgotMessage(answer.message);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 429
+          ? "That is a lot of tries in a short time. Please wait a little and try again."
+          : err instanceof ApiError && err.errors?.email
+            ? err.errors.email[0]
+            : "Sorry, that did not go through. Please try again in a moment.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -100,15 +123,17 @@ export default function AccountPage() {
       </nav>
 
       <h1 className="font-serif text-charcoal text-h1">
-        {mode === "login" ? "Welcome back" : "Create your account"}
+        {mode === "login" ? "Welcome back" : mode === "forgot" ? "Choose a new password" : "Create your account"}
       </h1>
       <p className="mt-2 text-body text-stone">
         {mode === "login"
           ? "Login to view your orders and saved addresses."
-          : "Save your addresses and track orders faster."}
+          : mode === "forgot"
+            ? "Give us your email address or phone number and we will email you a link."
+            : "Save your addresses and track orders faster."}
       </p>
 
-      {providers.length > 0 && (
+      {mode !== "forgot" && providers.length > 0 && (
         <div className="mt-6 space-y-4">
           {providers.includes("google") && (
             <a
@@ -153,7 +178,7 @@ export default function AccountPage() {
         </div>
       )}
 
-      {showSocialDivider(siteSettings?.social_login) && (
+      {mode !== "forgot" && showSocialDivider(siteSettings?.social_login) && (
         <div className="my-6 flex items-center gap-4 text-caption text-stone">
           <span className="h-px flex-1 bg-line" />
           or
@@ -161,7 +186,53 @@ export default function AccountPage() {
         </div>
       )}
 
-      {mode === "login" ? (
+      {mode === "forgot" ? (
+        <>
+          {forgotMessage ? (
+            <div role="status" className="mt-6 rounded-btn border border-linen bg-linen p-4 text-body text-charcoal">
+              <p>{forgotMessage}</p>
+              <p className="mt-2 text-caption text-stone">
+                Nothing yet? Look in your spam folder, or ask again in a few minutes.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleForgot} className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="forgot-email" className={labelClass}>
+                  Email or Phone
+                </label>
+                <input id="forgot-email" name="email" type="text" autoComplete="email" required className={inputClass} />
+              </div>
+              {error && (
+                <p role="alert" className="text-body text-burgundy">
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="min-h-12 w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {submitting ? "Sending..." : "Email me a link"}
+              </button>
+            </form>
+          )}
+
+          <p className="mt-4 text-body text-stone">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setForgotMessage(null);
+                setError(null);
+              }}
+              className="min-h-11 font-medium text-navy hover:underline"
+            >
+              Back to login
+            </button>
+          </p>
+        </>
+      ) : mode === "login" ? (
         <>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div>
@@ -173,6 +244,18 @@ export default function AccountPage() {
               <input name="password" type="password" required className={inputClass} />
             </div>
             {error && <p className="text-body text-burgundy">{error}</p>}
+            <p className="text-body">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setError(null);
+                }}
+                className="min-h-11 font-medium text-navy hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </p>
             <button
               type="submit"
               disabled={submitting}
