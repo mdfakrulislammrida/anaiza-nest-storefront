@@ -447,6 +447,8 @@ export interface SiteSetting {
   corporate_intro?: string | null;
   // False when the admin has switched cash on delivery off in Payment Settings.
   cod_enabled?: boolean;
+  // Which "continue with" providers the admin has switched on (and given credentials). Absent on an older API = none.
+  social_login?: { google: boolean; facebook: boolean };
   // The WhatsApp bubble and every chat link. The number is the contact phone when no WhatsApp number is set. Absent on an
   // older API (the contact phone is then used, and the bubble stays on).
   whatsapp?: {

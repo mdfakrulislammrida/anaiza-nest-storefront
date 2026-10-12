@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { unavailableMessage } from "@/lib/socialLogin";
 
 const ERROR_MESSAGES: Record<string, string> = {
   social_login_failed: "We couldn't complete that sign-in. Please try again.",
@@ -21,6 +22,9 @@ export default function AuthCallbackClient() {
   // only the async token exchange below needs an effect.
   const [error, setError] = useState<string | null>(() => {
     const errorCode = searchParams.get("error");
+    if (errorCode === "social_login_unavailable") {
+      return unavailableMessage(searchParams.get("provider"));
+    }
     if (errorCode) {
       return ERROR_MESSAGES[errorCode] ?? "Something went wrong signing you in. Please try again.";
     }
