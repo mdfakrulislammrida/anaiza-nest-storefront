@@ -37,6 +37,36 @@ RewriteRule ^blog/.+$ /article.html [L]
 ErrorDocument 404 /404.html
 
 # ---------------------------------------------------------------------------
+# Security headers. Set on every response (including errors) by the host, since
+# a static export has no server of its own to set them.
+#
+# The Content-Security-Policy is REPORT ONLY for now: the browser lists anything
+# it would have blocked in its console (DevTools > Console) and blocks nothing.
+# Browse the shop with a pixel and the cookie banner on, fix the allow-lists
+# below for anything legitimate that is listed, then change the header name
+# "Content-Security-Policy-Report-Only" to "Content-Security-Policy" to enforce.
+# 'unsafe-inline' stays in script-src and style-src because the pages carry their
+# own inline start-up script and styles; the value of the policy is that it names
+# every other place a script, frame, form or connection may come from.
+#
+# When the site has run on HTTPS only for a while, add (it cannot be taken back
+# quickly, browsers remember it for the whole max-age):
+#   Header always set Strict-Transport-Security "max-age=15552000"
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always unset X-Powered-By
+
+  # Enforced: nobody else may put the shop in a frame (frame-ancestors is ignored in report-only mode).
+  Header always set Content-Security-Policy "frame-ancestors 'self'"
+
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://analytics.tiktok.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' https:; connect-src 'self' https://api.anaizanest.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.doubleclick.net https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://*.tiktok.com; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://www.googletagmanager.com https://www.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+</IfModule>
+
+# ---------------------------------------------------------------------------
 # Performance: compression + caching. Each block is wrapped in <IfModule> so a
 # host without that module just skips it instead of returning a 500.
 # ---------------------------------------------------------------------------
