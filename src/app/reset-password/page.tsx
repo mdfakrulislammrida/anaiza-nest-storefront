@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ApiError, checkPasswordResetToken, resetPassword } from "@/lib/api";
 import { passwordProblems, tokenFromSearch } from "@/lib/passwordReset";
+import { useHydrated } from "@/components/useFormGuard";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -16,6 +17,7 @@ type Stage = "checking" | "ready" | "ended" | "done";
 // The page the link in a "choose a new password" email opens. The token is read from the address in the browser (the site is
 // static), checked with the shop first so an ended link is said so before anyone types, and sent with the new password.
 export default function ResetPasswordPage() {
+  const hydrated = useHydrated();
   const [stage, setStage] = useState<Stage>("checking");
   const [token, setToken] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -160,7 +162,7 @@ export default function ResetPasswordPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !hydrated}
               className="min-h-12 w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Saving..." : "Save new password"}

@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { ApiError, requestPasswordReset } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
+import { calmMessage } from "@/lib/formGuard";
+import { useFormGuard } from "@/components/useFormGuard";
 import { enabledProviders, showSocialDivider } from "@/lib/socialLogin";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
@@ -22,6 +24,7 @@ export default function AccountPage() {
   const { siteSettings } = useSiteSettings();
   const providers = enabledProviders(siteSettings?.social_login);
   const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
+  const guard = useFormGuard("form");
   // The shop's answer to a request for a reset link (the same whoever asks).
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -79,6 +82,7 @@ export default function AccountPage() {
     const form = new FormData(event.currentTarget);
     try {
       await register({
+        ...(await guard.proof()),
         name: String(form.get("name") ?? ""),
         email: String(form.get("email") ?? ""),
         password: String(form.get("password") ?? ""),
@@ -89,7 +93,7 @@ export default function AccountPage() {
       });
       router.push("/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Sorry, that did not go through. Please try again in a moment.");
+      setError(err instanceof ApiError && err.errors ? err.message : calmMessage(err, "Sorry, that did not go through. Please try again in a moment."));
     } finally {
       setSubmitting(false);
     }
@@ -216,7 +220,7 @@ export default function AccountPage() {
               )}
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !guard.ready}
                 className="min-h-12 w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {submitting ? "Sending..." : "Email me a link"}
@@ -264,7 +268,7 @@ export default function AccountPage() {
             </p>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !guard.ready}
               className="w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Logging in..." : "Login"}
@@ -280,7 +284,8 @@ export default function AccountPage() {
         </>
       ) : (
         <>
-          <form onSubmit={handleRegister} className="mt-6 space-y-4">
+          <form onSubmit={handleRegister} className="relative mt-6 space-y-4">
+            {guard.trap}
             <div>
               <label className={labelClass}>Full name</label>
               <input name="name" required className={inputClass} />
@@ -314,7 +319,7 @@ export default function AccountPage() {
             {error && <p className="text-body text-burgundy">{error}</p>}
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !guard.ready}
               className="w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Creating account..." : "Create account"}

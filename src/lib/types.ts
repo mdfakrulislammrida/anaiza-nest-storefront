@@ -196,6 +196,9 @@ export interface OrderItemPayload {
 }
 
 export interface CreateOrderPayload {
+  // The quiet bot trap (lib/formGuard.ts).
+  hp_field?: string;
+  form_rendered_at?: number;
   customer_name: string;
   customer_email?: string | null;
   customer_phone: string;
@@ -536,6 +539,9 @@ export interface ContactSubmissionPayload {
   name: string;
   phone: string;
   message: string;
+  // The quiet bot trap (lib/formGuard.ts).
+  hp_field?: string;
+  form_rendered_at?: number;
 }
 
 export interface RegisterPayload {
@@ -546,6 +552,8 @@ export interface RegisterPayload {
   address: string;
   city: string;
   postal_code: string;
+  hp_field?: string;
+  form_rendered_at?: number;
 }
 
 export interface LoginPayload {

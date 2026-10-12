@@ -6,6 +6,7 @@ import { ApiError, lookupOrder } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import PaymentStateNotice from "@/components/PaymentStateNotice";
+import { useHydrated } from "@/components/useFormGuard";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -21,6 +22,7 @@ function statusLabel(status: string): string {
 
 export default function TrackOrderPage() {
   const [order, setOrder] = useState<Order | null>(null);
+  const hydrated = useHydrated();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +77,7 @@ export default function TrackOrderPage() {
         {error && <p className="text-body text-burgundy">{error}</p>}
         <button
           type="submit"
-          disabled={status === "loading"}
+          disabled={status === "loading" || !hydrated}
           className="rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {status === "loading" ? "Searching..." : "Track order"}

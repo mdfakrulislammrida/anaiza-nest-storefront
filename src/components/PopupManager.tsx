@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Modal from "./Modal";
 import { getPopupSettings, subscribeToNewsletter } from "@/lib/api";
+import { calmMessage } from "@/lib/formGuard";
+import { useFormGuard } from "./useFormGuard";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { CTA } from "@/lib/brand";
 import { resolveWording } from "@/lib/homepageWording";
@@ -144,6 +146,8 @@ function PopupImage({ src, alt }: { src: string | null; alt: string }) {
 
 function NewsletterPopupContent({ image }: { image: string | null }) {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const guard = useFormGuard("newsletter");
   const wording = resolveWording(useSiteSettings().siteSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -154,11 +158,12 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
 
     setStatus("loading");
     try {
-      await subscribeToNewsletter(email);
+      await subscribeToNewsletter(email, await guard.proof());
       setStatus("done");
       form.reset();
-    } catch {
+    } catch (err) {
       setStatus("error");
+      setMessage(calmMessage(err, "Sorry, that did not go through. Please try again in a moment."));
     }
   }
 
@@ -172,7 +177,8 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
         {status === "done" ? (
           <p className="mt-6 text-body font-medium text-charcoal">Thanks — you&apos;re on the list.</p>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-2">
+          <form onSubmit={handleSubmit} className="relative mt-6 space-y-2">
+            {guard.trap}
             <input
               type="email"
               name="email"
@@ -182,7 +188,7 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
             />
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={status === "loading" || !guard.ready}
               className="w-full rounded-btn bg-navy px-6 py-2 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Subscribe
@@ -190,7 +196,7 @@ function NewsletterPopupContent({ image }: { image: string | null }) {
           </form>
         )}
         {status === "error" && (
-          <p className="mt-2 text-caption text-burgundy">Sorry, that did not go through. Please try again in a moment.</p>
+          <p className="mt-2 text-caption text-burgundy">{message}</p>
         )}
       </div>
     </div>

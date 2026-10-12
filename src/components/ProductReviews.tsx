@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { ApiError, getProductReviews, getReviewLink, submitProductReview } from "@/lib/api";
+import { calmMessage, RENDERED_AT_FIELD } from "@/lib/formGuard";
+import { useFormGuard } from "./useFormGuard";
 import { formatDate } from "@/lib/format";
 import type { Review, ReviewsPage } from "@/lib/types";
 import Stars from "./Stars";
@@ -63,6 +65,7 @@ function ReviewItem({ review }: { review: Review }) {
 
 function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug: string; onDone: () => void; reviewToken?: string | null; startName?: string }) {
   const uid = useId();
+  const guard = useFormGuard("form");
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -100,6 +103,10 @@ function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug
     }
 
     try {
+      // The trap's own input is already in the form; the time it was opened goes with it.
+      const proof = await guard.proof();
+      form.set(RENDERED_AT_FIELD, String(proof.form_rendered_at));
+
       await submitProductReview(slug, form, authToken());
       setStatus("done");
     } catch (err) {
@@ -108,10 +115,17 @@ function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug
         // The server's messages are written in our voice, so they are shown as they are.
         setErrors(err.errors);
         setFormError("Please check the highlighted fields and try again.");
-      } else if (err instanceof ApiError && err.status === 429) {
-        setFormError("That is a lot of tries in a short time. Please wait a little and try again.");
+      } else if (err instanceof ApiError && err.status === 401) {
+        // A sign-in that has run out (they last 30 days): forget it, and the form asks for the order number and phone.
+        try {
+          window.localStorage.removeItem("anaiza-auth");
+        } catch {
+          // nothing to forget
+        }
+        setSignedIn(false);
+        setFormError("Your sign-in has ended. Please add your order number and phone number below, or sign in again.");
       } else {
-        setFormError("Sorry, that did not go through. Please try again in a moment.");
+        setFormError(calmMessage(err, "Sorry, that did not go through. Please try again in a moment."));
       }
     }
   }
@@ -128,7 +142,8 @@ function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-btn border border-linen p-4 sm:p-6" noValidate>
+    <form onSubmit={handleSubmit} className="relative mt-6 space-y-4 rounded-btn border border-linen p-4 sm:p-6" noValidate>
+      {guard.trap}
       <fieldset>
         <legend className={labelClass}>Your rating</legend>
         <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Your rating">
@@ -232,7 +247,7 @@ function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug
 
       <button
         type="submit"
-        disabled={status === "sending"}
+        disabled={status === "sending" || !guard.ready}
         className="min-h-12 w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
       >
         {status === "sending" ? "Sending..." : "Send review"}

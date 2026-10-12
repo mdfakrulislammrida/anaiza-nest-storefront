@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { exchangeSocialCode } from "@/lib/api";
 import { unavailableMessage } from "@/lib/socialLogin";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -28,14 +29,26 @@ export default function AuthCallbackClient() {
     if (errorCode) {
       return ERROR_MESSAGES[errorCode] ?? "Something went wrong signing you in. Please try again.";
     }
-    return searchParams.get("token") ? null : "Missing sign-in details. Please try again.";
+    return searchParams.get("code") || searchParams.get("token") ? null : "Missing sign-in details. Please try again.";
   });
 
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (!token) return;
+  // The code works once, so it must be used once: a development double-run of this effect must not spend it twice.
+  const started = useRef(false);
 
-    loginWithToken(token)
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const legacyToken = searchParams.get("token");
+    if ((!code && !legacyToken) || started.current) return;
+    started.current = true;
+
+    // Whatever arrived in the address is not left in the history.
+    window.history.replaceState(null, "", window.location.pathname);
+
+    const signIn = code
+      ? exchangeSocialCode(code).then(({ token }) => loginWithToken(token))
+      : loginWithToken(legacyToken as string);
+
+    signIn
       .then(() => router.replace("/account"))
       .catch(() => setError("We couldn't sign you in. Please try again."));
   }, [searchParams, loginWithToken, router]);

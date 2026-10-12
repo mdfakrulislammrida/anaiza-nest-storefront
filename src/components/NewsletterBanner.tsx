@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { subscribeToNewsletter } from "@/lib/api";
+import { calmMessage } from "@/lib/formGuard";
+import { useFormGuard } from "./useFormGuard";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { resolveWording } from "@/lib/homepageWording";
 
@@ -14,6 +16,8 @@ export default function NewsletterBanner({
   subtitle?: string | null;
 }) {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const guard = useFormGuard("newsletter");
   const wording = resolveWording(useSiteSettings().siteSettings);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -24,11 +28,12 @@ export default function NewsletterBanner({
 
     setStatus("loading");
     try {
-      await subscribeToNewsletter(email);
+      await subscribeToNewsletter(email, await guard.proof());
       setStatus("done");
       form.reset();
-    } catch {
+    } catch (err) {
       setStatus("error");
+      setMessage(calmMessage(err, "Sorry, that did not go through. Please try again in a moment."));
     }
   }
 
@@ -41,7 +46,8 @@ export default function NewsletterBanner({
         {status === "done" ? (
           <p className="mt-6 text-body font-medium">Thanks — you&apos;re on the list.</p>
         ) : (
-          <form onSubmit={handleSubmit} className="mx-auto mt-6 flex max-w-sm gap-2">
+          <form onSubmit={handleSubmit} className="relative mx-auto mt-6 flex max-w-sm gap-2">
+            {guard.trap}
             <input
               type="email"
               name="email"
@@ -51,7 +57,7 @@ export default function NewsletterBanner({
             />
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={status === "loading" || !guard.ready}
               className="shrink-0 rounded-btn bg-ivory px-6 py-2 text-button text-navy transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Subscribe
@@ -59,7 +65,7 @@ export default function NewsletterBanner({
           </form>
         )}
         {status === "error" && (
-          <p className="mt-2 text-caption text-champagne">Something went wrong. Please try again.</p>
+          <p className="mt-2 text-caption text-champagne">{message}</p>
         )}
       </div>
     </section>

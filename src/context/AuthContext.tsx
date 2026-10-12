@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getCustomer, loginCustomer, registerCustomer } from "@/lib/api";
+import { getCustomer, loginCustomer, logoutCustomer, registerCustomer } from "@/lib/api";
 import type { AuthCustomer, LoginPayload, RegisterPayload } from "@/lib/types";
 
 interface AuthContextValue {
@@ -58,8 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    let token: string | null = null;
+    try {
+      token = (JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as { token?: string } | null)?.token ?? null;
+    } catch {
+      // nothing usable stored
+    }
+
     window.localStorage.removeItem(STORAGE_KEY);
     setCustomer(null);
+
+    if (token) void logoutCustomer(token);
   }, []);
 
   const value = useMemo(

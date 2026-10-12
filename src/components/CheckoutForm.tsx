@@ -10,6 +10,8 @@ import { clearCouponCode, clearRecoveryToken, readCouponCode, readRecoveryToken,
 import { mayStoreIdentified, validEmail, validPhone } from "@/lib/recovery";
 import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import { getStoredUtmParams } from "@/lib/attribution";
+import { calmMessage, mobileProblem } from "@/lib/formGuard";
+import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
 import { estimateDeliveryFee, resolvePolicy } from "@/lib/policy";
@@ -72,6 +74,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
   const whatsapp = resolveWhatsApp(siteSettings);
   const whatsappHref = whatsappLink(whatsapp.number, whatsapp.message);
   const uid = useId();
+  const guard = useFormGuard("order");
   const alertRef = useRef<HTMLDivElement>(null);
 
   // Seeded from the build, then refreshed once on load: a merchant number or step the shop has just changed
@@ -305,6 +308,16 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
     }
 
     const form = new FormData(formElement);
+
+    // Caught here, in words that say what a number looks like, rather than after the order is sent.
+    const phoneProblem = mobileProblem(String(form.get("customer_phone") ?? ""));
+    if (phoneProblem) {
+      setFieldErrors({ customer_phone: [phoneProblem] });
+      setFormError("Please check the highlighted fields and try again.");
+      setRevealCount((count) => count + 1);
+      return;
+    }
+
     const senderNumber = String(form.get("payment_sender_number") ?? "");
     const trxId = String(form.get("payment_trx_id") ?? "");
 
@@ -322,7 +335,11 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
     setSubmitting(true);
     const email = String(form.get("customer_email") ?? "").trim();
 
+    // Waits out the bot trap's minimum time (invisibly, with the button already busy), then carries its two fields.
+    const proof = await guard.proof();
+
     const payload: CreateOrderPayload = {
+      ...proof,
       customer_name: String(form.get("customer_name") ?? ""),
       customer_email: email || null,
       customer_phone: String(form.get("customer_phone") ?? ""),
@@ -388,7 +405,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
               : error.message || "We couldn't place your order. Please try again.",
         );
       } else {
-        setFormError("Sorry, we could not place your order just now. Please try again in a moment.");
+        setFormError(calmMessage(error, "Sorry, we could not place your order just now. Please try again in a moment."));
       }
       setRevealCount((count) => count + 1);
     } finally {
@@ -424,7 +441,8 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
       <h1 className="font-serif text-charcoal text-h1">Checkout</h1>
 
       <div className="mt-8 flex flex-col gap-10 lg:flex-row">
-        <form id="checkout-form" onSubmit={handleSubmit} onBlur={handleContactBlur} className="flex-1 space-y-8">
+        <form id="checkout-form" onSubmit={handleSubmit} onBlur={handleContactBlur} className="relative flex-1 space-y-8">
+          {guard.trap}
           {formError && (
             <div
               ref={alertRef}
@@ -823,7 +841,7 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
               <button
                 type="submit"
                 form="checkout-form"
-                disabled={submitting}
+                disabled={submitting || !guard.ready}
                 className="w-full flex-1 scroll-mb-[calc(var(--cookie-top,0px)+1rem)] rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? "Placing your order..." : paymentMethod === "cod" ? CTA.order : "Place order"}

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "./config";
 import { fetchJsonStrict } from "./buildFetch";
+import type { FormProof } from "./formGuard";
 import type { RecoveredCart } from "./cartRecovery";
 import type { SessionPayload } from "./recovery";
 import type {
@@ -375,10 +376,10 @@ export async function getTestimonials(featured = false): Promise<Testimonial[]> 
   return data;
 }
 
-export async function subscribeToNewsletter(email: string): Promise<void> {
+export async function subscribeToNewsletter(email: string, proof: Partial<FormProof> = {}): Promise<void> {
   await apiFetch<{ message: string; email: string }>("/newsletter-subscribers", {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, ...proof }),
   });
 }
 
@@ -428,6 +429,27 @@ export async function resetPassword(payload: { token: string; password: string; 
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// Trades the one-time code a social sign-in returns with for the sign-in token. The code works once, for five minutes.
+export async function exchangeSocialCode(code: string): Promise<{ token: string; customer: AuthCustomer }> {
+  return apiFetch<{ token: string; customer: AuthCustomer }>("/auth/social/exchange", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+// Ends this sign-in on the server too, so a copied token stops working. Best effort: signing out here never waits on it.
+export async function logoutCustomer(token: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      keepalive: true,
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // The token is forgotten here either way.
+  }
 }
 
 // Used to hydrate the customer profile after a social login redirect hands

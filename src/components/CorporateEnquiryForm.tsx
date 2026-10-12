@@ -3,6 +3,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { ApiError, submitCorporateEnquiry } from "@/lib/api";
 import { CTA } from "@/lib/brand";
+import { useHydrated } from "./useFormGuard";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -12,6 +13,7 @@ const labelClass = "text-caption font-semibold text-stone";
 
 export default function CorporateEnquiryForm() {
   const uid = useId();
+  const hydrated = useHydrated();
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -154,7 +156,7 @@ export default function CorporateEnquiryForm() {
       )}
       <button
         type="submit"
-        disabled={status === "loading"}
+        disabled={status === "loading" || !hydrated}
         className="w-full rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
       >
         {status === "loading" ? "Sending..." : CTA.corporate}
