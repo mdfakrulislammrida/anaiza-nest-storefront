@@ -32,6 +32,9 @@ RewriteRule ^product/.+$ /product.html [L]
 RewriteRule ^pages/.+$ /pages.html [L]
 RewriteRule ^category/.+$ /category.html [L]
 RewriteRule ^blog/.+$ /article.html [L]
+#    Landing pages (/lp/<slug>) made in the admin after the last build: the same
+#    client-only shell idea, so a new page works at once.
+RewriteRule ^lp/.+$ /lp.html [L]
 
 # 5. Custom 404 page
 ErrorDocument 404 /404.html

@@ -9,7 +9,7 @@ import { currentSessionToken, endSession, noteContact, noteStage } from "@/lib/c
 import { clearCouponCode, clearRecoveryToken, readCouponCode, readRecoveryToken, saveCouponCode, type AppliedCoupon } from "@/lib/coupon";
 import { mayStoreIdentified, validEmail, validPhone } from "@/lib/recovery";
 import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
-import { getStoredUtmParams } from "@/lib/attribution";
+import { getStoredClickIds, getStoredUtmParams } from "@/lib/attribution";
 import { calmMessage, mobileProblem } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
@@ -63,9 +63,25 @@ function logoFor(settings: PaymentSetting | null, method: PaymentMethod): string
   return method === "cod" || !settings ? null : (settings[`${method as WalletMethod}_logo`] ?? null);
 }
 
-export default function CheckoutForm({ paymentSettings: initialPaymentSettings }: { paymentSettings: PaymentSetting | null }) {
+// The checkout page, and (with `embedded`) the same checkout inside a landing page's Order form block: no page chrome,
+// stacked rather than side by side, quantities editable in the summary, and a sticky order button on a phone. It is one
+// component on purpose, so a landing order goes through exactly the same validation, protections and tracking.
+export default function CheckoutForm({
+  paymentSettings: initialPaymentSettings,
+  embedded = false,
+  landing,
+  heading,
+  intro,
+}: {
+  paymentSettings: PaymentSetting | null;
+  embedded?: boolean;
+  // The landing page the order is placed from; its slug travels with the order.
+  landing?: { id: number; slug: string };
+  heading?: string | null;
+  intro?: string | null;
+}) {
   const router = useRouter();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, updateQuantity, removeItem } = useCart();
   // The order summary shows a live estimate from the editable delivery settings;
   // the server always recomputes and charges the authoritative fee itself.
   const { siteSettings } = useSiteSettings();
@@ -162,13 +178,20 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
   const upazilas = district ? (BD_UPAZILAS_BY_DISTRICT[district] ?? []) : [];
   const deliveryFee = division ? estimateDeliveryFee(policy, division, subtotal) : null;
 
-  useEffect(() => {
+  // InitiateCheckout and the "checkout started" stage fire once. On the checkout page that is when it opens; inside a landing
+  // page, where the form is far down the page, it is the first time the visitor touches the form.
+  const flowStarted = useRef(false);
+
+  function noteFlowStarted() {
+    if (flowStarted.current) return;
+    flowStarted.current = true;
     if (items.length > 0) trackBeginCheckout(items, subtotal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once when the checkout page is first reached with items in the cart, not on every subtotal change
-  }, []);
+    noteStage("checkout_started");
+  }
 
   useEffect(() => {
-    noteStage("checkout_started");
+    if (!embedded) noteFlowStarted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once when the checkout page is first reached, not on every cart change
   }, []);
 
   // Details from a reminder's link start the form filled in (only fields still empty), and its coupon is checked. The cart
@@ -273,6 +296,33 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
     clearCouponCode();
   }
 
+  // The sticky order button on a phone: with nothing chosen yet it takes the visitor up to the products.
+  function scrollToId(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (items.length === 0 && !orderPlaced && embedded) {
+    return (
+      <div>
+        <div className="rounded-btn border border-linen bg-linen/50 p-6 text-center">
+          <p className="text-body text-charcoal">Choose a gift above and it will appear here, ready to order.</p>
+        </div>
+        <div
+          data-bottom-bar
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(42,38,34,0.08)] lg:hidden"
+        >
+          <button
+            type="button"
+            onClick={() => scrollToId("landing-products")}
+            className="w-full rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90"
+          >
+            {siteSettings?.cod_enabled === false ? "Order now" : CTA.order}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (items.length === 0 && !orderPlaced) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
@@ -361,6 +411,8 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
         variant_id: item.variantId,
       })),
       ...getStoredUtmParams(),
+      ...getStoredClickIds(),
+      ...(landing ? { landing_page: landing.slug } : {}),
       ...(coupon ? { coupon_code: coupon.code } : {}),
       ...(currentSessionToken() ? { checkout_session: currentSessionToken() as string } : {}),
     };
@@ -413,6 +465,19 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
     }
   }
 
+  // On a phone the order button is fixed to the bottom of the screen for the whole page. Pressed while the form is out of
+  // sight, it takes the visitor to the form instead of asking for fields they cannot see.
+  function handleStickyOrder(event: { preventDefault: () => void }) {
+    const section = document.getElementById("landing-order");
+    const rect = section?.getBoundingClientRect();
+    const formInView = rect !== undefined && rect.bottom > 0 && rect.top < window.innerHeight * 0.7;
+
+    if (!formInView) {
+      event.preventDefault();
+      scrollToId("landing-order");
+    }
+  }
+
   function errorFor(field: string) {
     const message = fieldErrors[field]?.[0];
     return message ? <p className="mt-1 text-caption text-burgundy">{message}</p> : null;
@@ -425,23 +490,38 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
   const labelClass = "text-caption font-medium text-stone";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <nav className="mb-6 text-caption text-stone">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <Link href="/cart" className="hover:text-navy">
-          Cart
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">Checkout</span>
-      </nav>
+    <div className={embedded ? "" : "mx-auto max-w-6xl px-4 py-10 sm:px-6"}>
+      {embedded ? (
+        <div>
+          <h2 className="font-serif text-charcoal text-h2">{heading || "Your order"}</h2>
+          {intro && <p className="mt-2 text-body text-stone">{intro}</p>}
+        </div>
+      ) : (
+        <>
+          <nav className="mb-6 text-caption text-stone">
+            <Link href="/" className="hover:text-navy">
+              Home
+            </Link>
+            <span className="mx-1.5">/</span>
+            <Link href="/cart" className="hover:text-navy">
+              Cart
+            </Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-charcoal">Checkout</span>
+          </nav>
 
-      <h1 className="font-serif text-charcoal text-h1">Checkout</h1>
+          <h1 className="font-serif text-charcoal text-h1">Checkout</h1>
+        </>
+      )}
 
-      <div className="mt-8 flex flex-col gap-10 lg:flex-row">
-        <form id="checkout-form" onSubmit={handleSubmit} onBlur={handleContactBlur} className="relative flex-1 space-y-8">
+      <div className={embedded ? "mt-6 flex flex-col gap-8" : "mt-8 flex flex-col gap-10 lg:flex-row"}>
+        <form
+          id="checkout-form"
+          onSubmit={handleSubmit}
+          onBlur={handleContactBlur}
+          onFocusCapture={embedded ? noteFlowStarted : undefined}
+          className="relative flex-1 space-y-8"
+        >
           {guard.trap}
           {formError && (
             <div
@@ -459,10 +539,16 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
                     ))}
                   </ul>
                   <p className="mt-4">
-                    <Link href="/cart" className="font-medium underline">
-                      Review your cart
-                    </Link>{" "}
-                    and lower the quantity, then place the order again.
+                    {embedded ? (
+                      <a href="#landing-order" className="font-medium underline">
+                        Change the quantity below
+                      </a>
+                    ) : (
+                      <Link href="/cart" className="font-medium underline">
+                        Review your cart
+                      </Link>
+                    )}{" "}
+                    {embedded ? "and lower it, then place the order again." : "and lower the quantity, then place the order again."}
                   </p>
                 </>
               )}
@@ -743,20 +829,48 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
           </fieldset>
         </form>
 
-        <aside className="lg:w-80">
+        <aside className={embedded ? "w-full" : "lg:w-80"}>
           <div className="rounded-xl border border-linen p-6">
             <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
 
             <ul className="mt-4 space-y-4">
               {items.map((item) => (
-                <li key={item.key} className="flex justify-between text-body text-charcoal/70">
-                  <span>
-                    {item.name}
-                    {item.variantLabel ? ` (${item.variantLabel})` : ""} &times; {item.quantity}
-                  </span>
-                  <span className="whitespace-nowrap font-medium text-charcoal">
-                    {formatPrice(item.price * item.quantity)}
-                  </span>
+                <li key={item.key} className="text-body text-charcoal/70">
+                  <div className="flex justify-between">
+                    <span>
+                      {item.name}
+                      {item.variantLabel ? ` (${item.variantLabel})` : ""} &times; {item.quantity}
+                    </span>
+                    <span className="whitespace-nowrap font-medium text-charcoal">
+                      {formatPrice(item.price * item.quantity)}
+                    </span>
+                  </div>
+                  {embedded && (
+                    <div className="mt-2 flex items-center gap-3">
+                      <div className="flex items-center rounded-btn border border-stone/80">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                          className="flex h-11 w-11 items-center justify-center text-charcoal hover:bg-linen"
+                          aria-label={`Fewer ${item.name}`}
+                        >
+                          &minus;
+                        </button>
+                        <span className="flex h-11 min-w-8 items-center justify-center text-body font-medium text-charcoal">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                          className="flex h-11 w-11 items-center justify-center text-charcoal hover:bg-linen"
+                          aria-label={`More ${item.name}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button type="button" onClick={() => removeItem(item.key)} className="min-h-11 text-caption font-medium text-navy underline">
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -836,11 +950,28 @@ export default function CheckoutForm({ paymentSettings: initialPaymentSettings }
               )}
             </div>
 
-            <div className="mt-6 flex items-center gap-4">
-              {paymentSettings?.cod_enabled !== false && <Seal message="Cash on delivery" />}
+            <div
+              {...(embedded ? { "data-bottom-bar": "" } : {})}
+              className={
+                embedded
+                  ? "fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(42,38,34,0.08)] lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
+                  : "mt-6 flex items-center gap-4"
+              }
+            >
+              {paymentSettings?.cod_enabled !== false && (
+                <span className={embedded ? "hidden lg:block" : undefined}>
+                  <Seal message="Cash on delivery" />
+                </span>
+              )}
+              {embedded && (
+                <span className="shrink-0 text-body font-semibold text-charcoal lg:hidden">
+                  {formatPrice(Math.max(0, subtotal - (coupon?.discount ?? 0)) + (deliveryFee ?? 0))}
+                </span>
+              )}
               <button
                 type="submit"
                 form="checkout-form"
+                onClick={embedded ? handleStickyOrder : undefined}
                 disabled={submitting || !guard.ready}
                 className="w-full flex-1 scroll-mb-[calc(var(--cookie-top,0px)+1rem)] rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllArticles, getAllProducts, getCategories, getPages } from "@/lib/api";
+import { getAllArticles, getAllProducts, getCategories, getPages, getSitemapLandingPages } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 
 // Required for output: "export" -- there's no server to compute this
@@ -11,11 +11,13 @@ export const dynamic = "force-static";
 const STATIC_ROUTES = ["/", "/shop", "/hot-deals", "/gift-finder", "/corporate-gifting", "/contact", "/faq", "/track-order", "/blog"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, categories, pages, articles] = await Promise.all([
+  const [products, categories, pages, articles, landingPages] = await Promise.all([
     getAllProducts().catch(() => []),
     getCategories().catch(() => []),
     getPages().catch(() => []),
     getAllArticles().catch(() => []),
+    // Only the campaign pages whose "keep out of search" switch has been turned off.
+    getSitemapLandingPages().catch(() => []),
   ]);
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((path) => ({
@@ -48,5 +50,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...productEntries, ...categoryEntries, ...pageEntries, ...articleEntries];
+  const landingEntries: MetadataRoute.Sitemap = landingPages.map((page) => ({
+    url: new URL(`/lp/${page.slug}`, SITE_URL).toString(),
+    changeFrequency: "weekly",
+    priority: 0.5,
+  }));
+
+  return [...staticEntries, ...productEntries, ...categoryEntries, ...pageEntries, ...articleEntries, ...landingEntries];
 }

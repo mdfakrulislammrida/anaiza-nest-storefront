@@ -21,6 +21,7 @@ import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/Market
 import RouteChangeTracker from "@/components/RouteChangeTracker";
 import UtmCapture from "@/components/UtmCapture";
 import CookieConsent from "@/components/CookieConsent";
+import { HideOnLanding, LandingChromeProvider } from "@/components/LandingChrome";
 
 // Brand kit type: Fraunces 300/400/500 for headings (italic 300 only for the one emotional line),
 // Inter 400/500/600 for text. Both are variable fonts, so every weight the kit uses (300/400/500 and 400/500/600) is one file each.
@@ -127,6 +128,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // later is linked only after the next build, because its page doesn't exist until then.
   const categories = await getCategories().catch(() => []);
 
+  // The frame around every page. Landing pages (/lp/...) draw their own (logo only, or these same pieces by choice), so
+  // the layout hides them there and hands them over through LandingChromeProvider.
+  const top = (
+    <>
+      <TopPromoBar />
+      <Header categories={categories} />
+    </>
+  );
+  const bottom = <Footer cookieBanner={Boolean(cookieConsent?.enabled)} />;
+
   return (
     <html
       lang="en"
@@ -147,15 +158,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <AuthProvider>
             <CartProvider>
               <WishlistProvider>
-                <TopPromoBar />
-                <Header categories={categories} />
-                <main className="flex-1">{children}</main>
-                <Footer cookieBanner={Boolean(cookieConsent?.enabled)} />
-                <CartDrawer />
-                <CheckoutSessionReporter />
-                <WhatsAppButton />
-                <PopupManager />
-                <CookieConsent initial={cookieConsent} />
+                <LandingChromeProvider top={top} bottom={bottom}>
+                  <HideOnLanding>{top}</HideOnLanding>
+                  <main className="flex-1">{children}</main>
+                  <HideOnLanding>{bottom}</HideOnLanding>
+                  <HideOnLanding>
+                    <CartDrawer />
+                  </HideOnLanding>
+                  <CheckoutSessionReporter />
+                  <HideOnLanding>
+                    <WhatsAppButton />
+                  </HideOnLanding>
+                  <HideOnLanding>
+                    <PopupManager />
+                  </HideOnLanding>
+                  <CookieConsent initial={cookieConsent} />
+                </LandingChromeProvider>
               </WishlistProvider>
             </CartProvider>
           </AuthProvider>

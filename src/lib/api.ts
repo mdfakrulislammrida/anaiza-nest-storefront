@@ -21,6 +21,8 @@ import type {
   CreateOrderPayload,
   Faq,
   HomepageSection,
+  LandingPage,
+  LandingPageListItem,
   LoginPayload,
   MarketingSetting,
   Order,
@@ -298,6 +300,46 @@ export async function getReviewLink(
   token: string,
 ): Promise<{ valid: boolean; name?: string | null; reason?: "ended" | "used" }> {
   return apiFetch(`/products/${encodeURIComponent(slug)}/review-link?token=${encodeURIComponent(token)}`);
+}
+
+// The landing pages that are open now: what the build makes a static page for.
+export async function getLandingPages(): Promise<LandingPageListItem[]> {
+  // An API that predates landing pages answers this address with 404. That is "none yet", not a broken build: the /lp shell
+  // serves any page made once the API is updated.
+  if (IS_BUILD) {
+    const probe = await fetch(`${API_BASE_URL}/landing-pages`, { headers: { Accept: "application/json" } }).catch(() => null);
+    if (probe?.status === 404) return [];
+  }
+
+  const { data } = await apiFetch<{ data: LandingPageListItem[] }>("/landing-pages");
+  return data;
+}
+
+// The landing pages that asked to be found by search engines (they are left out of the sitemap otherwise).
+export async function getSitemapLandingPages(): Promise<{ slug: string }[]> {
+  const body = await apiFetch<{ landing_pages?: { slug: string }[] }>("/sitemap");
+  return body.landing_pages ?? [];
+}
+
+// One landing page. A draft opens only with the admin's preview link (its token, passed through as it is).
+export async function getLandingPage(slug: string, preview?: string | null): Promise<LandingPage> {
+  const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
+  const { data } = await apiFetch<{ data: LandingPage }>(`/landing-pages/${encodeURIComponent(slug)}${qs}`);
+  return data;
+}
+
+// A view (once per visitor session) or an add to cart on a landing page, for the admin's figures. Fire and forget.
+export async function sendLandingEvent(slug: string, type: "view" | "add_to_cart"): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/landing-pages/${encodeURIComponent(slug)}/events`, {
+      method: "POST",
+      keepalive: true,
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
+    });
+  } catch {
+    // Counting is never worth showing an error for.
+  }
 }
 
 export async function lookupOrder(orderId: string, phone: string): Promise<Order> {

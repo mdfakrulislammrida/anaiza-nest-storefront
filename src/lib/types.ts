@@ -199,6 +199,11 @@ export interface CreateOrderPayload {
   // The quiet bot trap (lib/formGuard.ts).
   hp_field?: string;
   form_rendered_at?: number;
+  // The landing page (its slug) the order was placed from, and the ad click ids kept with the UTM parameters.
+  landing_page?: string;
+  fbclid?: string;
+  gclid?: string;
+  ttclid?: string;
   customer_name: string;
   customer_email?: string | null;
   customer_phone: string;
@@ -520,6 +525,41 @@ export interface ReviewsPage {
   data: Review[];
   summary: { rating_count: number; rating_average: number | null };
   meta: { current_page: number; last_page: number; per_page: number; total: number };
+}
+
+// ---- Landing pages (/lp/<slug>), built in the admin. The API sends each block already resolved.
+
+export type LandingButtonTarget = "products" | "order" | "url";
+
+export type LandingBlock =
+  | { key: string; type: "hero"; headline: string | null; subline: string | null; image_desktop: string | null; image_mobile: string | null; button_text: string | null; button_target: LandingButtonTarget; button_url: string | null }
+  | { key: string; type: "rich_text"; html: string }
+  | { key: string; type: "custom_html"; html: string; scope_class: string; scripts: boolean }
+  | { key: string; type: "products"; heading: string | null; layout: "grid" | "list"; show_price: boolean; show_button: boolean; picker: boolean; products: Product[] }
+  | { key: string; type: "benefits"; heading: string | null; items: { icon: string; text: string }[] }
+  | { key: string; type: "faq"; heading: string | null; items: { id: number; question: string; answer: string }[] }
+  | { key: string; type: "reviews"; heading: string | null; summary: { rating_count: number; rating_average: number | null }; items: (Review & { product_name: string | null })[] }
+  | { key: string; type: "order_form"; heading: string | null; intro: string | null }
+  | { key: string; type: "countdown"; label: string | null; ends_at: string };
+
+export interface LandingPage {
+  id: number;
+  title: string;
+  slug: string;
+  // live: open. ended: its time has passed (no blocks are sent). preview: a draft opened with the admin's link.
+  state: "live" | "ended" | "preview";
+  layout: "focus" | "normal";
+  publish_until: string | null;
+  seo: { title: string; description: string | null; og_image: string | null; noindex: boolean; canonical: string | null };
+  blocks: LandingBlock[];
+}
+
+export interface LandingPageListItem {
+  id: number;
+  slug: string;
+  title: string;
+  noindex: boolean;
+  updated_at: string | null;
 }
 
 export interface CorporateEnquiryPayload {

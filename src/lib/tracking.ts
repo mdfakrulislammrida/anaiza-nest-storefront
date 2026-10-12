@@ -117,6 +117,47 @@ export function trackViewItem(product: Product) {
   });
 }
 
+// The products a landing page puts in front of the visitor, as the ids the feeds use (a variant with its own SKU is its
+// own item, exactly as on a product page). One ViewContent for the page, listing every product on it.
+export function viewContentListPayload(products: Product[]) {
+  const items = products.map((product) => ({
+    id: feedItemId(product, pageVariant(product)),
+    name: product.name,
+    price: product.effective_price,
+  }));
+
+  return {
+    content_ids: items.map((item) => item.id),
+    contents: items.map((item) => ({ id: item.id, quantity: 1, item_price: item.price })),
+    content_type: "product" as const,
+    currency: CURRENCY,
+    // The cheapest piece: a landing page does not know yet which one will be chosen.
+    value: items.length > 0 ? Math.min(...items.map((item) => item.price)) : 0,
+  };
+}
+
+export function trackViewContentList(products: Product[], listName: string) {
+  if (products.length === 0) return;
+
+  const payload = viewContentListPayload(products);
+
+  pushDataLayer({
+    event: "view_item_list",
+    ecommerce: {
+      item_list_name: listName,
+      currency: CURRENCY,
+      items: products.map((p) => ga4Item(p)),
+    },
+  });
+  fbqTrack("ViewContent", payload);
+  ttqTrack("ViewContent", {
+    contents: payload.contents.map((item) => ({ content_id: item.id, quantity: item.quantity, price: item.item_price })),
+    content_type: "product",
+    currency: CURRENCY,
+    value: payload.value,
+  });
+}
+
 export function trackViewItemList(products: Product[], listName: string) {
   if (products.length === 0) return;
   pushDataLayer({

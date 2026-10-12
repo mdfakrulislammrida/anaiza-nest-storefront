@@ -1,4 +1,4 @@
-import { marketingAllowed } from "./consent";
+import { marketingAllowed } from "./consent.ts";
 
 const STORAGE_KEY = "anaiza-utm-attribution";
 const EXPIRY_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -21,6 +21,8 @@ export function captureUtmParams(search: string): void {
   if (typeof window === "undefined" || !search) return;
   // In opt-in cookie mode nothing is stored until the visitor allows marketing.
   if (!marketingAllowed()) return;
+
+  captureClickIds(search);
 
   const params = new URLSearchParams(search);
   const values: UtmValues = {};
@@ -59,6 +61,61 @@ export function getStoredUtmParams(): UtmValues {
       if (record[key]) values[key] = record[key];
     }
     return values;
+  } catch {
+    return {};
+  }
+}
+
+// ---- Ad click ids. Kept like the UTM parameters (same consent rule, same 30 days, last click wins) and sent with the
+// order, so the shop's server-side Meta and TikTok events can be matched to the ad click that brought the visitor.
+
+const CLICK_STORAGE_KEY = "anaiza-click-ids";
+const CLICK_KEYS = ["fbclid", "gclid", "ttclid"] as const;
+type ClickKey = (typeof CLICK_KEYS)[number];
+export type ClickIds = Partial<Record<ClickKey, string>>;
+
+// Long enough for any real click id, short enough that nobody can use the field to store anything else.
+const MAX_CLICK_ID_LENGTH = 255;
+
+/** The click ids in a query string (?fbclid=...), only well-formed ones. */
+export function clickIdsFromSearch(search: string): ClickIds {
+  const params = new URLSearchParams(search);
+  const found: ClickIds = {};
+
+  for (const key of CLICK_KEYS) {
+    const value = params.get(key)?.trim();
+    if (value && value.length <= MAX_CLICK_ID_LENGTH && /^[\w.\-~%=+]+$/.test(value)) found[key] = value;
+  }
+
+  return found;
+}
+
+function captureClickIds(search: string): void {
+  const found = clickIdsFromSearch(search);
+  if (Object.keys(found).length === 0) return;
+
+  try {
+    window.localStorage.setItem(CLICK_STORAGE_KEY, JSON.stringify({ ...found, capturedAt: Date.now() }));
+  } catch {
+    // Storage unavailable: attribution is a nice-to-have.
+  }
+}
+
+export function getStoredClickIds(): ClickIds {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(CLICK_STORAGE_KEY);
+    if (!raw) return {};
+
+    const record = JSON.parse(raw) as ClickIds & { capturedAt?: number };
+    if (!record.capturedAt || Date.now() - record.capturedAt > EXPIRY_MS) return {};
+
+    const found: ClickIds = {};
+    for (const key of CLICK_KEYS) {
+      if (typeof record[key] === "string" && record[key]) found[key] = record[key];
+    }
+    return found;
   } catch {
     return {};
   }

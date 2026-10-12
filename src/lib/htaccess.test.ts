@@ -79,3 +79,13 @@ describe("the content security policy", () => {
     assert.deepEqual(directive(reportOnly, "form-action"), ["'self'"]);
   });
 });
+
+describe("the rewrite rules", () => {
+  it("send a landing page made after the last build to the /lp shell, after the clean-URL rules", () => {
+    const rule = "RewriteRule ^lp/.+$ /lp.html [L]";
+
+    assert.ok(htaccess.includes(rule));
+    assert.ok(htaccess.indexOf(rule) > htaccess.indexOf("RewriteRule ^blog/.+$ /article.html [L]"), "next to the other shells");
+    assert.ok(htaccess.indexOf(rule) > htaccess.indexOf("RewriteCond %{REQUEST_FILENAME}.html -f"), "a built page still wins");
+  });
+});
