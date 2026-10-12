@@ -39,7 +39,13 @@ export default function AccountPage() {
       });
       router.push("/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Sorry, that did not go through. Please try again in a moment.");
+      setError(
+        err instanceof ApiError && err.status === 429
+          ? "That is a lot of tries in a short time. Please wait a minute and try again, or choose a new password."
+          : err instanceof ApiError
+            ? err.message
+            : "Sorry, that did not go through. Please try again in a moment.",
+      );
     } finally {
       setSubmitting(false);
     }
