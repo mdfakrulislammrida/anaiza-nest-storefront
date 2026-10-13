@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { OccasionTile } from "@/lib/types";
 
 const tileClass =
-  "group relative flex aspect-[4/3] items-end overflow-hidden rounded-btn border border-linen bg-linen p-3 text-charcoal transition-colors hover:border-gold sm:p-4";
+  "group relative flex aspect-[4/3] items-end overflow-hidden rounded-btn border border-linen bg-linen p-4 text-charcoal transition-colors hover:border-gold";
 
 // "Shop by occasion": two tiles to a row on phones, a small WebP picture (or a plain linen panel
 // when there is none) and the label. Nothing is rendered when the admin has no tile switched on,
@@ -25,7 +25,7 @@ export default function OccasionsSection({
         {subtitle && <p className="mt-1 text-body text-stone">{subtitle}</p>}
       </div>
 
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {tiles.map((tile) => {
           const content = (
             <>

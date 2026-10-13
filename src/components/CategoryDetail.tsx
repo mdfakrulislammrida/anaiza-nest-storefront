@@ -37,7 +37,7 @@ export default function CategoryDetail({
             />
           </picture>
           {/* The kit's gift frame, on the category banner. */}
-          <GiftFrame />
+          <GiftFrame tone="gold" />
         </div>
       )}
 
@@ -77,7 +77,7 @@ export default function CategoryDetail({
       {category.faqs && category.faqs.length > 0 && (
         <section className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
           <h2 className="mb-4 font-serif text-charcoal text-h2">
-            Frequently Asked Questions
+            Frequently asked questions
           </h2>
           <div>
             {category.faqs.map((faq) => (

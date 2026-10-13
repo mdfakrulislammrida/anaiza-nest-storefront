@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 import CartLineItem from "@/components/CartLineItem";
 import CartRecoveryRestore from "@/components/CartRecoveryRestore";
+import TrustBadges from "@/components/TrustBadges";
 import { CTA } from "@/lib/brand";
 
 export default function CartPage() {
@@ -81,6 +82,7 @@ export default function CartPage() {
             >
               Continue shopping
             </Link>
+            <TrustBadges compact />
           </div>
         </aside>
       </div>

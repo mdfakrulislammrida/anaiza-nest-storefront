@@ -79,7 +79,7 @@ export default function VideoFacade({ video }: { video: ProductVideo }) {
       />
       <span className="absolute inset-0 flex items-center justify-center bg-deepink/20 transition-colors group-hover:bg-deepink/30">
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-ivory/90 transition-transform group-hover:scale-105">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6 text-navy">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6 text-navy">
             <path d="M8 5v14l11-7z" />
           </svg>
         </span>

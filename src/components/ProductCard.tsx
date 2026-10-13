@@ -82,9 +82,9 @@ export default function ProductCard({
         type="button"
         onClick={() => toggle(product)}
         aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-ivory/90 text-navy transition-colors hover:text-gold"
+        className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-ivory/90 text-navy transition-colors hover:bg-linen"
       >
-        <svg
+        <svg aria-hidden="true" focusable="false"
           viewBox="0 0 24 24"
           fill={wishlisted ? "currentColor" : "none"}
           stroke="currentColor"
@@ -102,7 +102,7 @@ export default function ProductCard({
         className={`absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${dark ? "bg-ivory text-navy" : "bg-navy text-ivory"}`}
         aria-label="Add to cart"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
           <circle cx="9" cy="21" r="1" />
           <circle cx="20" cy="21" r="1" />
           <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />

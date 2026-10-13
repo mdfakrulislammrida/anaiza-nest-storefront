@@ -8,6 +8,7 @@ import Accordion from "@/components/Accordion";
 import CountdownTimer from "@/components/CountdownTimer";
 import RatingSummary from "@/components/RatingSummary";
 import ResponsiveImage from "@/components/ResponsiveImage";
+import GiftFrame from "@/components/GiftFrame";
 import Stars from "@/components/Stars";
 import { CTA } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
@@ -30,7 +31,7 @@ export function HeroBlock({ block, headline }: { block: Block<"hero">; headline:
   const destination = heroDestination(block.button_target, block.button_url);
   const text = block.headline || headline;
   const buttonClass =
-    "mt-8 inline-flex min-h-12 items-center justify-center rounded-btn bg-burgundy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90";
+    "mt-8 inline-flex min-h-12 items-center justify-center rounded-btn bg-ivory px-8 py-4 text-button text-navy transition-opacity hover:opacity-90";
 
   return (
     <section className="relative isolate flex min-h-[26rem] items-end overflow-hidden bg-navy text-ivory sm:min-h-[30rem] sm:items-center">
@@ -48,9 +49,10 @@ export function HeroBlock({ block, headline }: { block: Block<"hero">; headline:
           />
         </picture>
       ) : null}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-navy/80 via-navy/40 to-navy/20" aria-hidden="true" />
+      <div data-scrim="" className="absolute inset-0 -z-10 bg-gradient-to-t from-navy/80 via-navy/40 to-navy/20" aria-hidden="true" />
+      <GiftFrame />
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-14 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl px-8 py-14 sm:px-12">
         <h1 className="max-w-2xl font-serif text-h1 text-ivory">{text}</h1>
         {block.subline && <p className="mt-4 max-w-xl text-base text-ivory/90">{block.subline}</p>}
 
@@ -260,7 +262,7 @@ function ProductItem({
             type="button"
             onClick={add}
             disabled={!inStock}
-            className="mt-4 min-h-12 w-full rounded-btn bg-burgundy px-4 py-3 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-4 min-h-12 w-full rounded-btn bg-navy px-4 py-3 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-linen disabled:text-charcoal/70 disabled:opacity-100"
           >
             {!inStock ? "Sold out" : codOn ? CTA.order : "Order now"}
           </button>

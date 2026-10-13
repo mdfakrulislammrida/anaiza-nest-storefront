@@ -28,7 +28,7 @@ export default function CartDrawer() {
             aria-label="Close cart"
             className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal hover:bg-linen"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -68,7 +68,7 @@ export default function CartDrawer() {
                         aria-label="Remove item"
                         className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center text-stone hover:text-navy"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+                        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                           <path d="M18 6 6 18M6 6l12 12" />
                         </svg>
                       </button>

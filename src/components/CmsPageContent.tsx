@@ -7,6 +7,7 @@ import { proseHtml } from "@/lib/prose";
 export default function CmsPageContent({ page }: { page: Page }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      <span className="an-pour" aria-hidden="true" />
       <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
           Home

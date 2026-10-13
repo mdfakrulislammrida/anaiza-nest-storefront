@@ -121,7 +121,7 @@ export default function SearchableSelect({
         <span className={value ? "" : "text-stone"}>
           {value || (disabled ? disabledHint : placeholder)}
         </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 shrink-0 text-stone">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 shrink-0 text-stone">
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
@@ -147,7 +147,7 @@ export default function SearchableSelect({
                   aria-label="Close"
                   className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal hover:bg-linen"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
+                  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
                     <path d="M18 6 6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -183,7 +183,7 @@ export default function SearchableSelect({
                         >
                           {option}
                           {selected && (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 shrink-0">
+                            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 shrink-0">
                               <path d="M5 13l4 4L19 7" />
                             </svg>
                           )}

@@ -22,7 +22,7 @@ export default function PriceFilterPanel({
     // the fold. A single tap on "Filter" expands it either way.
     <details className="group">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 text-caption font-semibold text-charcoal">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
           <path d="M4 6h16M7 12h10M10 18h4" />
         </svg>
         Filter

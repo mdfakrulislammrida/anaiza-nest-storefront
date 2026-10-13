@@ -60,7 +60,7 @@ export default function HomeClient({
 
   return (
     <>
-      {sections.map((section) => {
+      {sections.map((section, index) => {
         switch (section.type) {
           case "hero_banner":
             // TrustBadges isn't its own section type -- it's a trust-
@@ -102,7 +102,13 @@ export default function HomeClient({
               />
             );
           case "newsletter":
-            return <NewsletterBanner key={section.id} title={section.custom_title} subtitle={section.custom_subtitle} />;
+            return (
+              <Fragment key={section.id}>
+                <NewsletterBanner title={section.custom_title} subtitle={section.custom_subtitle} />
+                {/* Navy straight onto the deep-ink footer reads as one muddy band: leave a strip of ivory between. */}
+                {index === sections.length - 1 && <div aria-hidden="true" className="h-10" />}
+              </Fragment>
+            );
           case "occasions":
             return (
               <OccasionsSection

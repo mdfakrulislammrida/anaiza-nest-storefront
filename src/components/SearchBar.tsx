@@ -27,7 +27,7 @@ export default function SearchBar({
   return (
     <form onSubmit={handleSubmit} className={`flex-1 ${className}`}>
       <div className="relative">
-        <svg
+        <svg aria-hidden="true" focusable="false"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

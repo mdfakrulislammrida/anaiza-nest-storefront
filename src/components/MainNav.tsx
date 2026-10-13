@@ -118,7 +118,7 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
                 <div
                   className={`absolute left-0 top-full z-40 pt-1 group-focus-within:block group-hover:block ${open ? "block" : "hidden"}`}
                 >
-                  <ul className="min-w-48 rounded-btn border border-linen bg-ivory py-1 shadow-[0_8px_24px_rgba(42,38,34,0.12)]">
+                  <ul className="min-w-48 rounded-btn border border-linen bg-ivory py-1">
                     {children.map((child) => (
                       <li key={child.url}>
                         <a

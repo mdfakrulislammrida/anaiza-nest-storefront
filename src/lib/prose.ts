@@ -167,12 +167,19 @@ function labelTables(html: string): string {
 }
 
 export function decorateProse(html: string): string {
+  // Burgundy is the kit's once-per-layout colour: the first emotional line has it, any later one is navy.
+  let seen = false;
+
   return labelTables(
     html
       // A paragraph that is one <em> and nothing else: the emotional line.
-      .replace(/<p>\s*(<em>(?:(?!<\/?em>)[\s\S])*<\/em>)\s*<\/p>/gi, '<p class="an-em">$1</p>')
+      .replace(/<p>\s*(<em>(?:(?!<\/?em>)[\s\S])*<\/em>)\s*<\/p>/gi, (_match, em: string) => {
+        const name = seen ? "an-em-alt" : "an-em";
+        seen = true;
+        return `<p class="${name}">${em}</p>`;
+      })
       // ...and when it closes the text, it is the sign-off instead.
-      .replace(/<p class="an-em">((?:(?!<\/p>)[\s\S])*)<\/p>(\s*)$/i, '<p class="an-tagline">$1</p>$2')
+      .replace(/<p class="an-em(?:-alt)?">((?:(?!<\/p>)[\s\S])*)<\/p>(\s*)$/i, '<p class="an-tagline">$1</p>$2')
       // A list item that opens with a bold label.
       .replace(/<li>(\s*)<strong>/gi, '<li class="an-li-label">$1<strong>'),
   );

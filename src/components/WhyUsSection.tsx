@@ -18,7 +18,7 @@ export default function WhyUsSection({
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
         <div className="mb-8">
           <h2 className="font-serif text-charcoal text-h2">{title || "Why Anaiza Nest"}</h2>
-          {subtitle && <p className="mt-1 text-body text-stone">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-body text-charcoal/80">{subtitle}</p>}
         </div>
 
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

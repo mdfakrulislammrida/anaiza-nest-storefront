@@ -70,10 +70,16 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
     function measure() {
       // How far the highest fixed bar reaches up from the bottom of the screen.
       let height = 0;
+      let found = false;
       document.querySelectorAll<HTMLElement>("[data-bottom-bar]").forEach((bar) => {
+        found = true;
         if (getComputedStyle(bar).position === "fixed") height = Math.max(height, window.innerHeight - bar.getBoundingClientRect().top);
       });
-      setBarHeight(Math.max(0, Math.round(height)));
+      const rounded = Math.max(0, Math.round(height));
+      setBarHeight(rounded);
+      // The same number for the WhatsApp bubble, whether or not the banner is showing. No bar, no property.
+      if (found) document.documentElement.style.setProperty("--bar-top", `${rounded}px`);
+      else document.documentElement.style.removeProperty("--bar-top");
     }
 
     // The bar belongs to the product page and may mount after this banner does, so watch for it appearing as well
@@ -97,6 +103,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
       window.removeEventListener("resize", schedule);
       mutationObserver.disconnect();
       resizeObserver.disconnect();
+      document.documentElement.style.removeProperty("--bar-top");
     };
   }, [pathname, visible]);
 
@@ -137,22 +144,22 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
 
   const labels = settings.labels;
   const buttonClass =
-    "min-h-11 rounded-btn px-3 text-button transition-colors";
+    "min-h-10 rounded-btn px-2 text-button transition-colors sm:min-h-11 sm:px-4";
 
   return (
     <section
       ref={bannerRef}
       aria-label="Cookie settings"
       style={{ bottom: barHeight }}
-      className="fixed inset-x-0 z-[35] mx-auto w-full max-w-3xl px-3 pb-3 sm:px-4"
+      className="fixed inset-x-0 z-[35] mx-auto w-full max-w-3xl px-2 pb-2 sm:px-4 sm:pb-4"
     >
-      <div className="max-h-[70vh] overflow-y-auto rounded-btn border border-linen bg-ivory p-3 shadow-[0_-4px_16px_rgba(42,38,34,0.12)] sm:p-4">
+      <div className="max-h-[70vh] overflow-y-auto rounded-btn border border-linen bg-ivory p-2 sm:p-4">
         <p className="text-caption leading-snug text-charcoal">{settings.banner_text}</p>
 
         {customizing ? (
           <div className="mt-2 space-y-1">
             <ul className="divide-y divide-linen">
-              <li className="flex min-h-11 items-center justify-between gap-3 py-2">
+              <li className="flex min-h-11 items-center justify-between gap-4 py-2">
                 <span>
                   <span className="block text-body font-medium text-charcoal">Necessary</span>
                   <span className="block text-caption text-stone">{DESCRIPTIONS.necessary}</span>
@@ -160,7 +167,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
                 <input type="checkbox" checked disabled aria-label="Necessary, always on" className="h-6 w-6 shrink-0 accent-navy" />
               </li>
               <li>
-                <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 py-2">
+                <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4 py-2">
                   <span>
                     <span className="block text-body font-medium text-charcoal">Analytics</span>
                     <span className="block text-caption text-stone">{DESCRIPTIONS.analytics}</span>
@@ -174,7 +181,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
                 </label>
               </li>
               <li>
-                <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 py-2">
+                <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4 py-2">
                   <span>
                     <span className="block text-body font-medium text-charcoal">Marketing</span>
                     <span className="block text-caption text-stone">{DESCRIPTIONS.marketing}</span>
@@ -221,12 +228,12 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
                   setMarketing(current?.m ?? false);
                   setCustomizing(true);
                 }}
-                className="inline-flex min-h-10 items-center text-caption font-medium text-navy underline"
+                className="inline-flex min-h-8 items-center text-caption font-medium text-navy underline sm:min-h-10"
               >
                 {labels.customize}
               </button>
               {settings.privacy_url && (
-                <a href={settings.privacy_url} className="inline-flex min-h-10 items-center text-caption text-navy underline">
+                <a href={settings.privacy_url} className="inline-flex min-h-8 items-center text-caption text-navy underline sm:min-h-10">
                   {settings.privacy_label}
                 </a>
               )}

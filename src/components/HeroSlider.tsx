@@ -35,7 +35,7 @@ function SlideBody({ slide, first, active, position, total }: { slide: SlideView
           src={desktop.src}
           srcSet={desktop.srcSet ?? undefined}
           sizes={desktop.srcSet ? "(min-width: 1280px) 1280px, 100vw" : undefined}
-          alt={slide.headline ?? ""}
+          alt=""
           width={desktop.width}
           height={desktop.height}
           // Only the first slide is on screen at load: it is the one that is fetched first.
@@ -47,11 +47,11 @@ function SlideBody({ slide, first, active, position, total }: { slide: SlideView
       </picture>
 
       {hasText && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-start gap-3 bg-gradient-to-t from-deepink/80 via-deepink/40 to-transparent p-5 pt-16 text-ivory sm:p-10 sm:pt-24">
+        <div data-scrim="" className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-start gap-4 bg-gradient-to-t from-deepink/80 via-deepink/40 to-transparent p-6 pt-16 text-ivory sm:p-10 sm:pt-24">
           {slide.headline && <p className="max-w-xl font-serif text-h2">{slide.headline}</p>}
           {slide.subtext && <p className="max-w-lg text-body text-ivory/90">{slide.subtext}</p>}
           {slide.buttonText && (
-            <span className="rounded-btn bg-ivory px-6 py-3 text-button text-navy">{slide.buttonText}</span>
+            <span className="rounded-btn bg-ivory px-6 py-4 text-button text-navy">{slide.buttonText}</span>
           )}
         </div>
       )}

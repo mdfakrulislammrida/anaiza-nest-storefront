@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Modal from "./Modal";
@@ -227,9 +227,21 @@ function GiftFinderPopupContent({ image, onNavigate }: { image: string | null; o
   );
 }
 
+// A popup never opens over the cookie banner: while the banner is on and the visitor has not chosen, it waits.
+function subscribeToConsent(onChange: () => void) {
+  window.addEventListener("anaiza:consent", onChange);
+  return () => window.removeEventListener("anaiza:consent", onChange);
+}
+
+function consentIsPending(): boolean {
+  const consent = window.anaizaConsent;
+  return Boolean(consent?.config?.enabled && !consent.get());
+}
+
 export default function PopupManager() {
   const [settings, setSettings] = useState<PopupSettings | null>(null);
   const [activePopup, setActivePopup] = useState<"newsletter" | "gift_finder" | null>(null);
+  const consentPending = useSyncExternalStore(subscribeToConsent, consentIsPending, () => false);
 
   useEffect(() => {
     getPopupSettings()
@@ -247,7 +259,7 @@ export default function PopupManager() {
         config={settings.newsletter}
         storageKey="popup-dismissed-newsletter"
         ariaLabel="Newsletter signup"
-        canShow={activePopup === null}
+        canShow={activePopup === null && !consentPending}
         onShown={() => setActivePopup("newsletter")}
         onClosed={() => setActivePopup(null)}
       >
@@ -258,7 +270,7 @@ export default function PopupManager() {
         config={settings.gift_finder}
         storageKey="popup-dismissed-giftfinder"
         ariaLabel="Gift finder"
-        canShow={activePopup === null}
+        canShow={activePopup === null && !consentPending}
         onShown={() => setActivePopup("gift_finder")}
         onClosed={() => setActivePopup(null)}
       >

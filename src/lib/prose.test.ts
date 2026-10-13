@@ -69,6 +69,13 @@ describe("decorateProse", () => {
     );
   });
 
+  it("keeps burgundy for the first emotional line; a later one is navy, and the closing one is the sign-off", () => {
+    const html = "<p><em>One.</em></p><p>Text</p><p><em>Two.</em></p><p>Text</p><p><em>End.</em></p>";
+    assert.equal(
+      decorateProse(html),
+      '<p class="an-em"><em>One.</em></p><p>Text</p><p class="an-em-alt"><em>Two.</em></p><p>Text</p><p class="an-tagline"><em>End.</em></p>',
+    );
+  });
   it("does not mistake two emphasised phrases for one", () => {
     const html = "<p><em>one</em> and <em>two</em></p>";
     assert.equal(decorateProse(html), html);

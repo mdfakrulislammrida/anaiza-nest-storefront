@@ -309,7 +309,7 @@ export default function CheckoutForm({
         </div>
         <div
           data-bottom-bar
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(42,38,34,0.08)] lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:hidden"
         >
           <button
             type="button"
@@ -954,8 +954,8 @@ export default function CheckoutForm({
               {...(embedded ? { "data-bottom-bar": "" } : {})}
               className={
                 embedded
-                  ? "fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(42,38,34,0.08)] lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
-                  : "mt-6 flex items-center gap-4"
+                  ? "fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0"
+                  : "mt-6 flex flex-col items-center gap-4 pr-16 sm:flex-row sm:pr-0"
               }
             >
               {paymentSettings?.cod_enabled !== false && (
@@ -979,7 +979,7 @@ export default function CheckoutForm({
               </button>
             </div>
 
-            <p className="mt-4 text-center text-caption text-stone">
+            <p className={`mt-4 text-center text-caption text-stone ${embedded ? "" : "pr-16 sm:pr-0"}`}>
               By placing this order you agree to our{" "}
               <Link href="/pages/terms" className="underline hover:text-navy">
                 Terms

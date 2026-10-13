@@ -65,8 +65,10 @@
   font-weight: 600;
 }
 
-/* The emotional line: the one italic, and the one place burgundy is used. */
-.an-prose p.an-em {
+/* The emotional line: the one italic, and the one place burgundy is used. A second one on the same page is
+   the same italic in navy (prose.ts decides which is which). */
+.an-prose p.an-em,
+.an-prose p.an-em-alt {
   color: var(--burgundy);
   font-family: var(--font-serif-italic);
   font-size: 1.1875rem; /* 19/28 on phones */
@@ -74,11 +76,16 @@
   font-weight: 300;
   line-height: 1.75rem;
 }
-.an-prose p.an-em em {
+.an-prose p.an-em-alt {
+  color: var(--navy);
+}
+.an-prose p.an-em em,
+.an-prose p.an-em-alt em {
   font-style: italic;
 }
 @media (min-width: 40rem) {
-  .an-prose p.an-em {
+  .an-prose p.an-em,
+  .an-prose p.an-em-alt {
     font-size: 1.375rem; /* 22/32 */
     line-height: 2rem;
   }

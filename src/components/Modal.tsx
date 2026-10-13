@@ -58,7 +58,7 @@ export default function Modal({
           aria-label="Close"
           className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-ivory/90 text-charcoal hover:bg-ivory"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>

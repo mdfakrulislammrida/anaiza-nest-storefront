@@ -11,6 +11,7 @@ import ClampedText from "@/components/ClampedText";
 import VideoFacade from "@/components/VideoFacade";
 import ProductSpecs from "@/components/ProductSpecs";
 import Seal from "@/components/Seal";
+import TrustBadges from "@/components/TrustBadges";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { formatDays, resolvePolicy } from "@/lib/policy";
 import { RICH_TABLE_CLASSES, wrapTables } from "@/lib/richHtml";
@@ -117,6 +118,7 @@ export default function ProductDetail({
               selectedVariant={selectedVariant}
               onSelectVariant={setSelectedVariant}
             />
+            <TrustBadges compact omit={["Gift-ready"]} />
           </div>
 
           {product.video && (product.video.url || product.video.file) && product.video.poster && (
