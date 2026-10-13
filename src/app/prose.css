@@ -1,0 +1,349 @@
+/* Written content -----------------------------------------------------------------------
+
+   Long text written in the admin (a category's description, a CMS page, a blog article). The content brings no
+   class or style of its own, so every rule here is a plain element selector. Three small classes are added at
+   render time (src/lib/prose.ts) for what an element selector cannot say: .an-em (a paragraph that is only an
+   <em>), .an-tagline (that paragraph when it closes the text), .an-li-label (a list item that opens with a bold
+   label). Colours are the kit's; fonts are the two already loaded. */
+
+.an-prose {
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+}
+.an-prose > :last-child {
+  margin-bottom: 0;
+}
+
+.an-prose p {
+  max-width: 68ch;
+  margin: 0 0 16px;
+}
+
+.an-prose h2 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: 1.375rem; /* 22/28 on phones */
+  font-weight: 500;
+  line-height: 1.75rem;
+  scroll-margin-top: 6rem;
+}
+/* Every h2 after the first opens a new section. */
+.an-prose h2 ~ h2 {
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 1px solid var(--linen);
+}
+@media (min-width: 40rem) {
+  .an-prose h2 {
+    font-size: 1.625rem; /* 26/32 */
+    line-height: 2rem;
+  }
+}
+
+.an-prose h3 {
+  margin: 24px 0 6px;
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: 1.125rem; /* 18/26 */
+  font-weight: 500;
+  line-height: 1.625rem;
+}
+.an-prose h4 {
+  margin: 24px 0 6px;
+  color: var(--navy);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.625rem;
+}
+
+.an-prose strong {
+  font-weight: 600;
+}
+
+/* The emotional line: the one italic, and the one place burgundy is used. */
+.an-prose p.an-em {
+  color: var(--burgundy);
+  font-family: var(--font-serif-italic);
+  font-size: 1.1875rem; /* 19/28 on phones */
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.75rem;
+}
+.an-prose p.an-em em {
+  font-style: italic;
+}
+@media (min-width: 40rem) {
+  .an-prose p.an-em {
+    font-size: 1.375rem; /* 22/32 */
+    line-height: 2rem;
+  }
+}
+
+/* The sign-off: when the text ends on that line, it stands navy, centred and upright. */
+.an-prose p.an-tagline {
+  max-width: none;
+  margin: 32px 0 0;
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: 1.25rem; /* 20/28 */
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.75rem;
+  text-align: center;
+}
+.an-prose p.an-tagline em {
+  font-style: normal;
+}
+
+.an-prose ul,
+.an-prose ol {
+  margin: 0 0 16px;
+  padding-left: 20px;
+}
+.an-prose ul {
+  list-style: none;
+}
+.an-prose ol {
+  padding-left: 24px;
+  list-style: decimal;
+}
+.an-prose li {
+  position: relative;
+  margin: 0 0 8px;
+}
+.an-prose ul > li::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: -20px;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--gold);
+}
+.an-prose li.an-li-label > strong:first-child {
+  color: var(--navy);
+  font-weight: 600;
+}
+/* A list under a small heading is set off by a fine line. */
+.an-prose h3 + ul {
+  padding-top: 12px;
+  border-top: 1px solid var(--linen);
+}
+
+.an-prose a[href] {
+  color: var(--navy);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.an-prose a[href]:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.an-prose blockquote {
+  margin: 0 0 16px;
+  padding-left: 16px;
+  border-left: 1px solid var(--linen);
+}
+.an-prose hr {
+  margin: 40px 0;
+  border: 0;
+  border-top: 1px solid var(--linen);
+}
+.an-prose img {
+  max-width: 100%;
+  height: auto;
+}
+.an-prose pre {
+  margin: 0 0 16px;
+  overflow-x: auto;
+}
+
+/* Tables */
+.an-prose table {
+  width: 100%;
+  margin: 0 0 16px;
+  border-collapse: collapse;
+}
+.an-prose th {
+  padding: 0 16px 12px 0;
+  border-bottom: 1px solid var(--gold);
+  color: var(--stone);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13/19 */
+  font-weight: 500;
+  line-height: 1.1875rem;
+  text-align: left;
+}
+.an-prose td {
+  padding: 16px 16px 16px 0;
+  border-bottom: 1px solid var(--linen);
+  text-align: left;
+  vertical-align: top;
+}
+.an-prose td:first-child {
+  color: var(--navy);
+  font-family: var(--font-serif);
+}
+/* Under 560px each row stacks, a label above each value. The header row is hidden from sight but stays for a
+   screen reader, and nothing is wider than the screen. */
+@media (max-width: 34.99rem) {
+  .an-prose table,
+  .an-prose tbody,
+  .an-prose tr,
+  .an-prose td {
+    display: block;
+  }
+  .an-prose thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .an-prose tr {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--linen);
+  }
+  .an-prose td {
+    padding: 0 0 8px;
+    border-bottom: 0;
+  }
+  .an-prose td:last-child {
+    padding-bottom: 0;
+  }
+  .an-prose td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--stone);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.1875rem;
+  }
+}
+
+/* A category's "About" block: centred, 720px wide, with one pour line above it. */
+.an-about {
+  max-width: 45rem; /* 720 */
+  margin: 0 auto;
+  padding: 40px 16px;
+}
+@media (min-width: 40rem) {
+  .an-about {
+    padding: 64px 24px;
+  }
+}
+.an-pour {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 40px;
+  margin: 0 auto 24px;
+  background: var(--gold);
+}
+.an-pour::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: -2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--gold);
+}
+.an-about-title {
+  margin: 0 0 24px;
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: 1.75rem; /* 28/36 on phones, 32/40 from 640px */
+  font-weight: 400;
+  line-height: 2.25rem;
+}
+@media (min-width: 40rem) {
+  .an-about-title {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+}
+
+/* Mobile collapse. The full text is always in the HTML; on a phone it is clipped by height, and a class toggle
+   (data-expanded) opens it. From 640px nothing is clipped. */
+.an-clip {
+  position: relative;
+}
+@media (max-width: 39.99rem) {
+  .an-clip[data-expanded="false"] {
+    max-height: 22.5rem; /* 360 */
+    overflow: hidden;
+  }
+  .an-clip[data-expanded="false"]::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 96px;
+    background: linear-gradient(to bottom, rgba(246, 241, 231, 0), var(--ivory));
+    pointer-events: none;
+  }
+}
+.an-readmore {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.625rem;
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.an-readmore:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 3px;
+}
+@media (min-width: 40rem) {
+  .an-readmore {
+    display: none;
+  }
+}
+
+/* With no script the button cannot work, so the text is simply shown in full. */
+@media (scripting: none) {
+  .an-clip[data-expanded="false"] {
+    max-height: none;
+    overflow: visible;
+  }
+  .an-clip[data-expanded="false"]::after,
+  .an-readmore {
+    display: none;
+  }
+}
+
+/* Under a category's title: the summary. */
+.an-intro {
+  max-width: 60ch;
+  margin: 12px 0 24px;
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem; /* 17/28 */
+  font-weight: 400;
+  line-height: 1.75rem;
+}

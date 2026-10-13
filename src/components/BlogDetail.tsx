@@ -2,14 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Article } from "@/lib/types";
 import { formatDate } from "@/lib/format";
-import { RICH_TABLE_CLASSES, addHeadingAnchors, wrapTables } from "@/lib/richHtml";
+import { addHeadingAnchors } from "@/lib/richHtml";
+import { proseHtml } from "@/lib/prose";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper.
 export default function BlogDetail({ article }: { article: Article }) {
   // Anchor ids and the table of contents are computed from the body's <h2>s,
   // so they are in the static HTML and the jump links work without JavaScript.
-  const body = article.content ? addHeadingAnchors(wrapTables(article.content)) : null;
+  const body = article.content ? addHeadingAnchors(proseHtml(article.content)) : null;
   const authorName = article.author?.name;
   const authorBio = article.author?.bio;
 
@@ -74,8 +75,7 @@ export default function BlogDetail({ article }: { article: Article }) {
 
       {body && (
         <div
-          // scroll-mt keeps an anchored heading clear of the sticky header.
-          className={`mt-8 space-y-4 text-body leading-relaxed text-charcoal/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-8 [&_h2]:scroll-mt-24 [&_h2]:font-serif [&_h2]:text-h2 [&_h2]:text-charcoal [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-h2 [&_h3]:text-charcoal [&_img]:rounded-lg [&_li]:ml-6 [&_ol]:list-decimal [&_strong]:text-charcoal [&_ul]:list-disc ${RICH_TABLE_CLASSES}`}
+          className="an-prose mt-8 [&_img]:rounded-lg"
           dangerouslySetInnerHTML={{ __html: body.html }}
         />
       )}

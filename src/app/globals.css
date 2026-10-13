@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./prose.css";
 
 /* Anaiza Nest brand kit v1.0 palette. These are the only colours the storefront uses. */
 :root {

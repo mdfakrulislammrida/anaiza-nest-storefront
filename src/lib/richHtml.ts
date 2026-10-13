@@ -27,7 +27,7 @@ const ENTITIES: Record<string, string> = {
   "&nbsp;": " ",
 };
 
-function plainText(htmlFragment: string): string {
+export function plainText(htmlFragment: string): string {
   return htmlFragment
     .replace(/<[^>]*>/g, "")
     .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (entity) => ENTITIES[entity] ?? entity)

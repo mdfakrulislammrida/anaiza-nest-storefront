@@ -3,7 +3,7 @@ import ProductListing from "@/components/ProductListing";
 import ProductListingFallback from "@/components/ProductListingFallback";
 import Accordion from "@/components/Accordion";
 import GiftFrame from "@/components/GiftFrame";
-import { RICH_TABLE_CLASSES, wrapTables } from "@/lib/richHtml";
+import CategoryAbout from "@/components/CategoryAbout";
 import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
 
 // Pure presentational -- shared by the statically-rendered server page and
@@ -44,7 +44,7 @@ export default function CategoryDetail({
       <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
         <h1 className="font-serif text-charcoal text-h1">{category.name}</h1>
         {category.intro_text && (
-          <p className="mt-4 max-w-2xl text-body leading-relaxed text-charcoal/80">{category.intro_text}</p>
+          <p className="an-intro">{category.intro_text}</p>
         )}
       </div>
 
@@ -72,33 +72,7 @@ export default function CategoryDetail({
         </Suspense>
       </div>
 
-      {category.seo_description && (
-        <section className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
-          <h2 className="mb-4 font-serif text-charcoal text-h2">About {category.name}</h2>
-          {/* CSS-only mobile collapse: the checkbox drives a `peer` class so
-              the clipped height only ever changes via CSS (`peer-checked`,
-              `sm:`), never JS -- the full description HTML below is always
-              present in the server-rendered markup regardless of screen
-              size or checkbox state. */}
-          <input type="checkbox" id="category-description-expand" className="peer sr-only" />
-          <div
-            className={`max-h-40 overflow-hidden text-body leading-relaxed text-charcoal/80 [&_a]:text-navy [&_a]:underline [&_h2]:mt-4 [&_h2]:font-serif [&_h2]:text-body [&_h2]:text-charcoal [&_h2]:first:mt-0 [&_li]:ml-6 [&_ol]:list-decimal [&_p]:mt-4 [&_p]:first:mt-0 [&_ul]:list-disc peer-checked:max-h-none sm:max-h-none sm:overflow-visible ${RICH_TABLE_CLASSES}`}
-            dangerouslySetInnerHTML={{ __html: wrapTables(category.seo_description) }}
-          />
-          <label
-            htmlFor="category-description-expand"
-            className="mt-2 inline-block cursor-pointer text-body font-medium text-navy underline peer-checked:hidden sm:hidden"
-          >
-            Read more
-          </label>
-          <label
-            htmlFor="category-description-expand"
-            className="mt-2 hidden cursor-pointer text-body font-medium text-navy underline peer-checked:inline-block sm:hidden"
-          >
-            Read less
-          </label>
-        </section>
-      )}
+      {category.seo_description && <CategoryAbout name={category.name} html={category.seo_description} />}
 
       {category.faqs && category.faqs.length > 0 && (
         <section className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
