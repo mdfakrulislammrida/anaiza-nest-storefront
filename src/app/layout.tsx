@@ -163,7 +163,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   <HideOnLanding>
                     <CartBoundary variant="header">{top}</CartBoundary>
                   </HideOnLanding>
-                  <main className="flex-1">
+                  {/* overflow-x: clip is only a safety net (it is not a scroll container, so the sticky header is unaffected):
+                      the header is what must fit, and the checks in scripts/signature-probe.cjs say whether it does. */}
+                  <main className="flex-1 overflow-x-clip">
                     <CartBoundary variant="page">{children}</CartBoundary>
                   </main>
                   <HideOnLanding>{bottom}</HideOnLanding>

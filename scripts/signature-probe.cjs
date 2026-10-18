@@ -13,8 +13,11 @@
   // The one shadow the kit allows: product photography (the shadow-warm utility in globals.css).
   var PRODUCT_SHADOW = "rgba(42, 38, 34, 0.35) 0px 12px 28px -14px";
   var BURGUNDY = "rgb(102, 30, 41)";
-  // The fixed order bar and the cookie banner together may take this much of a phone's height.
+  // The fixed order bar and the cookie banner together may take this much of a phone's height, but never less than
+  // MIN_STACK_ALLOWED px: the bars are as tall as they are (a 166 px order bar and a 145 px banner) on a 640 px phone
+  // as on an 844 px one, so a percentage alone would flag the same bars on a shorter screen.
   var MAX_BOTTOM_STACK = 0.38;
+  var MIN_STACK_ALLOWED = 320;
 
   // ---- Browser side: take a snapshot of the page ----------------------------------------------------------------
 
@@ -49,7 +52,12 @@
       path: location.pathname,
       width: window.innerWidth,
       height: window.innerHeight,
-      overflowX: document.documentElement.scrollWidth > window.innerWidth,
+      // clientWidth, not innerWidth: a phone that has been made to scroll sideways reports an innerWidth as wide as the
+      // overflowing page, which hid exactly this fault.
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      header: null,
       h1: document.querySelectorAll("h1").length,
       pour: [],
       frames: [],
@@ -76,6 +84,18 @@
     });
 
     snapshot.seals = Array.prototype.filter.call(document.querySelectorAll("[data-seal]"), isVisible).length;
+
+    // The header's controls: how far right the rightmost reaches, and the cart in particular.
+    var header = document.querySelector("header");
+    if (header) {
+      var controls = Array.prototype.filter.call(header.querySelectorAll("a, button, img"), isVisible);
+      var cart = Array.prototype.filter.call(controls, function (el) { return /^Cart/.test(el.getAttribute("aria-label") || ""); })[0];
+      var cartRect = cart ? cart.getBoundingClientRect() : null;
+      snapshot.header = {
+        rightmost: Math.round(Math.max.apply(null, [0].concat(controls.map(function (el) { return el.getBoundingClientRect().right; })))),
+        cart: cartRect ? { left: Math.round(cartRect.left), right: Math.round(cartRect.right), w: Math.round(cartRect.width), h: Math.round(cartRect.height) } : null,
+      };
+    }
 
     all.forEach(function (element) {
       if (!isVisible(element)) return;
@@ -117,7 +137,23 @@
     var problems = [];
 
     if (snapshot.h1 !== 1) problems.push("Expected exactly one h1, found " + snapshot.h1 + ".");
-    if (snapshot.overflowX) problems.push("The page scrolls sideways at " + snapshot.width + " px.");
+    if (snapshot.overflowX) problems.push("The page scrolls sideways at " + snapshot.width + " px (its content is " + snapshot.scrollWidth + " px wide, the screen " + snapshot.clientWidth + " px).");
+
+    // Every header control inside the screen, and the cart whole and big enough to tap.
+    if (snapshot.header) {
+      var screen = snapshot.clientWidth || snapshot.width;
+      if (snapshot.header.rightmost > screen) {
+        problems.push("The header reaches " + (snapshot.header.rightmost - screen) + " px past the screen edge at " + snapshot.width + " px.");
+      }
+      var cart = snapshot.header.cart;
+      if (!cart) {
+        problems.push("The header has no cart button.");
+      } else if (cart.left < 0 || cart.right > screen) {
+        problems.push("The cart button is not fully on screen (" + cart.left + " to " + cart.right + " of " + screen + " px).");
+      } else if (cart.w < 44 || cart.h < 44) {
+        problems.push("The cart button is " + cart.w + " x " + cart.h + " px; the smallest tap target is 44 x 44.");
+      }
+    }
 
     if (snapshot.pour.length > 1) problems.push("More than one pour line (" + snapshot.pour.length + "): the kit allows one per layout.");
     snapshot.pour.forEach(function (line) {
@@ -164,8 +200,9 @@
     if (bottoms.length > 0) {
       var top = Math.min.apply(null, bottoms.map(function (item) { return item.y; }));
       var taken = snapshot.height - top;
-      if (taken > snapshot.height * MAX_BOTTOM_STACK) {
-        problems.push("Fixed bars take " + taken + " px of " + snapshot.height + " px (" + Math.round((taken / snapshot.height) * 100) + "%); the limit is " + MAX_BOTTOM_STACK * 100 + "%.");
+      var allowed = Math.max(snapshot.height * MAX_BOTTOM_STACK, MIN_STACK_ALLOWED);
+      if (taken > allowed) {
+        problems.push("Fixed bars take " + taken + " px of " + snapshot.height + " px (" + Math.round((taken / snapshot.height) * 100) + "%); the limit is " + Math.round(allowed) + " px.");
       }
     }
 

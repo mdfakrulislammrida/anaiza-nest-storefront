@@ -176,7 +176,7 @@ function Tile({
   if (!picture) {
     return (
       <Link href={href} className={`relative flex min-h-[13rem] flex-col justify-end ${background} p-6 text-ivory`}>
-        <p className="font-serif text-h2">{title}</p>
+        <p className="font-serif text-h2">{title}</p>{" "}
         <p className="mt-1 text-body text-ivory/80">{text} →</p>
       </Link>
     );
@@ -197,7 +197,7 @@ function Tile({
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className={`relative ${TILE_OVERLAY_CLASS} p-6`}>
-        <p className="font-serif text-h2">{title}</p>
+        <p className="font-serif text-h2">{title}</p>{" "}
         <p className="mt-1 text-body text-ivory/80">{text} →</p>
       </div>
     </Link>

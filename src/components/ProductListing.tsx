@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api";
 import { trackViewItemList } from "@/lib/tracking";
+import ListBreadcrumb from "./ListBreadcrumb";
+import PhoneListBar from "./PhoneListBar";
 import ProductGrid from "./ProductGrid";
 import PriceFilterPanel from "./PriceFilterPanel";
 import SortDropdown from "./SortDropdown";
@@ -20,9 +22,12 @@ export default function ProductListing({
   emptyTitle,
   emptyText,
   emptyLink,
+  showBreadcrumb = true,
 }: {
   fixedParams?: Partial<ProductListParams>;
   breadcrumbLabel: string;
+  // False when the page has already put "Home / Name" above its own title (a category page does).
+  showBreadcrumb?: boolean;
   // What to say when the list has nothing in it (no filters applied), e.g. a new shop or no special prices.
   emptyTitle?: string;
   emptyText?: string;
@@ -120,13 +125,7 @@ export default function ProductListing({
   if (!showSkeleton && !result && failed) {
     return (
       <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">{breadcrumbLabel}</span>
-      </nav>
+      {showBreadcrumb && <ListBreadcrumb label={breadcrumbLabel} />}
         <EmptyState
           title="We could not load the collection"
           text="Something went wrong on our side. Please refresh in a moment, or get in touch and we will help you."
@@ -138,13 +137,7 @@ export default function ProductListing({
   if (!showSkeleton && products.length === 0 && !filtersActive) {
     return (
       <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">{breadcrumbLabel}</span>
-      </nav>
+      {showBreadcrumb && <ListBreadcrumb label={breadcrumbLabel} />}
         <EmptyState
           title={emptyTitle}
           text={emptyText}
@@ -157,22 +150,23 @@ export default function ProductListing({
 
   return (
     <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">{breadcrumbLabel}</span>
-      </nav>
+      {showBreadcrumb && <ListBreadcrumb label={breadcrumbLabel} />}
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+        {/* Phone: Filter and Sort in one row that stays under the header; the count sits under it. */}
+        <PhoneListBar>
+          <PriceFilterPanel buildHref={buildHref} activeMin={minPrice} activeMax={maxPrice} bar />
+          <SortDropdown />
+        </PhoneListBar>
+        <p className="my-4 text-body text-stone sm:hidden">{showSkeleton ? "Loading…" : `${meta?.total ?? 0} products`}</p>
+
         <div className="flex flex-col gap-8 sm:flex-row">
-          <aside className="shrink-0 sm:w-56">
+          <aside className="hidden shrink-0 sm:block sm:w-56">
             <PriceFilterPanel buildHref={buildHref} activeMin={minPrice} activeMax={maxPrice} />
           </aside>
 
           <div className="flex-1">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 hidden items-center justify-between sm:flex">
               <p className="text-body text-stone">
                 {showSkeleton ? "Loading…" : `${meta?.total ?? 0} products`}
               </p>

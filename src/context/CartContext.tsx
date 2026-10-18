@@ -50,6 +50,8 @@ export function maxQuantityFor(item: Pick<CartItem, "stock">): number {
 
 interface CartContextValue {
   items: CartItem[];
+  // True once the saved cart has been read from the browser (until then `items` is empty because nothing has been read).
+  ready: boolean;
   itemCount: number;
   subtotal: number;
   isDrawerOpen: boolean;
@@ -202,6 +204,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       items,
+      ready: hydrated,
       itemCount,
       subtotal,
       isDrawerOpen,
@@ -215,6 +218,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }),
     [
       items,
+      hydrated,
       itemCount,
       subtotal,
       isDrawerOpen,

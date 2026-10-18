@@ -82,7 +82,7 @@ export default function CheckoutForm({
   intro?: string | null;
 }) {
   const router = useRouter();
-  const { items, subtotal, clearCart, updateQuantity, removeItem } = useCart();
+  const { items, subtotal, ready, clearCart, updateQuantity, removeItem } = useCart();
   // The order summary shows a live estimate from the editable delivery settings;
   // the server always recomputes and charges the authoritative fee itself.
   const { siteSettings } = useSiteSettings();
@@ -326,7 +326,7 @@ export default function CheckoutForm({
 
   if (items.length === 0 && !orderPlaced) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
+      <div className={`mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 ${ready ? "" : "min-h-screen"}`}>
         <h1 className="font-serif text-charcoal text-h1">Nothing to check out</h1>
         <p className="mt-4 text-body text-stone">Your cart is empty. Browse the collection and find something worth keeping.</p>
         <Link

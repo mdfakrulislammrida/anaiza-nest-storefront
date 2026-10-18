@@ -88,7 +88,8 @@ export default function Header({ categories: initialCategories = [] }: { categor
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-4 sm:gap-4 sm:py-4 sm:px-6">
           {/* Clear space around the logo is the header's own padding on top, bottom and left, plus
               the right margin here; the tagline sits under it on desktop only. */}
-          <Link href="/" className="mr-4 flex shrink-0 flex-col justify-center" aria-label={`${siteName} home`}>
+          {/* On a phone the logo gives way to the icons (it never goes under the kit's 120 px); from sm up it is as it was. */}
+          <Link href="/" className="mr-2 flex min-w-0 shrink flex-col justify-center sm:mr-4 sm:shrink-0" aria-label={`${siteName} home`}>
             <Logo variant="navy" />
             {tagline && <span className="mt-1 hidden text-caption text-stone sm:block">{tagline}</span>}
           </Link>
@@ -114,7 +115,8 @@ export default function Header({ categories: initialCategories = [] }: { categor
                 </svg>
               )}
             </button>
-            <Link href="/account" aria-label="Account" className={ICON_BUTTON_CLASS}>
+            {/* On a phone the account link is in the menu: four icons and the logo do not fit a 360 px screen. */}
+            <Link href="/account" aria-label="Account" className={`${ICON_BUTTON_CLASS} hidden sm:flex`}>
               <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" />

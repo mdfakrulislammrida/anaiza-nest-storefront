@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { WhyUsReason } from "@/lib/types";
 
 // "Why Anaiza Nest": up to five short lines the admin wrote (or inserted from the brand kit). Empty by
@@ -23,10 +24,13 @@ export default function WhyUsSection({
 
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {reasons.map((reason, index) => (
-            <li key={`${index}-${reason.line}`} className="border-t border-gold pt-4">
-              {reason.title && <p className="font-serif text-body font-semibold text-charcoal">{reason.title}</p>}
-              <p className={`text-body text-charcoal/80 ${reason.title ? "mt-1" : ""}`}>{reason.line}</p>
-            </li>
+            <Fragment key={`${index}-${reason.line}`}>
+              <li className="border-t border-gold pt-4">
+                {reason.title && <p className="font-serif text-body font-semibold text-charcoal">{reason.title}</p>}
+                {" "}
+                <p className={`text-body text-charcoal/80 ${reason.title ? "mt-1" : ""}`}>{reason.line}</p>
+              </li>{" "}
+            </Fragment>
           ))}
         </ul>
       </div>

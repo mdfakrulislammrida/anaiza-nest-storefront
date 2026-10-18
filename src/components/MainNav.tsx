@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 // One menu entry. A top-level entry may have one level of children. An entry with no url is only a heading
 // for its children (the built-in Categories dropdown).
@@ -34,6 +35,7 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const desktopRef = useRef<HTMLUListElement>(null);
+  const phone = useSiteSettings().siteSettings?.contact_phone;
 
   useEffect(() => {
     if (openDesktop === null) return;
@@ -205,6 +207,26 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
                   </li>
                 );
               })}
+            </ul>
+            {/* What the header and the promo bar show from sm up, on a phone: the account, order tracking and a call. */}
+            <ul className="divide-y divide-linen border-t border-linen sm:hidden">
+              <li>
+                <a href="/account" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+                  Account
+                </a>
+              </li>
+              <li>
+                <a href="/track-order" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+                  Track order
+                </a>
+              </li>
+              {phone && (
+                <li>
+                  <a href={`tel:${phone.replace(/\s+/g, "")}`} className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+                    Call {phone}
+                  </a>
+                </li>
+              )}
             </ul>
           </nav>
         )}

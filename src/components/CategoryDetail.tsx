@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import ProductListing from "@/components/ProductListing";
 import ProductListingFallback from "@/components/ProductListingFallback";
 import Accordion from "@/components/Accordion";
+import CategoryIntro from "@/components/CategoryIntro";
 import GiftFrame from "@/components/GiftFrame";
 import CategoryAbout from "@/components/CategoryAbout";
 import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
@@ -21,8 +23,10 @@ export default function CategoryDetail({
 
   return (
     <div>
+      {/* On a phone the banner is capped at 220 px (still filling its box from the centre), so the title and the products
+          are not a screen down; the frame is 4% of the shorter side of whatever the box is. */}
       {hasBanner && (
-        <div className="relative aspect-[3/2] w-full overflow-hidden bg-linen sm:aspect-[4/1]">
+        <div className="relative aspect-[3/2] max-h-[13.75rem] w-full overflow-hidden bg-linen sm:aspect-[4/1] sm:max-h-none">
           <picture>
             {mobile.url && <source media="(max-width: 639px)" srcSet={mobile.url} />}
             <img
@@ -41,11 +45,17 @@ export default function CategoryDetail({
         </div>
       )}
 
-      <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* "Home / Name" above the title, where it says where you are; the list below does not repeat it. */}
+        <nav aria-label="Breadcrumb" className="pb-3 pt-4 text-caption text-stone">
+          <Link href="/" className="hover:text-navy">
+            Home
+          </Link>
+          <span className="mx-1.5">/</span>
+          <span className="text-charcoal">{category.name}</span>
+        </nav>
         <h1 className="font-serif text-charcoal text-h1">{category.name}</h1>
-        {category.intro_text && (
-          <p className="an-intro">{category.intro_text}</p>
-        )}
+        {category.intro_text && <CategoryIntro text={category.intro_text} />}
       </div>
 
       <div className="mt-4">
@@ -54,6 +64,7 @@ export default function CategoryDetail({
             <ProductListingFallback
               result={initialProducts}
               breadcrumbLabel={category.name}
+              showBreadcrumb={false}
               basePath={`/category/${category.slug}`}
               emptyTitle="Nothing in this category just yet"
               emptyText="We are still setting this category out. Please check back soon, or have a look at the rest of the collection."
@@ -64,6 +75,7 @@ export default function CategoryDetail({
           <ProductListing
             fixedParams={{ category: category.slug }}
             breadcrumbLabel={category.name}
+            showBreadcrumb={false}
             initialResult={initialProducts}
             emptyTitle="Nothing in this category just yet"
               emptyText="We are still setting this category out. Please check back soon, or have a look at the rest of the collection."
@@ -74,8 +86,9 @@ export default function CategoryDetail({
 
       {category.seo_description && <CategoryAbout name={category.name} html={category.seo_description} />}
 
+      {/* The FAQ sits in the same 720 px column as the About text above, so the two share one left edge. */}
       {category.faqs && category.faqs.length > 0 && (
-        <section className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
+        <section className="mx-auto max-w-[45rem] px-4 pb-16 sm:px-6">
           <h2 className="mb-4 font-serif text-charcoal text-h2">
             Frequently asked questions
           </h2>

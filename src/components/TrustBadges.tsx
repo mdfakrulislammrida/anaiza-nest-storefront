@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { deliveryTimeText, resolvePolicy } from "@/lib/policy";
 import type { StorePolicy } from "@/lib/types";
@@ -79,10 +79,12 @@ export default function TrustBadges({ compact = false, omit = [] }: { compact?: 
     return (
       <ul className={`mt-6 grid gap-4 border-t border-linen pt-4 ${COMPACT_COLUMNS[Math.min(badges.length, 3)]}`}>
         {badges.map((badge) => (
-          <li key={badge.title} className="flex flex-col items-center gap-2 text-center">
-            <Icon size="h-5 w-5">{badge.icon}</Icon>
-            <span className="text-caption font-medium text-charcoal">{badge.title}</span>
-          </li>
+          <Fragment key={badge.title}>
+            <li className="flex flex-col items-center gap-2 text-center">
+              <Icon size="h-5 w-5">{badge.icon}</Icon>
+              <span className="text-caption font-medium text-charcoal">{badge.title}</span>
+            </li>{" "}
+          </Fragment>
         ))}
       </ul>
     );
@@ -94,15 +96,17 @@ export default function TrustBadges({ compact = false, omit = [] }: { compact?: 
         className={`mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 ${badges.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
       >
         {badges.map((badge) => (
-          <div key={badge.title} className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
-            <Icon size="h-6 w-6">{badge.icon}</Icon>
-            <div>
-              <p className="text-body font-medium text-charcoal">{badge.title}</p>
-              <p className="text-caption text-stone">
-                {typeof badge.subtitle === "function" ? badge.subtitle(policy) : badge.subtitle}
-              </p>
-            </div>
-          </div>
+          <Fragment key={badge.title}>
+            <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
+              <Icon size="h-6 w-6">{badge.icon}</Icon>
+              <div>
+                <p className="text-body font-medium text-charcoal">{badge.title}</p>{" "}
+                <p className="text-caption text-stone">
+                  {typeof badge.subtitle === "function" ? badge.subtitle(policy) : badge.subtitle}
+                </p>
+              </div>
+            </div>{" "}
+          </Fragment>
         ))}
       </div>
     </section>

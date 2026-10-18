@@ -14,9 +14,12 @@ few rules. Two checks keep them there.
 `scripts/signature-probe.cjs` measures the page it is pasted into.
 
 1. Start the shop (`npm run dev` with the API running, or open the built site).
-2. Open the page. Set the window to **390 wide** (and 844 high), then paste the whole file into the browser console.
-3. Read the `problems` list. An empty list passes. Repeat at **1280 wide**.
+2. Open the page. Set the window to **360 x 640**, then paste the whole file into the browser console.
+3. Read the `problems` list. An empty list passes. Repeat at **375 x 667**, **390 x 844** and **1280 x 800**.
 4. Do the first visit (no cookie choice, so the banner shows) and again after choosing.
+
+Run it against content that looks like the live site, not only the demo data: the live logo is a 197 px wide SVG, and it was the
+logo that pushed the header off a phone. (Point the dev server at the live API, or copy the live logo into the local settings.)
 
 Page types worth running: home, shop, category, product, cart, checkout, a CMS page, a blog article, a landing page.
 
@@ -25,7 +28,6 @@ What it checks, per page:
 | Rule | Limit |
 | --- | --- |
 | h1 | exactly one |
-| Sideways scroll | none |
 | Pour line (`.pour-line`, `.an-pour`) | at most one, hidden from screen readers |
 | Gift frame | inset 4% of the short side (within 1.5 px), hidden from screen readers |
 | Seal | at most one |
@@ -33,6 +35,8 @@ What it checks, per page:
 | Shadow | only the product-photo shadow (`shadow-warm`) |
 | Gradient | only an element marked `data-scrim` (a text scrim over a photo) |
 | Fixed items | none overlapping (a dialog covers the page by design) |
-| Fixed bars at the bottom | the order bar and the cookie banner together take at most 38% of the screen height |
+| Fixed bars at the bottom | the order bar and the cookie banner together take at most 38% of the screen height, or 320 px if that is more (the bars are as tall on a short phone as on a tall one) |
+| Header | every control inside the screen; the cart whole and at least 44 x 44 px |
+| Sideways scroll | measured as `scrollWidth` against `clientWidth` (a phone that scrolls sideways reports an `innerWidth` as wide as the page, which once hid the header overflow) |
 
 A new text scrim over a photo must carry `data-scrim`; a new seal must be rendered by `Seal` (which carries `data-seal`).

@@ -9,13 +9,14 @@ import TrustBadges from "@/components/TrustBadges";
 import { CTA } from "@/lib/brand";
 
 export default function CartPage() {
-  const { items, subtotal } = useCart();
+  const { items, subtotal, ready } = useCart();
 
   if (items.length === 0) {
     return (
       <>
         <CartRecoveryRestore />
-      <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
+      {/* Until the saved cart has been read the page keeps a screen's height, so the footer does not jump when it fills. */}
+      <div className={`mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 ${ready ? "" : "min-h-screen"}`}>
         <h1 className="font-serif text-charcoal text-h1">Your cart is empty</h1>
         <p className="mt-4 text-body text-stone">Browse the collection and find something worth keeping.</p>
         <Link

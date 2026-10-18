@@ -1,4 +1,5 @@
-import Link from "next/link";
+import ListBreadcrumb from "./ListBreadcrumb";
+import PhoneListBar from "./PhoneListBar";
 import PriceFilterPanel from "./PriceFilterPanel";
 import ProductGrid from "./ProductGrid";
 import EmptyState from "./EmptyState";
@@ -18,9 +19,11 @@ export default function ProductListingFallback({
   emptyTitle,
   emptyText,
   emptyLink,
+  showBreadcrumb = true,
 }: {
   result: ProductListResponse | null;
   breadcrumbLabel: string;
+  showBreadcrumb?: boolean;
   basePath: string;
   emptyTitle?: string;
   emptyText?: string;
@@ -33,13 +36,7 @@ export default function ProductListingFallback({
   if (result.data.length === 0) {
     return (
       <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">{breadcrumbLabel}</span>
-      </nav>
+      {showBreadcrumb && <ListBreadcrumb label={breadcrumbLabel} />}
         <EmptyState title={emptyTitle} text={emptyText} linkHref={emptyLink?.href} linkLabel={emptyLink?.label} />
       </div>
     );
@@ -55,22 +52,21 @@ export default function ProductListingFallback({
 
   return (
     <div>
-      <nav className="mx-auto max-w-7xl px-4 py-4 text-caption text-stone sm:px-6">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">{breadcrumbLabel}</span>
-      </nav>
+      {showBreadcrumb && <ListBreadcrumb label={breadcrumbLabel} />}
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+        <PhoneListBar>
+          <PriceFilterPanel buildHref={buildHref} bar />
+        </PhoneListBar>
+        <p className="my-4 text-body text-stone sm:hidden">{result.meta.total} products</p>
+
         <div className="flex flex-col gap-8 sm:flex-row">
-          <aside className="shrink-0 sm:w-56">
+          <aside className="hidden shrink-0 sm:block sm:w-56">
             <PriceFilterPanel buildHref={buildHref} />
           </aside>
 
           <div className="flex-1">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 hidden items-center justify-between sm:flex">
               <p className="text-body text-stone">{result.meta.total} products</p>
             </div>
 

@@ -354,3 +354,36 @@
   font-weight: 400;
   line-height: 1.75rem;
 }
+
+/* A long summary is clamped to three lines on a phone (CSS only: the whole text stays in the page), with a Read more
+   button; from 640 px, and without script, it is shown in full. */
+@media (max-width: 39.99rem) {
+  .an-intro-clamp {
+    display: -webkit-box;
+    margin-bottom: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .an-intro-clamp[data-expanded="true"] {
+    display: block;
+    overflow: visible;
+  }
+  .an-readmore.an-readmore-intro {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: 0 0 8px;
+  }
+}
+@media (scripting: none) {
+  .an-intro-clamp[data-expanded="false"] {
+    display: block;
+    margin-bottom: 24px;
+    overflow: visible;
+  }
+  .an-readmore.an-readmore-intro {
+    display: none;
+  }
+}
