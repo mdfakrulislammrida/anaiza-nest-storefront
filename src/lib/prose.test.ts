@@ -114,3 +114,17 @@ describe("proseHtml", () => {
     assert.equal(proseHtml("<p>Text</p><p><em>Gifted, beautifully.</em></p>"), '<p>Text</p><p class="an-tagline"><em>Gifted, beautifully.</em></p>');
   });
 });
+
+describe("a page that already uses burgundy (the product page's order button)", () => {
+  it("makes even the first italic line navy, so burgundy stays once per layout", () => {
+    assert.equal(
+      decorateProse("<h2>A</h2><p><em>One.</em></p><p>Text</p><p><em>Two.</em></p><p>Text</p>", true),
+      '<h2>A</h2><p class="an-em-alt"><em>One.</em></p><p>Text</p><p class="an-em-alt"><em>Two.</em></p><p>Text</p>',
+    );
+    assert.equal(proseHtml("<p><em>One.</em></p><p>Text</p>", true), '<p class="an-em-alt"><em>One.</em></p><p>Text</p>');
+  });
+
+  it("is unchanged by default", () => {
+    assert.equal(decorateProse("<p><em>One.</em></p><p>Text</p>"), '<p class="an-em"><em>One.</em></p><p>Text</p>');
+  });
+});

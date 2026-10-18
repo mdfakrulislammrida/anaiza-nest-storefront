@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ApiError, getAllProducts, getProduct, getProductReviews, getProducts, getSiteSettings } from "@/lib/api";
 import { breadcrumbJsonLd, faqPageJsonLd, productJsonLd } from "@/lib/jsonld";
+import { metaDescription } from "@/lib/productDisplay";
 import ProductDetailClient from "@/components/ProductDetailClient";
 import NotFound from "@/app/not-found";
 import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
@@ -25,7 +26,8 @@ export async function generateMetadata({
   if (!product) return {};
 
   const title = product.seo?.meta_title || product.name;
-  const description = product.seo?.meta_description || product.short_description || undefined;
+  // The SEO field, else the short description, the summary or the first words of the description: never a page with none.
+  const description = metaDescription(product);
   const image = product.seo?.og_image || product.images?.[0]?.url;
 
   return {

@@ -31,6 +31,12 @@ interface Hero {
   headerRight: number | null;
 }
 
+interface Product {
+  titleTop: number;
+  titleHeight: number;
+  bar: { h: number } | null;
+}
+
 interface Snapshot {
   path: string;
   width: number;
@@ -40,6 +46,7 @@ interface Snapshot {
   overflowX: boolean;
   header: { rightmost: number; cart: { left: number; right: number; w: number; h: number } | null } | null;
   hero: Hero | null;
+  product: Product | null;
   h1: number;
   pour: { label: string; hidden: boolean }[];
   frames: { inset: number; short: number; hidden: boolean }[];
@@ -61,6 +68,7 @@ function page(overrides: Partial<Snapshot> = {}): Snapshot {
     overflowX: false,
     header: { rightmost: 374, cart: { left: 330, right: 374, w: 44, h: 44 } },
     hero: null,
+    product: null,
     h1: 1,
     pour: [],
     frames: [],
@@ -282,5 +290,56 @@ describe("the homepage hero", () => {
 
     const phone = page({ hero: hero({ panel: { l: 0, r: 390, t: 269, b: 834 }, h1: { l: 32, r: 358, t: 352, b: 440 }, badge: { l: 32, r: 162.4, t: 301, b: 328 }, frame: { l: 15.6, r: 374.4, t: 284.6, b: 818.4 }, pour: { l: 365, r: 366, t: 269, b: 418 }, left: 0, right: 390, headerLeft: 16, headerRight: 374 }) });
     assert.deepEqual(probe.check(phone), []);
+  });
+});
+// The product page on a phone. Before: the title stood at 728 px on a 640 px screen (below the first screen), and the fixed
+// bar was 167 px tall (26% of the screen) with the price, a quantity and two buttons. Now the title is whole in the first
+// screen and the bar, once it shows, is the price and one button in 64 px.
+describe("the product page on a phone", () => {
+  const has = (snapshot: Snapshot, text: string) => probe.check(snapshot).some((problem) => problem.includes(text));
+
+  const phone = (overrides: Partial<Snapshot> = {}): Snapshot =>
+    page({
+      path: "/product/lotus-jar",
+      width: 360,
+      height: 640,
+      clientWidth: 360,
+      scrollWidth: 360,
+      header: { rightmost: 344, cart: { left: 300, right: 344, w: 44, h: 44 } },
+      ...overrides,
+    });
+
+  it("passes with the title whole in the first screen (582 to 638 px of 640) and no bar at the top of the page", () => {
+    assert.deepEqual(probe.check(phone({ product: { titleTop: 581.8, titleHeight: 56, bar: null } })), []);
+  });
+
+  it("catches a title below the first screen (before: 728 px on a 640 px screen)", () => {
+    const low = phone({ product: { titleTop: 727.8, titleHeight: 102, bar: null } });
+
+    assert.ok(has(low, "The product title ends at 830 px, below the first screen (640 px high)"));
+  });
+
+  it("holds a taller phone and a wide screen to nothing about the fold", () => {
+    assert.deepEqual(probe.check(page({ path: "/product/x", width: 1366, height: 768, clientWidth: 1351, scrollWidth: 1351, product: { titleTop: 255, titleHeight: 92, bar: null } })), []);
+    assert.deepEqual(probe.check(phone({ width: 390, height: 844, clientWidth: 390, scrollWidth: 390, product: { titleTop: 619.8, titleHeight: 56, bar: null } })), []);
+  });
+
+  it("allows a 64 px bar and catches the old 167 px one", () => {
+    assert.ok(!has(phone({ product: { titleTop: 581.8, titleHeight: 56, bar: { h: 64 } } }), "sticky bar"));
+    assert.ok(has(phone({ product: { titleTop: 581.8, titleHeight: 56, bar: { h: 167 } } }), "The sticky bar is 167 px tall; the limit is 64 px"));
+  });
+
+  it("keeps the bubble above the bar, and the bar above the cookie banner, with no overlap", () => {
+    const fixed = [
+      { label: "div.fixed sticky bar", x: 0, y: 576, w: 360, h: 64, modal: false, bottom: true },
+      { label: "section.fixed cookie banner", x: 0, y: 430, w: 360, h: 146, modal: false, bottom: true },
+      { label: "a.fixed WhatsApp", x: 292, y: 370, w: 48, h: 48, modal: false, bottom: false },
+    ];
+
+    assert.deepEqual(probe.check(phone({ fixed, product: { titleTop: 581.8, titleHeight: 56, bar: { h: 64 } } })), []);
+
+    // The old default put the bubble where the bar is until the bar had been measured.
+    const covered = fixed.map((item) => (item.label.includes("WhatsApp") ? { ...item, y: 560 } : item));
+    assert.ok(has(phone({ fixed: covered, product: { titleTop: 581.8, titleHeight: 56, bar: { h: 64 } } }), "Fixed items overlap"));
   });
 });

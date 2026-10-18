@@ -244,7 +244,7 @@ export function productJsonLd(product: Product, policy?: StorePolicy | null, rev
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.short_description ?? undefined,
+    description: product.short_description || product.summary || undefined,
     sku: product.sku,
     ...gtinProperty(product.gtin),
     ...(product.mpn ? { mpn: product.mpn } : {}),

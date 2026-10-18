@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 // One menu entry. A top-level entry may have one level of children. An entry with no url is only a heading
@@ -36,6 +37,8 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
   const [expanded, setExpanded] = useState<number | null>(null);
   const desktopRef = useRef<HTMLUListElement>(null);
   const phone = useSiteSettings().siteSettings?.contact_phone;
+  // A product page has its own row for the way back and the menu, so the Menu bar is not repeated above it.
+  const onProduct = usePathname().startsWith("/product/");
 
   useEffect(() => {
     if (openDesktop === null) return;
@@ -54,6 +57,15 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [openDesktop]);
+
+  // The product page's own Menu button asks for the menu through this event.
+  useEffect(() => {
+    function toggle() {
+      setMenuOpen((open) => !open);
+    }
+    window.addEventListener("anaiza:menu", toggle);
+    return () => window.removeEventListener("anaiza:menu", toggle);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -140,13 +152,13 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
       </nav>
 
       {/* Phone: a Menu bar that opens an accordion. */}
-      <div className="border-b border-t border-linen bg-ivory md:hidden">
+      <div className={`bg-ivory md:hidden ${onProduct && !menuOpen ? "" : "border-b border-t border-linen"}`}>
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
-          className="flex min-h-12 w-full items-center justify-between px-4 text-body font-medium text-charcoal"
+          className={`min-h-12 w-full items-center justify-between px-4 text-body font-medium text-charcoal ${onProduct ? "hidden" : "flex"}`}
         >
           <span className="flex items-center gap-3">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true" className="h-5 w-5">

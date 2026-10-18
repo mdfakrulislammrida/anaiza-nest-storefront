@@ -11,9 +11,9 @@ export default function WhatsAppButton() {
   const whatsapp = resolveWhatsApp(siteSettings);
   const href = whatsappLink(whatsapp.number, whatsapp.message);
   const pathname = usePathname();
-  // Only product pages carry the fixed Add to Cart / Buy Now bar on mobile, so only there does the
-  // bubble need lifting above it. Everywhere else it sits in the corner and stays out of the way of
-  // cards and order totals.
+  // Only product pages carry the phone's Add to cart bar, so only there does the bubble need lifting above it (and only
+  // while the bar shows: it sets --bar-top when it mounts and removes it when it goes). Everywhere else the bubble sits
+  // in the corner and stays out of the way of cards and order totals.
   const isProductPage = pathname.startsWith("/product");
 
   if (!whatsapp.showBubble || href === null || isPathHidden(pathname, whatsapp.hiddenPaths)) return null;
@@ -26,10 +26,10 @@ export default function WhatsAppButton() {
       aria-label="Chat with us on WhatsApp"
       // --cookie-top is how far the cookie banner reaches up from the bottom of the screen and --bar-top how far the
       // fixed order bar does (each absent when there is none), so the bubble sits above whichever is higher. The bar's
-      // height is measured, not guessed; on a product page 10rem holds the place until it has been.
+      // height is measured, not guessed.
       className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-champagne text-navy transition-transform hover:scale-105 sm:bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))] ${
         isProductPage
-          ? "bottom-[max(1.25rem,calc(max(var(--bar-top,10rem),var(--cookie-top,0px))+0.75rem))]"
+          ? "bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))]"
           : "bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))]"
       }`}
     >

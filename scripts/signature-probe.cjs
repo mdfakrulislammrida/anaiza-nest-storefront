@@ -18,6 +18,10 @@
   // as on an 844 px one, so a percentage alone would flag the same bars on a shorter screen.
   var MAX_BOTTOM_STACK = 0.38;
   var MIN_STACK_ALLOWED = 320;
+  // The product page's sticky Add to cart bar: the price and one button, never taller than this.
+  var MAX_PRODUCT_BAR = 64;
+  // Under this width the product's title must be whole in the first screen.
+  var PHONE_WIDTH = 480;
 
   // ---- Browser side: take a snapshot of the page ----------------------------------------------------------------
 
@@ -59,6 +63,7 @@
       overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
       header: null,
       hero: null,
+      product: null,
       h1: document.querySelectorAll("h1").length,
       pour: [],
       frames: [],
@@ -132,6 +137,20 @@
         right: box(heroSection.lastElementChild).r,
         headerLeft: innerRect ? Math.round((innerRect.left + parseFloat(innerStyle.paddingLeft)) * 10) / 10 : null,
         headerRight: innerRect ? Math.round((innerRect.right - parseFloat(innerStyle.paddingRight)) * 10) / 10 : null,
+      };
+    }
+
+
+    // A product page: where the title stands (from the top of the page) and how tall the fixed bar is.
+    var productTitle = /^\/product\//.test(window.location.pathname) ? document.querySelector("main h1") : null;
+    if (productTitle) {
+      var titleRect = productTitle.getBoundingClientRect();
+      var productBar = document.querySelector("[data-bottom-bar]");
+      var barFixed = productBar && window.getComputedStyle(productBar).position === "fixed";
+      snapshot.product = {
+        titleTop: Math.round((titleRect.top + window.scrollY) * 10) / 10,
+        titleHeight: Math.round(titleRect.height * 10) / 10,
+        bar: barFixed ? { h: Math.round(productBar.getBoundingClientRect().height * 10) / 10 } : null,
       };
     }
 
@@ -217,6 +236,18 @@
       if (snapshot.width >= 640 && hero.headerLeft !== null) {
         if (Math.abs(hero.left - hero.headerLeft) > 1) problems.push("The hero starts at " + hero.left + " px, the header content at " + hero.headerLeft + " px.");
         if (Math.abs(hero.right - hero.headerRight) > 1) problems.push("The hero tiles end at " + hero.right + " px, the header content at " + hero.headerRight + " px.");
+      }
+    }
+
+
+    // A product page: the whole title in the first screen on a phone, and the sticky bar no taller than the limit.
+    var product = snapshot.product;
+    if (product) {
+      if (snapshot.width <= PHONE_WIDTH && product.titleTop + product.titleHeight > snapshot.height) {
+        problems.push("The product title ends at " + Math.round(product.titleTop + product.titleHeight) + " px, below the first screen (" + snapshot.height + " px high).");
+      }
+      if (product.bar && product.bar.h > MAX_PRODUCT_BAR) {
+        problems.push("The sticky bar is " + product.bar.h + " px tall; the limit is " + MAX_PRODUCT_BAR + " px.");
       }
     }
 

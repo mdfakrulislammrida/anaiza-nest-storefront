@@ -166,9 +166,11 @@ function labelTables(html: string): string {
   });
 }
 
-export function decorateProse(html: string): string {
+// `burgundyTaken`: the page already uses burgundy elsewhere (the product page's order button), so even the first emotional
+// line is navy.
+export function decorateProse(html: string, burgundyTaken = false): string {
   // Burgundy is the kit's once-per-layout colour: the first emotional line has it, any later one is navy.
-  let seen = false;
+  let seen = burgundyTaken;
 
   return labelTables(
     html
@@ -185,6 +187,6 @@ export function decorateProse(html: string): string {
   );
 }
 
-export function proseHtml(html: string): string {
-  return decorateProse(sanitizeContentHtml(html));
+export function proseHtml(html: string, burgundyTaken = false): string {
+  return decorateProse(sanitizeContentHtml(html), burgundyTaken);
 }
