@@ -16,10 +16,11 @@ export const TILE_OVERLAY_OPACITY = 0.78;
 export const HERO_OVERLAY_CLASS = "bg-deepink/90";
 export const TILE_OVERLAY_CLASS = "bg-deepink/[0.78]";
 
-// The hero panel is two thirds of the page from 640 px, at most 843 px (the page is 1280 wide at most); a tile is a third.
-export const HERO_SIZES = "(min-width: 1280px) 843px, (min-width: 640px) 67vw, 100vw";
+// The hero panel is two thirds of the page column from 640 px, at most 821 px (the column is 1232 wide at most: 1280 less the
+// 24 px sides the header has); a tile is a third.
+export const HERO_SIZES = "(min-width: 1280px) 821px, (min-width: 640px) calc((100vw - 48px) * 0.667), 100vw";
 export const HERO_MOBILE_SIZES = "100vw";
-export const TILE_SIZES = "(min-width: 1280px) 427px, (min-width: 640px) 34vw, 100vw";
+export const TILE_SIZES = "(min-width: 1280px) 411px, (min-width: 640px) calc((100vw - 48px) / 3), 100vw";
 
 export interface HeroPictures {
   desktop: HomepagePictureSet;

@@ -75,14 +75,16 @@ function HeroPanel({
     </>
   );
 
+  // From 640 px the hero and its tiles sit on the same 1232 px column as the header's logo and cart (the header's 1280 px
+  // container less its 24 px sides), so their left and right edges line up with it. A phone keeps the hero edge to edge.
   return (
-    <section className="mx-auto grid max-w-7xl grid-cols-1 gap-0.5 px-0 sm:grid-cols-3">
+    <section data-hero className="mx-auto grid max-w-7xl grid-cols-1 gap-0.5 px-0 sm:grid-cols-3 sm:px-6">
       {picture ? (
         <HeroWithPicture picture={picture} sliderIsLive={sliderIsLive}>
           {words}
         </HeroWithPicture>
       ) : (
-        <div className="relative flex min-h-[26rem] flex-col justify-end gap-6 overflow-hidden bg-deepink p-8 text-ivory sm:col-span-2 sm:p-16">
+        <div data-hero-panel className="relative flex min-h-[26rem] flex-col justify-end gap-6 overflow-hidden bg-deepink p-8 text-ivory sm:col-span-2 sm:p-16">
           {/* The layout's gift frame and its one pour line. */}
           <GiftFrame />
           <PourLine className="right-8 sm:right-16" length="9rem" />
@@ -110,10 +112,14 @@ function HeroPanel({
   );
 }
 
-// The hero with a photograph. The picture fills the panel (object-fit: cover, from the centre: the shop never crops it). The
+// The hero with a photograph. The picture fills the hero (object-fit: cover, from the centre: the shop never crops it). The
 // text sits on a flat deepink panel: the left side on a wide screen, the lower part on a phone, so the photograph's subject
-// belongs on the right (wide) or at the top (phone). The gift frame and the pour line are drawn last, so they stay on top,
-// in gold, which shows on a bright photograph as well as a dark one.
+// belongs on the right (wide) or at the top (phone).
+//
+// The panel is in the page's flow, so the hero is as tall as the words need (it was a fixed height with the panel pinned to
+// both edges, which cut the badge and the top of the headline off). The gift frame and the pour line are drawn inside the
+// panel, in gold (it shows on a bright photograph as well as a dark one), and never reach the photograph. On a wide screen
+// the panel's edge is softened by one 120 px fade, from the panel's own deepink into the photograph (data-scrim).
 function HeroWithPicture({
   picture,
   sliderIsLive,
@@ -127,7 +133,7 @@ function HeroWithPicture({
   const { loading, fetchPriority } = heroLoading(sliderIsLive);
 
   return (
-    <div className="relative flex min-h-[42rem] flex-col justify-end overflow-hidden bg-deepink text-ivory sm:col-span-2 sm:min-h-[26rem]">
+    <div className="relative flex min-h-[42rem] flex-col justify-end overflow-hidden bg-deepink text-ivory sm:col-span-2 sm:min-h-[26rem] sm:flex-row sm:justify-start">
       <picture>
         {/* Under 640 px the phone's own picture, so it never fetches the desktop file. Without one, it uses the desktop picture. */}
         {mobile && <source media="(max-width: 639px)" srcSet={mobile.srcset} sizes={HERO_MOBILE_SIZES} />}
@@ -146,14 +152,16 @@ function HeroWithPicture({
       </picture>
 
       <div
-        className={`relative flex flex-col gap-6 p-8 ${HERO_OVERLAY_CLASS} sm:absolute sm:inset-y-0 sm:left-0 sm:w-[min(100%,37rem)] sm:justify-end sm:p-16`}
+        data-hero-panel
+        className={`relative flex flex-col gap-6 p-8 ${HERO_OVERLAY_CLASS} sm:w-[min(100%,37rem)] sm:shrink-0 sm:justify-end sm:p-16`}
       >
+        {/* The layout's gift frame and its one pour line, inside the panel. The pour line stands in the gap between the text and the frame. */}
+        <GiftFrame tone="gold" />
+        <PourLine className="pour-line-gold right-6 sm:right-12" length="9rem" />
         {children}
+        {/* The one fade: the panel's deepink at its own opacity, to nothing, 120 px over the photograph (wide screens only). */}
+        <div aria-hidden="true" data-scrim className="pointer-events-none absolute inset-y-0 left-full hidden w-[7.5rem] bg-gradient-to-r from-deepink/90 to-deepink/0 sm:block" />
       </div>
-
-      {/* The layout's gift frame and its one pour line. */}
-      <GiftFrame tone="gold" />
-      <PourLine className="pour-line-gold right-8 sm:right-16" length="9rem" />
     </div>
   );
 }

@@ -41,8 +41,11 @@ describe("signature visuals in the source", () => {
   });
 
   it("allows a gradient only as a marked text scrim, plus the read-more fade", () => {
-    assert.deepEqual(filesWith(/\bbg-gradient-/), ["components/HeroSlider.tsx", "components/landing/LandingBlocks.tsx"]);
-    for (const name of ["components/HeroSlider.tsx", "components/landing/LandingBlocks.tsx"]) {
+    // Hero.tsx: the one 120 px fade at the edge of the hero's text panel when a picture is set (deepink at the panel's own
+    // opacity to nothing; see docs/signature-checks.md).
+    const scrimFiles = ["components/Hero.tsx", "components/HeroSlider.tsx", "components/landing/LandingBlocks.tsx"];
+    assert.deepEqual(filesWith(/\bbg-gradient-/), scrimFiles);
+    for (const name of scrimFiles) {
       const text = files.find((file) => file.name === name)?.text ?? "";
       const lines = text.split("\n").filter((line) => line.includes("bg-gradient-"));
       assert.ok(lines.length > 0 && lines.every((line) => line.includes("data-scrim")), `${name}: every gradient carries data-scrim`);

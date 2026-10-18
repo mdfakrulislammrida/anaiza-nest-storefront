@@ -58,6 +58,7 @@
       scrollWidth: document.documentElement.scrollWidth,
       overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
       header: null,
+      hero: null,
       h1: document.querySelectorAll("h1").length,
       pour: [],
       frames: [],
@@ -94,6 +95,43 @@
       snapshot.header = {
         rightmost: Math.round(Math.max.apply(null, [0].concat(controls.map(function (el) { return el.getBoundingClientRect().right; })))),
         cart: cartRect ? { left: Math.round(cartRect.left), right: Math.round(cartRect.right), w: Math.round(cartRect.width), h: Math.round(cartRect.height) } : null,
+      };
+    }
+
+
+    // The homepage hero, when the page has one: where its words, frame and pour line sit against its panel, and where its
+    // edges sit against the header's logo and cart (the edges of the header's content, inside its 24 px sides).
+    var heroSection = document.querySelector("[data-hero]");
+    var heroPanel = heroSection ? heroSection.querySelector("[data-hero-panel]") : null;
+    if (heroSection && heroPanel) {
+      var box = function (el) {
+        if (!el) return null;
+        var r = el.getBoundingClientRect();
+        var round = function (n) { return Math.round(n * 10) / 10; };
+        return { l: round(r.left), r: round(r.right), t: round(r.top + window.scrollY), b: round(r.bottom + window.scrollY) };
+      };
+      var pourLine = heroPanel.querySelector(".pour-line");
+      var pourBox = box(pourLine);
+      if (pourBox) {
+        // The line draws itself on scroll (it is 0 px tall until then), so measure where it ends up: its length, then the drop.
+        var length = window.getComputedStyle(pourLine).getPropertyValue("--pour-length").trim();
+        var rem = parseFloat(window.getComputedStyle(document.documentElement).fontSize);
+        pourBox.b = pourBox.t + (/rem$/.test(length) ? parseFloat(length) * rem : parseFloat(length)) + 5;
+      }
+      var inner = header ? header.querySelector("[class*='max-w-7xl']") : null;
+      var innerStyle = inner ? window.getComputedStyle(inner) : null;
+      var innerRect = inner ? inner.getBoundingClientRect() : null;
+      snapshot.hero = {
+        picture: Boolean(heroSection.querySelector("picture")),
+        panel: box(heroPanel),
+        h1: box(heroPanel.querySelector("h1")),
+        badge: box(heroPanel.querySelector("span")),
+        frame: box(heroPanel.querySelector(".gift-frame-line")),
+        pour: pourBox,
+        left: box(heroSection.firstElementChild).l,
+        right: box(heroSection.lastElementChild).r,
+        headerLeft: innerRect ? Math.round((innerRect.left + parseFloat(innerStyle.paddingLeft)) * 10) / 10 : null,
+        headerRight: innerRect ? Math.round((innerRect.right - parseFloat(innerStyle.paddingRight)) * 10) / 10 : null,
       };
     }
 
@@ -152,6 +190,33 @@
         problems.push("The cart button is not fully on screen (" + cart.left + " to " + cart.right + " of " + screen + " px).");
       } else if (cart.w < 44 || cart.h < 44) {
         problems.push("The cart button is " + cart.w + " x " + cart.h + " px; the smallest tap target is 44 x 44.");
+      }
+    }
+
+
+    // The homepage hero: the whole headline and badge inside the screen and the panel, the frame and the pour line inside the
+    // panel (never over the photograph beside it), and the hero and its tiles on the header's left and right edges.
+    var hero = snapshot.hero;
+    if (hero) {
+      var screenWidth = snapshot.clientWidth || snapshot.width;
+      var inside = function (inner, outer) {
+        return inner.l >= outer.l - 1 && inner.r <= outer.r + 1 && inner.t >= outer.t - 1 && inner.b <= outer.b + 1;
+      };
+      var words = { "headline": hero.h1, "badge": hero.badge };
+      Object.keys(words).forEach(function (name) {
+        var box = words[name];
+        if (!box) return;
+        if (box.l < 0 || box.r > screenWidth || box.t < 0) problems.push("The hero " + name + " is outside the screen (" + box.l + " to " + box.r + " of " + screenWidth + " px, top " + box.t + ").");
+        if (hero.panel && !inside(box, hero.panel)) problems.push("The hero " + name + " is cut off by its panel (it spans " + box.t + " to " + box.b + " px, the panel " + hero.panel.t + " to " + hero.panel.b + ").");
+      });
+      if (hero.picture && hero.panel) {
+        if (hero.frame && !inside(hero.frame, hero.panel)) problems.push("With a picture set, the gift frame reaches outside the hero's text panel, over the photograph.");
+        if (hero.pour && !inside(hero.pour, hero.panel)) problems.push("With a picture set, the pour line reaches outside the hero's text panel, over the photograph.");
+      }
+      // A phone keeps the hero edge to edge; from 640 px it sits on the header's column.
+      if (snapshot.width >= 640 && hero.headerLeft !== null) {
+        if (Math.abs(hero.left - hero.headerLeft) > 1) problems.push("The hero starts at " + hero.left + " px, the header content at " + hero.headerLeft + " px.");
+        if (Math.abs(hero.right - hero.headerRight) > 1) problems.push("The hero tiles end at " + hero.right + " px, the header content at " + hero.headerRight + " px.");
       }
     }
 

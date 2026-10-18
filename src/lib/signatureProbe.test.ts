@@ -11,6 +11,26 @@ const probe = require("../../scripts/signature-probe.cjs") as {
   PRODUCT_SHADOW: string;
 };
 
+interface Box {
+  l: number;
+  r: number;
+  t: number;
+  b: number;
+}
+
+interface Hero {
+  picture: boolean;
+  panel: Box | null;
+  h1: Box | null;
+  badge: Box | null;
+  frame: Box | null;
+  pour: Box | null;
+  left: number;
+  right: number;
+  headerLeft: number | null;
+  headerRight: number | null;
+}
+
 interface Snapshot {
   path: string;
   width: number;
@@ -19,6 +39,7 @@ interface Snapshot {
   scrollWidth: number;
   overflowX: boolean;
   header: { rightmost: number; cart: { left: number; right: number; w: number; h: number } | null } | null;
+  hero: Hero | null;
   h1: number;
   pour: { label: string; hidden: boolean }[];
   frames: { inset: number; short: number; hidden: boolean }[];
@@ -39,6 +60,7 @@ function page(overrides: Partial<Snapshot> = {}): Snapshot {
     scrollWidth: 390,
     overflowX: false,
     header: { rightmost: 374, cart: { left: 330, right: 374, w: 44, h: 44 } },
+    hero: null,
     h1: 1,
     pour: [],
     frames: [],
@@ -194,5 +216,71 @@ describe("the header on the phones people really have", () => {
   it("wants a cart that is there and big enough to tap", () => {
     assert.ok(has(page({ header: { rightmost: 374, cart: null } }), "no cart button"));
     assert.ok(has(page({ header: { rightmost: 374, cart: { left: 340, right: 374, w: 34, h: 44 } } }), "34 x 44"));
+  });
+});
+
+// The homepage hero with a picture. Before: the panel was pinned to a 418 px hero while its words needed 535 px, so the
+// badge started 53 px above the panel and the headline 2 px above it (both cut off); the frame and the pour line were
+// drawn over the whole hero, photograph included; and the hero stood at the header's container edge, 24 px outside its logo
+// and cart. The numbers are what was measured at 1280 and 1440 px.
+describe("the homepage hero", () => {
+  const has = (snapshot: Snapshot, text: string) => probe.check(snapshot).some((problem) => problem.includes(text));
+
+  const hero = (overrides: Partial<Hero> = {}): Hero => ({
+    picture: true,
+    panel: { l: 24, r: 616, t: 173, b: 708 },
+    h1: { l: 88, r: 552, t: 288, b: 408 },
+    badge: { l: 88, r: 218.4, t: 237, b: 264 },
+    frame: { l: 45.4, r: 594.6, t: 194.4, b: 686.6 },
+    pour: { l: 567, r: 568, t: 173, b: 322 },
+    left: 24,
+    right: 1241,
+    headerLeft: 24,
+    headerRight: 1241,
+    ...overrides,
+  });
+  const desktop = (overrides: Partial<Hero> = {}) =>
+    page({ width: 1280, height: 800, clientWidth: 1265, scrollWidth: 1265, hero: hero(overrides) });
+
+  it("passes with the words, frame and pour line inside the panel and the edges on the header's", () => {
+    assert.deepEqual(probe.check(desktop()), []);
+  });
+
+  it("passes the hero without a picture (the frame and pour line are the panel's own there)", () => {
+    const plain = desktop({ picture: false, frame: { l: 45.4, r: 813.3, t: 194.4, b: 686.6 }, pour: { l: 769.7, r: 770.7, t: 173, b: 322 }, panel: { l: 24, r: 834.7, t: 173, b: 708 } });
+    assert.deepEqual(probe.check(plain), []);
+  });
+
+  it("catches the badge and the top of the headline cut off by the panel (before: 53 px and 2 px above it)", () => {
+    const cut = desktop({ panel: { l: 0, r: 592, t: 173, b: 591 }, badge: { l: 64, r: 194.4, t: 120, b: 147 }, h1: { l: 64, r: 528, t: 171, b: 291 }, frame: null, pour: null, left: 0, right: 1265, headerLeft: 0, headerRight: 1265 });
+
+    assert.ok(has(cut, "The hero badge is cut off by its panel"));
+    assert.ok(has(cut, "The hero headline is cut off by its panel"));
+  });
+
+  it("catches words outside the screen", () => {
+    assert.ok(has(desktop({ h1: { l: -4, r: 460, t: 288, b: 408 } }), "The hero headline is outside the screen"));
+    assert.ok(has(desktop({ badge: { l: 88, r: 1300, t: 237, b: 264 } }), "The hero badge is outside the screen"));
+  });
+
+  it("catches the frame and the pour line over the photograph when a picture is set (before: both ran across the whole hero)", () => {
+    const over = desktop({ frame: { l: 16.7, r: 825.9, t: 189.7, b: 574.3 }, pour: { l: 777.7, r: 778.7, t: 173, b: 322 } });
+
+    assert.ok(has(over, "the gift frame reaches outside the hero's text panel"));
+    assert.ok(has(over, "the pour line reaches outside the hero's text panel"));
+  });
+
+  it("catches the hero and tiles off the header's left and right edges (before: 24 px out at 1440 px)", () => {
+    const out = page({ width: 1440, height: 900, clientWidth: 1425, scrollWidth: 1425, hero: hero({ left: 72.5, right: 1352.5, headerLeft: 96.5, headerRight: 1328.5, panel: { l: 72.5, r: 664.5, t: 173, b: 708 }, h1: { l: 136.5, r: 600.5, t: 288, b: 408 }, badge: { l: 136.5, r: 266.9, t: 237, b: 264 }, frame: { l: 94, r: 643, t: 194.4, b: 686.6 }, pour: { l: 616, r: 617, t: 173, b: 322 } }) });
+
+    assert.ok(has(out, "The hero starts at 72.5 px, the header content at 96.5 px"));
+    assert.ok(has(out, "The hero tiles end at 1352.5 px, the header content at 1328.5 px"));
+  });
+
+  it("allows 1 px of rounding on the edges, and leaves a phone's edge-to-edge hero alone", () => {
+    assert.deepEqual(probe.check(desktop({ left: 24.8, right: 1240.3 })), []);
+
+    const phone = page({ hero: hero({ panel: { l: 0, r: 390, t: 269, b: 834 }, h1: { l: 32, r: 358, t: 352, b: 440 }, badge: { l: 32, r: 162.4, t: 301, b: 328 }, frame: { l: 15.6, r: 374.4, t: 284.6, b: 818.4 }, pour: { l: 365, r: 366, t: 269, b: 418 }, left: 0, right: 390, headerLeft: 16, headerRight: 374 }) });
+    assert.deepEqual(probe.check(phone), []);
   });
 });

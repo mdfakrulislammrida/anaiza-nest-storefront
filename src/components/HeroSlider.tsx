@@ -143,7 +143,7 @@ export default function HeroSlider({ slides, settings }: { slides: Banner[]; set
 
   if (count === 1) {
     return (
-      <section aria-label="Featured" className="mx-auto max-w-7xl">
+      <section aria-label="Featured" className="mx-auto max-w-7xl sm:px-6">
         <ul className="flex">
           <SlideBody slide={views[0]} first active position={1} total={1} />
         </ul>
@@ -156,7 +156,7 @@ export default function HeroSlider({ slides, settings }: { slides: Banner[]; set
       ref={root}
       aria-roledescription="carousel"
       aria-label="Featured"
-      className="mx-auto max-w-7xl"
+      className="mx-auto max-w-7xl sm:px-6"
       onMouseEnter={() => {
         held.current.hover = true;
       }}

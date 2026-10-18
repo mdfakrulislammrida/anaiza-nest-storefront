@@ -139,7 +139,12 @@ describe("the overlay behind the text", () => {
 
     const hero = readFileSync(new URL("../components/Hero.tsx", import.meta.url), "utf8");
     assert.ok(hero.includes("HERO_OVERLAY_CLASS") && hero.includes("TILE_OVERLAY_CLASS"));
-    assert.ok(!/gradient/i.test(hero), "no gradient on the hero or its tiles");
+    // The one exception is the 120 px fade at the panel's edge: deepink at the panel's own opacity to nothing, marked data-scrim.
+    const gradients = hero.split("\n").filter((line) => /gradient/i.test(line));
+    assert.equal(gradients.length, 1, "no gradient on the hero or its tiles except the one marked fade");
+    assert.ok(gradients[0].includes("data-scrim"), "the fade is marked as a scrim");
+    assert.ok(gradients[0].includes(`from-deepink/${Math.round(HERO_OVERLAY_OPACITY * 100)} to-deepink/0`), "it starts at the panel's opacity");
+    assert.ok(gradients[0].includes("w-[7.5rem]"), "120 px wide");
   });
 });
 
@@ -168,12 +173,17 @@ describe("the hero and tile markup", () => {
     assert.equal((hero.match(/loading="eager"/g) ?? []).length, 0, "eagerness comes from heroLoading, in one place");
   });
 
-  it("draws the gift frame and the pour line once each in either mode, the pictured one last so it stays on top", () => {
+  it("draws the gift frame and the pour line once each in either mode, the pictured ones inside the text panel only", () => {
     assert.equal((hero.match(/<PourLine/g) ?? []).length, 2, "one in each branch, never both at once");
     assert.equal((hero.match(/<GiftFrame/g) ?? []).length, 2);
 
     const picture = hero.slice(hero.indexOf("function HeroWithPicture"), hero.indexOf("// A side tile."));
-    assert.ok(picture.indexOf("{children}") < picture.indexOf("<GiftFrame"), "the frame comes after the text panel");
-    assert.ok(picture.indexOf("{children}") < picture.indexOf("<PourLine"));
+    // With a picture they are children of the text panel (never siblings of the photograph), and the fade is the panel's last child.
+    const panelStart = picture.indexOf("data-hero-panel");
+    const fade = picture.indexOf("data-scrim");
+    for (const part of ["<GiftFrame", "<PourLine"]) {
+      assert.ok(picture.indexOf(part) > panelStart && picture.indexOf(part) < fade, `${part} is inside the text panel`);
+    }
+    assert.ok(picture.indexOf("<picture>") < panelStart, "the photograph comes first, the panel over it");
   });
 });
