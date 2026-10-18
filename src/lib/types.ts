@@ -430,6 +430,21 @@ export interface StorePolicy {
   return_window_days: number;
 }
 
+// One picture of the homepage hero (Site Settings > Homepage pictures): the largest copy, a srcset of all of them, and the size
+// of the largest. Absolute URLs.
+export interface HomepagePictureSet {
+  src: string;
+  srcset: string;
+  width: number;
+  height: number;
+}
+
+export interface HomepageImages {
+  hero: { desktop: HomepagePictureSet | null; mobile: HomepagePictureSet | null; alt: string };
+  hot_deals_tile: { image: HomepagePictureSet | null; alt: string };
+  new_arrivals_tile: { image: HomepagePictureSet | null; alt: string };
+}
+
 // Admin-written homepage wording (Site Settings > Homepage wording); each field is null when blank.
 export interface HomepageWording {
   hero_badge: string | null;
@@ -439,6 +454,8 @@ export interface HomepageWording {
   new_arrivals_tile_text: string | null;
   newsletter_headline: string | null;
   newsletter_text: string | null;
+  // The pictures behind the hero panel and its tiles; absent on an older API (no pictures).
+  images?: HomepageImages;
 }
 
 export interface SiteSetting {

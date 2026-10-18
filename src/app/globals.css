@@ -146,6 +146,11 @@ h4 {
   opacity: 1;
   transition: opacity 0.4s ease-out 1.6s;
 }
+/* On a photograph the line is gold: champagne disappears on a bright one, and gold holds on a dark one as well. */
+.pour-line-gold,
+.pour-line-gold::after {
+  background: var(--gold);
+}
 .pour-line-h {
   position: static;
   width: 100%;
