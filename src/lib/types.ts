@@ -265,6 +265,9 @@ export interface Order {
   // Set by the shop when the order ships; null until then. Absent on an older API.
   courier_name?: string | null;
   tracking_number?: string | null;
+  // The courier's own tracking page (when the shop has set one up), and a plain sentence about where the parcel is.
+  tracking_url?: string | null;
+  delivery_update?: string | null;
   subtotal: number;
   delivery_fee: number;
   // What a coupon took off, and its code (absent on an older API, zero and null when none was used).

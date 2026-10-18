@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ApiError, lookupOrder } from "@/lib/api";
+import { courierLink } from "@/lib/courier";
 import { formatPrice } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import PaymentStateNotice from "@/components/PaymentStateNotice";
@@ -22,6 +23,7 @@ function statusLabel(status: string): string {
 
 export default function TrackOrderPage() {
   const [order, setOrder] = useState<Order | null>(null);
+  const link = order ? courierLink(order) : null;
   const hydrated = useHydrated();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -99,11 +101,17 @@ export default function TrackOrderPage() {
             </div>
           )}
 
-          {(order.courier_name || order.tracking_number) && (
-            <p className="mt-4 rounded-btn bg-linen p-4 text-body text-charcoal">
-              {order.courier_name && <span className="block">Courier: {order.courier_name}</span>}
-              {order.tracking_number && <span className="block">Tracking number: {order.tracking_number}</span>}
-            </p>
+          {(order.courier_name || order.tracking_number || order.delivery_update) && (
+            <div className="mt-4 rounded-btn bg-linen p-4 text-body text-charcoal">
+              {order.delivery_update && <p className="font-medium">{order.delivery_update}</p>}
+              {order.courier_name && <p className={order.delivery_update ? "mt-1" : ""}>Courier: {order.courier_name}</p>}
+              {order.tracking_number && <p className="break-all">Tracking number: {order.tracking_number}</p>}
+              {link && (
+                <a href={link.href} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-11 items-center text-navy underline">
+                  {link.label}
+                </a>
+              )}
+            </div>
           )}
 
           <ul className="mt-4 divide-y divide-linen">
