@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { getCustomer, loginCustomer, logoutCustomer, registerCustomer } from "@/lib/api";
+import { AUTH_KEY, loadAuth, readAuthToken } from "@/lib/storedState";
 import type { AuthCustomer, LoginPayload, RegisterPayload } from "@/lib/types";
 
 interface AuthContextValue {
@@ -21,31 +22,26 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const STORAGE_KEY = "anaiza-auth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<AuthCustomer | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      // One-time sync from localStorage on mount — see CartContext.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setCustomer((JSON.parse(raw) as { customer: AuthCustomer }).customer);
-    } catch {
-      // ignore malformed storage
-    }
+    // A saved sign-in is used only when it is a customer with a token (see storedState.ts).
+    // One-time sync from localStorage on mount — see CartContext.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCustomer(loadAuth(window.localStorage)?.customer ?? null);
   }, []);
 
   const login = useCallback(async (payload: LoginPayload) => {
     const res = await loginCustomer(payload);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(res));
+    window.localStorage.setItem(AUTH_KEY, JSON.stringify(res));
     setCustomer(res.customer);
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
     const res = await registerCustomer(payload);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(res));
+    window.localStorage.setItem(AUTH_KEY, JSON.stringify(res));
     setCustomer(res.customer);
   }, []);
 
@@ -53,19 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // token, so the customer profile has to be fetched separately here.
   const loginWithToken = useCallback(async (token: string) => {
     const customer = await getCustomer(token);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ customer, token }));
+    window.localStorage.setItem(AUTH_KEY, JSON.stringify({ customer, token }));
     setCustomer(customer);
   }, []);
 
   const logout = useCallback(() => {
-    let token: string | null = null;
-    try {
-      token = (JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as { token?: string } | null)?.token ?? null;
-    } catch {
-      // nothing usable stored
-    }
+    const token = readAuthToken(window.localStorage);
 
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(AUTH_KEY);
     setCustomer(null);
 
     if (token) void logoutCustomer(token);

@@ -11,6 +11,7 @@ import {
 } from "react";
 import { feedItemId, trackAddToCart, trackRemoveFromCart } from "@/lib/tracking";
 import type { RestoreLine } from "@/lib/cartRecovery";
+import { CART_KEY, loadCart } from "@/lib/storedState";
 import type { ProductVariant } from "@/lib/types";
 
 // Only the fields addItem actually reads — lets callers that don't have a
@@ -63,7 +64,6 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "anaiza-cart";
 
 function cartKey(productId: number, variantId: number | null) {
   return `${productId}:${variantId ?? "base"}`;
@@ -75,21 +75,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      // One-time sync from localStorage on mount — window is unavailable
-      // during SSR, so this can't be a lazy useState initializer instead.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setItems(JSON.parse(raw) as CartItem[]);
-    } catch {
-      // ignore malformed storage
-    }
+    // What is in storage is checked line by line before it is used: a cart saved by the old site, by an older version
+    // of this one, or a broken string is ignored and removed (see storedState.ts), never handed on as the cart.
+    // One-time sync from localStorage on mount — window is unavailable during SSR, so this can't be a lazy
+    // useState initializer instead.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(loadCart(window.localStorage));
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    try {
+      window.localStorage.setItem(CART_KEY, JSON.stringify(items));
+    } catch {
+      // Storage full or blocked: the cart still works for this visit.
+    }
   }, [items, hydrated]);
 
   const openDrawer = useCallback(() => setIsDrawerOpen(true), []);

@@ -43,6 +43,37 @@ export function captureUtmParams(search: string): void {
   }
 }
 
+// What a stored record is worth: nothing, unless it is an object with a real capture time inside the window. Values must
+// be short strings (they are sent with an order), so a record from anywhere else cannot put anything odd into a request.
+function isFreshRecord(record: unknown, now: number): record is Record<string, unknown> {
+  if (typeof record !== "object" || record === null || Array.isArray(record)) return false;
+
+  const { capturedAt } = record as { capturedAt?: unknown };
+  return typeof capturedAt === "number" && Number.isFinite(capturedAt) && capturedAt <= now + 60_000 && now - capturedAt <= EXPIRY_MS;
+}
+
+export function utmFromRecord(record: unknown, now: number): UtmValues {
+  if (!isFreshRecord(record, now)) return {};
+
+  const values: UtmValues = {};
+  for (const key of UTM_KEYS) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim() !== "" && value.length <= 255) values[key] = value;
+  }
+  return values;
+}
+
+export function clickIdsFromRecord(record: unknown, now: number): ClickIds {
+  if (!isFreshRecord(record, now)) return {};
+
+  const found: ClickIds = {};
+  for (const key of CLICK_KEYS) {
+    const value = record[key];
+    if (typeof value === "string" && value.length <= MAX_CLICK_ID_LENGTH && /^[\w.\-~%=+]+$/.test(value)) found[key] = value;
+  }
+  return found;
+}
+
 // Returns only the UTM keys that are actually present and not expired --
 // never an empty-string value, so callers can spread the result straight
 // into a request body without sending blank fields for missing ones.
@@ -53,14 +84,7 @@ export function getStoredUtmParams(): UtmValues {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
 
-    const record = JSON.parse(raw) as StoredAttribution;
-    if (Date.now() - record.capturedAt > EXPIRY_MS) return {};
-
-    const values: UtmValues = {};
-    for (const key of UTM_KEYS) {
-      if (record[key]) values[key] = record[key];
-    }
-    return values;
+    return utmFromRecord(JSON.parse(raw), Date.now());
   } catch {
     return {};
   }
@@ -108,14 +132,7 @@ export function getStoredClickIds(): ClickIds {
     const raw = window.localStorage.getItem(CLICK_STORAGE_KEY);
     if (!raw) return {};
 
-    const record = JSON.parse(raw) as ClickIds & { capturedAt?: number };
-    if (!record.capturedAt || Date.now() - record.capturedAt > EXPIRY_MS) return {};
-
-    const found: ClickIds = {};
-    for (const key of CLICK_KEYS) {
-      if (typeof record[key] === "string" && record[key]) found[key] = record[key];
-    }
-    return found;
+    return clickIdsFromRecord(JSON.parse(raw), Date.now());
   } catch {
     return {};
   }

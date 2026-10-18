@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/format";
 import { paymentMethodLabel } from "@/lib/payment";
 import { formatDays, resolvePolicy } from "@/lib/policy";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { loadLastOrder, parseNumberList } from "@/lib/storedState";
 import { trackPurchase } from "@/lib/tracking";
 import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import type { Order } from "@/lib/types";
@@ -18,7 +19,7 @@ const TRACKED_ORDERS_KEY = "anaiza-purchase-tracked";
 // purchase event only ever fires once per order.
 function alreadyTrackedPurchase(orderId: number): boolean {
   try {
-    const tracked = JSON.parse(window.sessionStorage.getItem(TRACKED_ORDERS_KEY) ?? "[]") as number[];
+    const tracked = parseNumberList(window.sessionStorage.getItem(TRACKED_ORDERS_KEY));
     if (tracked.includes(orderId)) return true;
     window.sessionStorage.setItem(TRACKED_ORDERS_KEY, JSON.stringify([...tracked, orderId]));
     return false;
@@ -37,8 +38,7 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     try {
-      const raw = window.sessionStorage.getItem("anaiza-last-order");
-      const parsed = raw ? (JSON.parse(raw) as Order) : null;
+      const parsed = loadLastOrder(window.sessionStorage);
       // One-time sync from sessionStorage on mount — see CartContext.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrder(parsed);

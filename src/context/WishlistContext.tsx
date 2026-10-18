@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { loadWishlist, WISHLIST_KEY } from "@/lib/storedState";
 import type { Product } from "@/lib/types";
 
 export interface WishlistItem {
@@ -29,27 +30,26 @@ interface WishlistContextValue {
 }
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
-const STORAGE_KEY = "anaiza-wishlist";
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      // One-time sync from localStorage on mount — see CartContext.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setItems(JSON.parse(raw) as WishlistItem[]);
-    } catch {
-      // ignore malformed storage
-    }
+    // Checked before use, like the cart (see storedState.ts).
+    // One-time sync from localStorage on mount — see CartContext.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(loadWishlist(window.localStorage));
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    try {
+      window.localStorage.setItem(WISHLIST_KEY, JSON.stringify(items));
+    } catch {
+      // Storage full or blocked: the list still works for this visit.
+    }
   }, [items, hydrated]);
 
   const isWishlisted = useCallback(

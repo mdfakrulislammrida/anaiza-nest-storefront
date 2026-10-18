@@ -11,9 +11,22 @@ export interface AppliedCoupon {
   valid_until_text: string | null;
 }
 
+/** A coupon code as the shop writes them: letters, digits, dash and underscore, up to 64. Anything else is not one. */
+export function cleanCouponCode(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+
+  const code = value.trim();
+  return /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(code) ? code : null;
+}
+
 export function readCouponCode(): string | null {
   try {
-    return window.sessionStorage.getItem(KEY) || window.localStorage.getItem(KEY) || null;
+    const code = cleanCouponCode(window.sessionStorage.getItem(KEY)) ?? cleanCouponCode(window.localStorage.getItem(KEY));
+
+    // A value that is not a code (from an older version or another site) is forgotten, not carried.
+    if (code === null && (window.sessionStorage.getItem(KEY) || window.localStorage.getItem(KEY))) clearCouponCode();
+
+    return code;
   } catch {
     return null;
   }

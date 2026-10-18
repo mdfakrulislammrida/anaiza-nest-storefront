@@ -8,6 +8,7 @@ import { ApiError, createOrder, getPaymentSettings, validateCoupon } from "@/lib
 import { currentSessionToken, endSession, noteContact, noteStage } from "@/lib/checkoutSession";
 import { clearCouponCode, clearRecoveryToken, readCouponCode, readRecoveryToken, saveCouponCode, type AppliedCoupon } from "@/lib/coupon";
 import { mayStoreIdentified, validEmail, validPhone } from "@/lib/recovery";
+import { parseRecoveredContact } from "@/lib/storedState";
 import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import { getStoredClickIds, getStoredUtmParams } from "@/lib/attribution";
 import { calmMessage, mobileProblem } from "@/lib/formGuard";
@@ -205,7 +206,7 @@ export default function CheckoutForm({
     try {
       const raw = window.sessionStorage.getItem("anaiza-recovered-contact");
       if (raw) {
-        const saved = JSON.parse(raw) as { name?: string | null; email?: string | null; phone?: string | null };
+        const saved = parseRecoveredContact(raw);
         const form = document.getElementById("checkout-form") as HTMLFormElement | null;
         const fill = (field: string, value: string | null | undefined) => {
           const input = form?.elements.namedItem(field) as HTMLInputElement | null;

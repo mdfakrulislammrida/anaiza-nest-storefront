@@ -5,6 +5,7 @@ import { ApiError, getProductReviews, getReviewLink, submitProductReview } from 
 import { calmMessage, RENDERED_AT_FIELD } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { formatDate } from "@/lib/format";
+import { readAuthToken } from "@/lib/storedState";
 import type { Review, ReviewsPage } from "@/lib/types";
 import Stars from "./Stars";
 
@@ -15,12 +16,7 @@ const inputClass =
 const labelClass = "text-caption font-medium text-stone";
 
 function authToken(): string | null {
-  try {
-    const raw = window.localStorage.getItem("anaiza-auth");
-    return raw ? ((JSON.parse(raw) as { token?: string }).token ?? null) : null;
-  } catch {
-    return null;
-  }
+  return readAuthToken(window.localStorage);
 }
 
 function ReviewItem({ review }: { review: Review }) {

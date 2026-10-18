@@ -9,6 +9,7 @@ import { reportCheckoutSession } from "./api";
 import { getStoredUtmParams } from "./attribution";
 import { marketingAllowed } from "./consent";
 import { buildReport, isIdentified, mayStoreIdentified, pushViewed, type CheckoutStage, type Contact } from "./recovery";
+import { isSessionToken, parseStringList, parseViewedIds } from "./storedState";
 import type { CartItem } from "../context/CartContext";
 
 const TOKEN_KEY = "anaiza-checkout-session";
@@ -40,7 +41,8 @@ function randomToken(): string {
 function token(create: boolean): string | null {
   try {
     const existing = window.localStorage.getItem(TOKEN_KEY);
-    if (existing) return existing;
+    if (isSessionToken(existing)) return existing;
+    // Something that is not a token this code made (an old site's value, say) is not used, and is replaced when a new one is needed.
     if (!create) return null;
 
     const fresh = randomToken();
@@ -63,8 +65,7 @@ function viewedProducts(): number[] {
   if (viewed !== null) return viewed;
 
   try {
-    const raw = window.localStorage.getItem(VIEWED_KEY);
-    viewed = raw ? (JSON.parse(raw) as number[]).filter((id) => Number.isInteger(id)).slice(-5) : [];
+    viewed = parseViewedIds(window.localStorage.getItem(VIEWED_KEY));
   } catch {
     viewed = [];
   }
@@ -92,7 +93,7 @@ function countedBefore(value: CheckoutStage): boolean {
   if (optIn()) return false;
 
   try {
-    return (JSON.parse(window.sessionStorage.getItem(COUNTED_KEY) ?? "[]") as string[]).includes(value);
+    return parseStringList(window.sessionStorage.getItem(COUNTED_KEY)).includes(value);
   } catch {
     return false;
   }
@@ -103,7 +104,7 @@ function rememberCounted(value: CheckoutStage): void {
   if (optIn()) return;
 
   try {
-    const done = JSON.parse(window.sessionStorage.getItem(COUNTED_KEY) ?? "[]") as string[];
+    const done = parseStringList(window.sessionStorage.getItem(COUNTED_KEY));
     window.sessionStorage.setItem(COUNTED_KEY, JSON.stringify([...done, value]));
   } catch {
     // The in-memory set still prevents a repeat for this page load.

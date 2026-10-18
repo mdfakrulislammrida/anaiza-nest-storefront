@@ -20,6 +20,7 @@ import { siteRobots } from "@/lib/seo";
 import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
 import RouteChangeTracker from "@/components/RouteChangeTracker";
 import UtmCapture from "@/components/UtmCapture";
+import CartBoundary from "@/components/CartBoundary";
 import CookieConsent from "@/components/CookieConsent";
 import { HideOnLanding, LandingChromeProvider } from "@/components/LandingChrome";
 
@@ -159,13 +160,21 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <CartProvider>
               <WishlistProvider>
                 <LandingChromeProvider top={top} bottom={bottom}>
-                  <HideOnLanding>{top}</HideOnLanding>
-                  <main className="flex-1">{children}</main>
+                  <HideOnLanding>
+                    <CartBoundary variant="header">{top}</CartBoundary>
+                  </HideOnLanding>
+                  <main className="flex-1">
+                    <CartBoundary variant="page">{children}</CartBoundary>
+                  </main>
                   <HideOnLanding>{bottom}</HideOnLanding>
                   <HideOnLanding>
-                    <CartDrawer />
+                    <CartBoundary variant="silent">
+                      <CartDrawer />
+                    </CartBoundary>
                   </HideOnLanding>
-                  <CheckoutSessionReporter />
+                  <CartBoundary variant="silent">
+                    <CheckoutSessionReporter />
+                  </CartBoundary>
                   <HideOnLanding>
                     <WhatsAppButton />
                   </HideOnLanding>
