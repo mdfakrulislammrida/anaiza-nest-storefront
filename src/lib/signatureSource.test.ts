@@ -53,9 +53,9 @@ describe("signature visuals in the source", () => {
     assert.deepEqual(filesWith(/linear-gradient\(/), ["app/prose.css"]);
   });
 
-  it("draws the pour line in one place, and keeps the seal to its two", () => {
+  it("draws the pour line in one place, and keeps the seal to the product page (the checkout has a text label instead)", () => {
     assert.deepEqual(filesWith(/<PourLine\b/), ["components/Hero.tsx"]);
-    assert.deepEqual(filesWith(/<Seal\b/), ["components/CheckoutForm.tsx", "components/ProductDetail.tsx"]);
+    assert.deepEqual(filesWith(/<Seal\b/), ["components/ProductDetail.tsx"]);
   });
 
   it("puts a burgundy fill only on the order buttons, never on the landing page's blocks", () => {

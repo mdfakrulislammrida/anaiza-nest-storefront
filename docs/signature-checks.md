@@ -38,6 +38,7 @@ What it checks, per page:
 | Fixed bars at the bottom | the order bar and the cookie banner together take at most 38% of the screen height, or 320 px if that is more (the bars are as tall on a short phone as on a tall one) |
 | Header | every control inside the screen; the cart whole and at least 44 x 44 px |
 | Hero (home) | the headline and the badge whole, inside the screen and inside the text panel; with a picture set, the gift frame and the pour line inside the text panel and never over the photograph; from 640 px the hero's left edge and the tiles' right edge within 1 px of the header's logo and cart edges |
+| Checkout (phone) | the order total in the first screen (in the folded summary at the top) and the fixed bar (total and Confirm order) at most 64 px; the small header has no cart on purpose, and every other header rule still holds |
 | Sideways scroll | measured as `scrollWidth` against `clientWidth` (a phone that scrolls sideways reports an `innerWidth` as wide as the page, which once hid the header overflow) |
 
 ## The scrims (gradients the kit's ban allows)

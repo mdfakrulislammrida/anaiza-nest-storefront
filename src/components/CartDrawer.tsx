@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { maxQuantityFor, useCart } from "@/context/CartContext";
+import { itemsLabel } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 
 export default function CartDrawer() {
-  const { items, subtotal, isDrawerOpen, closeDrawer, updateQuantity, removeItem } = useCart();
+  const { items, itemCount, subtotal, isDrawerOpen, closeDrawer, updateQuantity, removeItem } = useCart();
 
   if (!isDrawerOpen) return null;
 
@@ -21,7 +22,7 @@ export default function CartDrawer() {
 
       <div className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-linen bg-ivory">
         <div className="flex items-center justify-between border-b border-linen px-6 py-4">
-          <h2 className="font-serif text-charcoal text-h2">Your cart ({items.length})</h2>
+          <h2 className="font-serif text-charcoal text-h2">Your cart ({itemsLabel(itemCount)})</h2>
           <button
             type="button"
             onClick={closeDrawer}

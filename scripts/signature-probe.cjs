@@ -64,6 +64,7 @@
       header: null,
       hero: null,
       product: null,
+      checkout: null,
       h1: document.querySelectorAll("h1").length,
       pour: [],
       frames: [],
@@ -100,6 +101,8 @@
       snapshot.header = {
         rightmost: Math.round(Math.max.apply(null, [0].concat(controls.map(function (el) { return el.getBoundingClientRect().right; })))),
         cart: cartRect ? { left: Math.round(cartRect.left), right: Math.round(cartRect.right), w: Math.round(cartRect.width), h: Math.round(cartRect.height) } : null,
+        // The checkout's frame has no cart on purpose (nothing there should take the visitor away from paying).
+        cartOptional: /^\/checkout\/?$/.test(window.location.pathname),
       };
     }
 
@@ -154,6 +157,21 @@
       };
     }
 
+
+    // The checkout page: where the order total stands (from the top of the page) and how tall the fixed bar is.
+    if (/^\/checkout\/?$/.test(window.location.pathname)) {
+      var totalNode = document.querySelector("[data-checkout-total]");
+      var checkoutBar = document.querySelector("[data-bottom-bar]");
+      var checkoutBarFixed = checkoutBar && window.getComputedStyle(checkoutBar).position === "fixed";
+      if (totalNode || checkoutBar) {
+        var totalRect = totalNode ? totalNode.getBoundingClientRect() : null;
+        snapshot.checkout = {
+          totalBottom: totalRect && totalRect.height > 0 ? Math.round((totalRect.bottom + window.scrollY) * 10) / 10 : null,
+          bar: checkoutBarFixed ? { h: Math.round(checkoutBar.getBoundingClientRect().height * 10) / 10 } : null,
+        };
+      }
+    }
+
     all.forEach(function (element) {
       if (!isVisible(element)) return;
       var style = getComputedStyle(element);
@@ -203,7 +221,9 @@
         problems.push("The header reaches " + (snapshot.header.rightmost - screen) + " px past the screen edge at " + snapshot.width + " px.");
       }
       var cart = snapshot.header.cart;
-      if (!cart) {
+      if (!cart && snapshot.header.cartOptional) {
+        // A frame that leaves the cart out on purpose (the checkout): the other header checks still hold.
+      } else if (!cart) {
         problems.push("The header has no cart button.");
       } else if (cart.left < 0 || cart.right > screen) {
         problems.push("The cart button is not fully on screen (" + cart.left + " to " + cart.right + " of " + screen + " px).");
@@ -248,6 +268,19 @@
       }
       if (product.bar && product.bar.h > MAX_PRODUCT_BAR) {
         problems.push("The sticky bar is " + product.bar.h + " px tall; the limit is " + MAX_PRODUCT_BAR + " px.");
+      }
+    }
+
+
+    // The checkout on a phone: the order total in the first screen (in the folded summary, whatever is open), and the bar at
+    // most as tall as the limit.
+    var checkout = snapshot.checkout;
+    if (checkout) {
+      if (snapshot.width <= PHONE_WIDTH && checkout.totalBottom !== null && checkout.totalBottom > snapshot.height) {
+        problems.push("The checkout's order total ends at " + Math.round(checkout.totalBottom) + " px, below the first screen (" + snapshot.height + " px high).");
+      }
+      if (checkout.bar && checkout.bar.h > MAX_PRODUCT_BAR) {
+        problems.push("The checkout bar is " + checkout.bar.h + " px tall; the limit is " + MAX_PRODUCT_BAR + " px.");
       }
     }
 

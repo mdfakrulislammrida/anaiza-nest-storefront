@@ -23,6 +23,7 @@ import UtmCapture from "@/components/UtmCapture";
 import CartBoundary from "@/components/CartBoundary";
 import CookieConsent from "@/components/CookieConsent";
 import { HideOnLanding, LandingChromeProvider } from "@/components/LandingChrome";
+import { CheckoutFooter, CheckoutHeader, HideOnCheckout, OnlyOnCheckout } from "@/components/CheckoutChrome";
 
 // Brand kit type: Fraunces 300/400/500 for headings (italic 300 only for the one emotional line),
 // Inter 400/500/600 for text. Both are variable fonts, so every weight the kit uses (300/400/500 and 400/500/600) is one file each.
@@ -161,18 +162,31 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <WishlistProvider>
                 <LandingChromeProvider top={top} bottom={bottom}>
                   <HideOnLanding>
-                    <CartBoundary variant="header">{top}</CartBoundary>
+                    {/* The checkout draws a small frame of its own (logo, back to the cart, "Secure checkout"). */}
+                    <HideOnCheckout>
+                      <CartBoundary variant="header">{top}</CartBoundary>
+                    </HideOnCheckout>
+                    <OnlyOnCheckout>
+                      <CheckoutHeader />
+                    </OnlyOnCheckout>
                   </HideOnLanding>
                   {/* overflow-x: clip is only a safety net (it is not a scroll container, so the sticky header is unaffected):
                       the header is what must fit, and the checks in scripts/signature-probe.cjs say whether it does. */}
                   <main className="flex-1 overflow-x-clip">
                     <CartBoundary variant="page">{children}</CartBoundary>
                   </main>
-                  <HideOnLanding>{bottom}</HideOnLanding>
                   <HideOnLanding>
-                    <CartBoundary variant="silent">
-                      <CartDrawer />
-                    </CartBoundary>
+                    <HideOnCheckout>{bottom}</HideOnCheckout>
+                    <OnlyOnCheckout>
+                      <CheckoutFooter />
+                    </OnlyOnCheckout>
+                  </HideOnLanding>
+                  <HideOnLanding>
+                    <HideOnCheckout>
+                      <CartBoundary variant="silent">
+                        <CartDrawer />
+                      </CartBoundary>
+                    </HideOnCheckout>
                   </HideOnLanding>
                   <CartBoundary variant="silent">
                     <CheckoutSessionReporter />
@@ -181,7 +195,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                     <WhatsAppButton />
                   </HideOnLanding>
                   <HideOnLanding>
-                    <PopupManager />
+                    <HideOnCheckout>
+                      <PopupManager />
+                    </HideOnCheckout>
                   </HideOnLanding>
                   <CookieConsent initial={cookieConsent} />
                 </LandingChromeProvider>

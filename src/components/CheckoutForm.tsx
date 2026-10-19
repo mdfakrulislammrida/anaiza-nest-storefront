@@ -15,7 +15,9 @@ import { calmMessage, mobileProblem } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
-import { estimateDeliveryFee, resolvePolicy } from "@/lib/policy";
+import { resolvePolicy } from "@/lib/policy";
+import { beginCheckoutDue, deliveryChargeFor, freeDeliveryRemaining, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import {
   BD_DISTRICTS_BY_DIVISION,
@@ -24,7 +26,6 @@ import {
   type BdDivision,
 } from "@/lib/bangladesh-geography";
 import SearchableSelect from "./SearchableSelect";
-import Seal from "./Seal";
 import WalletPaymentPanel from "./WalletPaymentPanel";
 import { marketingAllowed } from "@/lib/consent";
 import { isWalletMethod, normalizeBdNumber, walletFieldProblems, type WalletMethod } from "@/lib/payment";
@@ -82,7 +83,7 @@ export default function CheckoutForm({
   intro?: string | null;
 }) {
   const router = useRouter();
-  const { items, subtotal, ready, clearCart, updateQuantity, removeItem } = useCart();
+  const { items, itemCount, subtotal, ready, clearCart, updateQuantity, removeItem } = useCart();
   // The order summary shows a live estimate from the editable delivery settings;
   // the server always recomputes and charges the authoritative fee itself.
   const { siteSettings } = useSiteSettings();
@@ -123,11 +124,21 @@ export default function CheckoutForm({
     [paymentSettings],
   );
 
-  // Dhaka is by far the most common destination -- preselected as a
-  // convenience, but both stay one tap away from changing.
-  const [division, setDivision] = useState<BdDivision | "">("Dhaka");
-  const [district, setDistrict] = useState("Dhaka");
+  // Where the parcel goes: nothing is chosen for the visitor, and no delivery charge is shown until they choose. Inside Dhaka
+  // means Dhaka division and district; Outside Dhaka asks for the division, district and area.
+  const [zone, setZone] = useState<DeliveryZone>(null);
+  const [division, setDivision] = useState<BdDivision | "">("");
+  const [district, setDistrict] = useState("");
   const [thana, setThana] = useState("");
+  // What is shown on a phone: the folded summary, the coupon field, the optional email and note.
+  const phone = useMediaQuery("(max-width: 639px)");
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [phoneNote, setPhoneNote] = useState<string | null>(null);
+  // add_shipping_info and add_payment_info: once for a choice, and for the default payment method at the order if never chosen.
+  const paymentTracked = useRef(false);
   const [chosenMethod, setChosenMethod] = useState<PaymentMethod | null>(null);
   // The visitor's choice if it is still on offer, otherwise the first method that is.
   const paymentMethod: PaymentMethod | null =
@@ -177,7 +188,12 @@ export default function CheckoutForm({
   // Falls back to free-text whenever a district's upazila list is missing or
   // empty, so a data gap never blocks checkout.
   const upazilas = district ? (BD_UPAZILAS_BY_DISTRICT[district] ?? []) : [];
-  const deliveryFee = division ? estimateDeliveryFee(policy, division, subtotal) : null;
+  // Null until a zone is chosen: a charge is never shown before that. The server charges by division, and so does this.
+  const deliveryFee = deliveryChargeFor(policy, zone, division, subtotal);
+  const discounted = Math.max(0, subtotal - (coupon?.discount ?? 0));
+  const total = discounted + (deliveryFee ?? 0);
+  // The nudge needs the shop's own threshold: with the settings not loaded there is none, and none is assumed.
+  const freeLeft = freeDeliveryRemaining(siteSettings?.policy?.free_delivery_threshold, zone, subtotal);
 
   // InitiateCheckout and the "checkout started" stage fire once. On the checkout page that is when it opens; inside a landing
   // page, where the form is far down the page, it is the first time the visitor touches the form.
@@ -190,10 +206,13 @@ export default function CheckoutForm({
     noteStage("checkout_started");
   }
 
+  // The cart is read from the browser after the first render, so the page opening and there being something to check out are
+  // not the same moment. This waits for the cart (it used to fire at the first render, find nothing, and never fire again).
   useEffect(() => {
-    if (!embedded) noteFlowStarted();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once when the checkout page is first reached, not on every cart change
-  }, []);
+    if (!beginCheckoutDue({ embedded, cartReady: ready, itemCount: items.length, alreadyFired: flowStarted.current })) return;
+    noteFlowStarted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires once, when the cart is first there
+  }, [ready, items.length]);
 
   // Details from a reminder's link start the form filled in (only fields still empty), and its coupon is checked. The cart
   // is read from storage after the first render, so this waits until there is a cart (and so a form) to fill.
@@ -346,6 +365,12 @@ export default function CheckoutForm({
     setOrderProblems([]);
     setFieldErrors({});
 
+    if (zone === null) {
+      setFormError("Please choose Inside Dhaka or Outside Dhaka, so we can work out delivery.");
+      setRevealCount((count) => count + 1);
+      return;
+    }
+
     if (!division || !district || !thana) {
       setFormError("Please select your division, district and thana/area.");
       setRevealCount((count) => count + 1);
@@ -359,6 +384,13 @@ export default function CheckoutForm({
     }
 
     const form = new FormData(formElement);
+
+    if (String(form.get("customer_address") ?? "").trim() === "") {
+      setFieldErrors({ customer_address: ["Please enter your street address."] });
+      setFormError("Please check the highlighted fields and try again.");
+      setRevealCount((count) => count + 1);
+      return;
+    }
 
     // Caught here, in words that say what a number looks like, rather than after the order is sent.
     const phoneProblem = mobileProblem(String(form.get("customer_phone") ?? ""));
@@ -385,6 +417,12 @@ export default function CheckoutForm({
 
     setSubmitting(true);
     const email = String(form.get("customer_email") ?? "").trim();
+
+    // The payment method was never touched (the first one on offer was already chosen for the visitor): report it now.
+    if (!paymentTracked.current) {
+      paymentTracked.current = true;
+      trackAddPaymentInfo(items, subtotal, paymentMethod);
+    }
 
     // Waits out the bot trap's minimum time (invisibly, with the button already busy), then carries its two fields.
     const proof = await guard.proof();
@@ -490,507 +528,644 @@ export default function CheckoutForm({
     "mt-1 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
   const labelClass = "text-caption font-medium text-stone";
 
-  return (
-    <div className={embedded ? "" : "mx-auto max-w-6xl px-4 py-10 sm:px-6"}>
-      {embedded ? (
-        <div>
-          <h2 className="font-serif text-charcoal text-h2">{heading || "Your order"}</h2>
-          {intro && <p className="mt-2 text-body text-stone">{intro}</p>}
-        </div>
-      ) : (
-        <>
-          <nav className="mb-6 text-caption text-stone">
-            <Link href="/" className="hover:text-navy">
-              Home
-            </Link>
-            <span className="mx-1.5">/</span>
-            <Link href="/cart" className="hover:text-navy">
-              Cart
-            </Link>
-            <span className="mx-1.5">/</span>
-            <span className="text-charcoal">Checkout</span>
-          </nav>
+  function chooseZone(next: "inside" | "outside") {
+    if (zone === next) return;
 
-          <h1 className="font-serif text-charcoal text-h1">Checkout</h1>
-        </>
-      )}
+    setZone(next);
+    setThana("");
 
-      <div className={embedded ? "mt-6 flex flex-col gap-8" : "mt-8 flex flex-col gap-10 lg:flex-row"}>
-        <form
-          id="checkout-form"
-          onSubmit={handleSubmit}
-          onBlur={handleContactBlur}
-          onFocusCapture={embedded ? noteFlowStarted : undefined}
-          className="relative flex-1 space-y-8"
+    if (next === "inside") {
+      setDivision("Dhaka");
+      setDistrict("Dhaka");
+    } else {
+      setDivision("");
+      setDistrict("");
+    }
+
+    trackAddShippingInfo(items, subtotal, next === "inside" ? "Inside Dhaka" : "Outside Dhaka");
+  }
+
+  const phoneProblemText = fieldErrors.customer_phone?.[0] ?? phoneNote;
+
+  const zoneButton = (value: "inside" | "outside", label: string) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={zone === value}
+      onClick={() => chooseZone(value)}
+      className={`flex min-h-14 flex-1 items-center justify-center rounded-btn border px-4 text-button transition-colors ${
+        zone === value ? "border-navy bg-linen text-navy" : "border-stone/80 text-charcoal hover:border-navy"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  const areaField =
+    upazilas.length > 0 ? (
+      <SearchableSelect
+        label="Area (thana)"
+        value={thana}
+        options={upazilas}
+        disabled={!district}
+        disabledHint="Select district first"
+        placeholder="Select your area"
+        searchPlaceholder="Search your area..."
+        error={errorFor("thana") ? fieldErrors.thana?.[0] : null}
+        onChange={setThana}
+      />
+    ) : (
+      <div>
+        <label htmlFor={`${uid}-thana`} className={labelClass}>
+          Area (thana)
+        </label>
+        <input
+          id={`${uid}-thana`}
+          autoComplete="off"
+          aria-invalid={fieldErrors.thana ? true : undefined}
+          value={thana}
+          onChange={(event) => setThana(event.target.value)}
+          disabled={!district}
+          required
+          placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
+          className={inputClass}
+        />
+        {errorFor("thana")}
+      </div>
+    );
+
+  const checkoutForm = (
+    <form
+      id="checkout-form"
+      onSubmit={handleSubmit}
+      onBlur={handleContactBlur}
+      onFocusCapture={embedded ? noteFlowStarted : undefined}
+      className="relative min-w-0 space-y-6"
+    >
+      {guard.trap}
+      {formError && (
+        <div
+          ref={alertRef}
+          role="alert"
+          tabIndex={-1}
+          className="rounded-btn border border-burgundy/30 bg-linen p-4 text-body text-burgundy focus:outline-none"
         >
-          {guard.trap}
-          {formError && (
-            <div
-              ref={alertRef}
-              role="alert"
-              tabIndex={-1}
-              className="rounded-btn border border-burgundy/30 bg-linen p-4 text-body text-burgundy focus:outline-none"
-            >
-              <p className="font-medium">{formError}</p>
-              {orderProblems.length > 0 && (
+          <p className="font-medium">{formError}</p>
+          {orderProblems.length > 0 && (
+            <>
+              <ul className="mt-2 list-disc space-y-1 pl-6">
+                {orderProblems.map((problem) => (
+                  <li key={problem}>{problem}</li>
+                ))}
+              </ul>
+              <p className="mt-4">
+                {embedded ? (
+                  <a href="#landing-order" className="font-medium underline">
+                    Change the quantity below
+                  </a>
+                ) : (
+                  <Link href="/cart" className="font-medium underline">
+                    Review your cart
+                  </Link>
+                )}{" "}
+                {embedded ? "and lower it, then place the order again." : "and lower the quantity, then place the order again."}
+              </p>
+            </>
+          )}
+          {(supportPhone || whatsappHref) && (
+            <p className="mt-4">
+              Need a hand?{" "}
+              {supportPhone && (
                 <>
-                  <ul className="mt-2 list-disc space-y-1 pl-6">
-                    {orderProblems.map((problem) => (
-                      <li key={problem}>{problem}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-4">
-                    {embedded ? (
-                      <a href="#landing-order" className="font-medium underline">
-                        Change the quantity below
-                      </a>
-                    ) : (
-                      <Link href="/cart" className="font-medium underline">
-                        Review your cart
-                      </Link>
-                    )}{" "}
-                    {embedded ? "and lower it, then place the order again." : "and lower the quantity, then place the order again."}
-                  </p>
+                  Call{" "}
+                  <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-medium underline">
+                    {supportPhone}
+                  </a>
                 </>
               )}
-              {(supportPhone || whatsappHref) && (
-                <p className="mt-4">
-                  Need a hand?{" "}
-                  {supportPhone && (
-                    <>
-                      Call{" "}
-                      <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="font-medium underline">
-                        {supportPhone}
-                      </a>
-                    </>
-                  )}
-                  {supportPhone && whatsappHref && " or "}
-                  {whatsappHref && (
-                    <a href={whatsappHref} target="_blank" rel="noreferrer noopener" className="font-medium underline">
-                      {supportPhone ? "message us on WhatsApp" : "Message us on WhatsApp"}
-                    </a>
-                  )}
-                  .
-                </p>
+              {supportPhone && whatsappHref && " or "}
+              {whatsappHref && (
+                <a href={whatsappHref} target="_blank" rel="noreferrer noopener" className="font-medium underline">
+                  {supportPhone ? "message us on WhatsApp" : "Message us on WhatsApp"}
+                </a>
               )}
-            </div>
+              .
+            </p>
           )}
+        </div>
+      )}
 
-          <fieldset className="space-y-4">
-            <legend className="font-serif text-h2 text-charcoal">Shipping details</legend>
+      <fieldset className="space-y-4">
+        <legend className="font-serif text-h2 text-charcoal">Your details</legend>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor={`${uid}-name`} className={labelClass}>
-                  Full name
-                </label>
-                <input
-                  id={`${uid}-name`}
-                  name="customer_name"
-                  autoComplete="name"
-                  required
-                  aria-invalid={fieldErrors.customer_name ? true : undefined}
-                  className={inputClass}
-                />
-                {errorFor("customer_name")}
-              </div>
-              <div>
-                <label htmlFor={`${uid}-phone`} className={labelClass}>
-                  Phone number
-                </label>
-                <input
-                  id={`${uid}-phone`}
-                  name="customer_phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  required
-                  aria-invalid={fieldErrors.customer_phone ? true : undefined}
-                  className={inputClass}
-                />
-                {errorFor("customer_phone")}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor={`${uid}-email`} className={labelClass}>
-                Email (optional)
-              </label>
-              <input
-                id={`${uid}-email`}
-                name="customer_email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                aria-invalid={fieldErrors.customer_email ? true : undefined}
-                className={inputClass}
-              />
-              {errorFor("customer_email")}
-              {reminderMayBeSent && (
-                <p className="mt-2 text-caption text-stone">
-                  If you leave without ordering, we may email you a reminder. You can unsubscribe any time.
-                </p>
-              )}
-            </div>
-
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body text-charcoal">
-              <input type="checkbox" name="whatsapp_optin" onChange={handleContactBlur} className="h-5 w-5 accent-navy" />
-              Send me updates and offers on WhatsApp
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor={`${uid}-name`} className={labelClass}>
+              Full name
             </label>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <SearchableSelect
-                label="Division"
-                value={division}
-                options={[...BD_DIVISIONS]}
-                placeholder="Select division"
-                error={errorFor("division") ? fieldErrors.division?.[0] : null}
-                onChange={(next) => {
-                  const nextDivision = next as BdDivision;
-                  setDivision(nextDivision);
-                  setDistrict("");
-                  setThana("");
-                  if (nextDivision) trackAddShippingInfo(items, subtotal, nextDivision);
-                }}
-              />
-
-              <SearchableSelect
-                label="District"
-                value={district}
-                options={districts}
-                disabled={!division}
-                disabledHint="Select division first"
-                placeholder="Select district"
-                error={errorFor("district") ? fieldErrors.district?.[0] : null}
-                onChange={(next) => {
-                  setDistrict(next);
-                  setThana("");
-                }}
-              />
-
-              <div>
-                {upazilas.length > 0 ? (
-                  <SearchableSelect
-                    label="Thana / Area"
-                    value={thana}
-                    options={upazilas}
-                    disabled={!district}
-                    disabledHint="Select district first"
-                    placeholder="Select thana / area"
-                    searchPlaceholder="Search thana / area..."
-                    error={errorFor("thana") ? fieldErrors.thana?.[0] : null}
-                    onChange={setThana}
-                  />
-                ) : (
-                  <>
-                    <label htmlFor={`${uid}-thana`} className={labelClass}>
-                      Thana / Area
-                    </label>
-                    <input
-                      id={`${uid}-thana`}
-                      autoComplete="off"
-                      aria-invalid={fieldErrors.thana ? true : undefined}
-                      value={thana}
-                      onChange={(event) => setThana(event.target.value)}
-                      disabled={!district}
-                      required
-                      placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
-                      className={inputClass}
-                    />
-                    {errorFor("thana")}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor={`${uid}-address`} className={labelClass}>
-                Street address
-              </label>
-              <input
-                id={`${uid}-address`}
-                name="customer_address"
-                autoComplete="street-address"
-                required
-                aria-invalid={fieldErrors.customer_address ? true : undefined}
-                className={inputClass}
-              />
-              {errorFor("customer_address")}
-            </div>
-
-            <p className="text-caption text-stone">
-              Select your division, district and thana/area to calculate delivery
-              area and shipping.
-            </p>
-
-            <div>
-              <label htmlFor={`${uid}-notes`} className={labelClass}>
-                Order notes (optional)
-              </label>
-              <textarea id={`${uid}-notes`} name="gift_note" rows={3} autoComplete="off" className={inputClass} />
-              {errorFor("gift_note")}
-            </div>
-
-            <div className="rounded-btn border border-linen bg-linen/50 p-4">
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body font-medium text-charcoal">
-                <input
-                  type="checkbox"
-                  checked={isGift}
-                  onChange={(event) => setIsGift(event.target.checked)}
-                  className="h-5 w-5 accent-navy"
-                />
-                This is a gift
-              </label>
-              <p className="text-caption text-stone">Free, and it does not change your total.</p>
-              {isGift && (
-                <div className="mt-3">
-                  <label htmlFor={`${uid}-gift`} className={labelClass}>
-                    Gift message (optional)
-                  </label>
-                  <textarea
-                    id={`${uid}-gift`}
-                    name="gift_message"
-                    rows={3}
-                    maxLength={200}
-                    value={giftMessage}
-                    onChange={(event) => setGiftMessage(event.target.value)}
-                    autoComplete="off"
-                    className={inputClass}
-                  />
-                  <p className="mt-1 text-right text-caption text-stone" aria-live="polite">
-                    {giftMessage.length}/200
-                  </p>
-                  {errorFor("gift_message")}
-                </div>
-              )}
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-4">
-            <legend className="font-serif text-h2 text-charcoal">Payment method</legend>
-            <p className="text-body text-stone">
-              {paymentSettings?.cod_enabled === false ? "Pay with a mobile wallet." : "Pay with a mobile wallet, or choose cash on delivery."}
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.value}
-                  className={`flex cursor-pointer items-center gap-4 rounded-btn border px-4 py-4 text-button transition-colors ${
-                    paymentMethod === method.value ? "border-navy bg-linen" : "border-stone/80 hover:border-navy"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value={method.value}
-                    checked={paymentMethod === method.value}
-                    onChange={() => {
-                      setChosenMethod(method.value);
-                      trackAddPaymentInfo(items, subtotal, method.value);
-                    }}
-                    className="sr-only"
-                  />
-                  {logoFor(paymentSettings, method.value) ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
-                    <img src={logoFor(paymentSettings, method.value) ?? undefined} alt="" height={28} loading="lazy" decoding="async" className="h-7 w-auto" />
-                  ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-caption font-semibold text-ivory">
-                      {method.initial}
-                    </span>
-                  )}
-                  {method.label}
-                </label>
-              ))}
-            </div>
-
-            {paymentMethods.length === 0 && (
-              <p className="text-body text-charcoal/70">
-                There is no way to pay online just now. Please{" "}
-                <Link href="/contact" className="underline hover:text-navy">
-                  contact us
-                </Link>{" "}
-                and we will help you order.
+            <input
+              id={`${uid}-name`}
+              name="customer_name"
+              autoComplete="name"
+              required
+              aria-invalid={fieldErrors.customer_name ? true : undefined}
+              className={inputClass}
+            />
+            {errorFor("customer_name")}
+          </div>
+          <div>
+            <label htmlFor={`${uid}-phone`} className={labelClass}>
+              Phone number
+            </label>
+            <input
+              id={`${uid}-phone`}
+              name="customer_phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              required
+              aria-invalid={phoneProblemText ? true : undefined}
+              aria-describedby={phoneProblemText ? `${uid}-phone-note` : undefined}
+              onChange={(event) => {
+                if (phoneNote && mobileProblem(event.target.value) === null) setPhoneNote(null);
+              }}
+              onBlur={(event) => setPhoneNote(event.target.value.trim() === "" ? null : mobileProblem(event.target.value))}
+              className={inputClass}
+            />
+            {phoneProblemText && (
+              <p id={`${uid}-phone-note`} className="mt-1 text-caption text-burgundy">
+                {phoneProblemText}
               </p>
             )}
-            {paymentMethod && isWalletMethod(paymentMethod) && paymentSettings && (
-              <WalletPaymentPanel
-                key={paymentMethod}
-                method={paymentMethod}
-                label={PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label ?? paymentMethod}
-                number={(paymentSettings[`${paymentMethod}_number`] ?? "").trim()}
-                amount={deliveryFee === null ? null : subtotal - (coupon?.discount ?? 0) + deliveryFee}
-                instructionsHtml={paymentSettings[`${paymentMethod}_instructions`] || DEFAULT_STEPS}
-                logo={logoFor(paymentSettings, paymentMethod)}
-                errors={fieldErrors}
+          </div>
+        </div>
+
+        {/* The email is optional, so it stays folded away until it is wanted (it is still in the form, empty, for a saved reminder to fill). */}
+        <div className={emailOpen ? "" : "hidden"}>
+          <label htmlFor={`${uid}-email`} className={labelClass}>
+            Email (optional)
+          </label>
+          <input
+            id={`${uid}-email`}
+            name="customer_email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            aria-invalid={fieldErrors.customer_email ? true : undefined}
+            className={inputClass}
+          />
+          {errorFor("customer_email")}
+          {reminderMayBeSent && (
+            <p className="mt-2 text-caption text-stone">
+              If you leave without ordering, we may email you a reminder. You can unsubscribe any time.
+            </p>
+          )}
+        </div>
+        {!emailOpen && (
+          <button type="button" onClick={() => setEmailOpen(true)} className="flex min-h-11 items-center text-body text-navy underline">
+            Add an email (optional)
+          </button>
+        )}
+
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body text-charcoal">
+          <input type="checkbox" name="whatsapp_optin" onChange={handleContactBlur} className="h-5 w-5 accent-navy" />
+          Send me updates and offers on WhatsApp
+        </label>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="font-serif text-h2 text-charcoal">Where should we deliver?</legend>
+
+        <div role="radiogroup" aria-label="Delivery area" className="flex gap-3">
+          {zoneButton("inside", "Inside Dhaka")}
+          {zoneButton("outside", "Outside Dhaka")}
+        </div>
+        {errorFor("division")}
+
+        {zone === null && <p className="text-caption text-stone">Choose one to see the delivery charge and add your address.</p>}
+
+        {zone === "outside" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SearchableSelect
+              label="Division"
+              value={division}
+              options={[...BD_DIVISIONS]}
+              placeholder="Select division"
+              error={errorFor("division") ? fieldErrors.division?.[0] : null}
+              onChange={(next) => {
+                setDivision(next as BdDivision);
+                setDistrict("");
+                setThana("");
+              }}
+            />
+            <SearchableSelect
+              label="District"
+              value={district}
+              options={districts}
+              disabled={!division}
+              disabledHint="Select division first"
+              placeholder="Select district"
+              error={errorFor("district") ? fieldErrors.district?.[0] : null}
+              onChange={(next) => {
+                setDistrict(next);
+                setThana("");
+              }}
+            />
+          </div>
+        )}
+
+        {zone !== null && areaField}
+
+        {thana !== "" && (
+          <div>
+            <label htmlFor={`${uid}-address`} className={labelClass}>
+              Street address
+            </label>
+            <input
+              id={`${uid}-address`}
+              name="customer_address"
+              autoComplete="street-address"
+              required
+              aria-invalid={fieldErrors.customer_address ? true : undefined}
+              className={inputClass}
+            />
+            {errorFor("customer_address")}
+          </div>
+        )}
+
+        <div className={noteOpen ? "" : "hidden"}>
+          <label htmlFor={`${uid}-notes`} className={labelClass}>
+            Order notes (optional)
+          </label>
+          <textarea id={`${uid}-notes`} name="gift_note" rows={3} autoComplete="off" className={inputClass} />
+          {errorFor("gift_note")}
+        </div>
+        {!noteOpen && (
+          <button type="button" onClick={() => setNoteOpen(true)} className="flex min-h-11 items-center text-body text-navy underline">
+            Add a note (optional)
+          </button>
+        )}
+
+        <div className="rounded-btn border border-linen bg-linen/50 p-4">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body font-medium text-charcoal">
+            <input
+              type="checkbox"
+              checked={isGift}
+              onChange={(event) => setIsGift(event.target.checked)}
+              className="h-5 w-5 accent-navy"
+            />
+            This is a gift
+          </label>
+          <p className="text-caption text-stone">Free, and it does not change your total.</p>
+          {isGift && (
+            <div className="mt-3">
+              <label htmlFor={`${uid}-gift`} className={labelClass}>
+                Gift message (optional)
+              </label>
+              <textarea
+                id={`${uid}-gift`}
+                name="gift_message"
+                rows={3}
+                maxLength={200}
+                value={giftMessage}
+                onChange={(event) => setGiftMessage(event.target.value)}
+                autoComplete="off"
+                className={inputClass}
               />
-            )}
-            {paymentMethod === "cod" && (
-              <p className="text-body text-charcoal/70">Pay when your order arrives.</p>
-            )}
-          </fieldset>
-        </form>
+              <p className="mt-1 text-right text-caption text-stone" aria-live="polite">
+                {giftMessage.length}/200
+              </p>
+              {errorFor("gift_message")}
+            </div>
+          )}
+        </div>
+      </fieldset>
 
-        <aside className={embedded ? "w-full" : "lg:w-80"}>
-          <div className="rounded-xl border border-linen p-6">
-            <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
-
-            <ul className="mt-4 space-y-4">
-              {items.map((item) => (
-                <li key={item.key} className="text-body text-charcoal/70">
-                  <div className="flex justify-between">
-                    <span>
-                      {item.name}
-                      {item.variantLabel ? ` (${item.variantLabel})` : ""} &times; {item.quantity}
-                    </span>
-                    <span className="whitespace-nowrap font-medium text-charcoal">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                  </div>
-                  {embedded && (
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="flex items-center rounded-btn border border-stone/80">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                          className="flex h-11 w-11 items-center justify-center text-charcoal hover:bg-linen"
-                          aria-label={`Fewer ${item.name}`}
-                        >
-                          &minus;
-                        </button>
-                        <span className="flex h-11 min-w-8 items-center justify-center text-body font-medium text-charcoal">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                          className="flex h-11 w-11 items-center justify-center text-charcoal hover:bg-linen"
-                          aria-label={`More ${item.name}`}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button type="button" onClick={() => removeItem(item.key)} className="min-h-11 text-caption font-medium text-navy underline">
-                        Remove
-                      </button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-6 space-y-2 border-t border-linen pt-4 text-body text-charcoal/70">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span className="font-medium text-charcoal">{formatPrice(subtotal)}</span>
-              </div>
-              {coupon && (
-                <div className="flex justify-between">
-                  <span>Code {coupon.code}</span>
-                  <span className="font-medium text-charcoal">&minus;{formatPrice(coupon.discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span>Delivery</span>
-                <span className="font-medium text-charcoal">
-                  {deliveryFee === null ? "Calculated at address" : formatPrice(deliveryFee)}
+      <fieldset className="space-y-4">
+        <legend className="font-serif text-h2 text-charcoal">Payment method</legend>
+        <p className="text-body text-stone">
+          {paymentSettings?.cod_enabled === false ? "Pay with a mobile wallet." : "Pay with a mobile wallet, or choose cash on delivery."}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {paymentMethods.map((method) => (
+            <label
+              key={method.value}
+              className={`flex cursor-pointer items-center gap-4 rounded-btn border px-4 py-4 text-button transition-colors ${
+                paymentMethod === method.value ? "border-navy bg-linen" : "border-stone/80 hover:border-navy"
+              }`}
+            >
+              <input
+                type="radio"
+                name="payment_method"
+                value={method.value}
+                checked={paymentMethod === method.value}
+                onChange={() => {
+                  setChosenMethod(method.value);
+                  paymentTracked.current = true;
+                  trackAddPaymentInfo(items, subtotal, method.value);
+                }}
+                className="sr-only"
+              />
+              {logoFor(paymentSettings, method.value) ? (
+                // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
+                <img src={logoFor(paymentSettings, method.value) ?? undefined} alt="" height={28} loading="lazy" decoding="async" className="h-7 w-auto" />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-caption font-semibold text-ivory">
+                  {method.initial}
                 </span>
-              </div>
-            </div>
+              )}
+              {method.label}
+            </label>
+          ))}
+        </div>
 
-            <div className="mt-4 flex justify-between border-t border-linen pt-4 text-base font-semibold text-charcoal">
-              <span>Total</span>
-              <span>{formatPrice(Math.max(0, subtotal - (coupon?.discount ?? 0)) + (deliveryFee ?? 0))}</span>
-            </div>
+        {paymentMethods.length === 0 && (
+          <p className="text-body text-charcoal/70">
+            There is no way to pay online just now. Please{" "}
+            <Link href="/contact" className="underline hover:text-navy">
+              contact us
+            </Link>{" "}
+            and we will help you order.
+          </p>
+        )}
+        {paymentMethod && isWalletMethod(paymentMethod) && paymentSettings && (
+          <WalletPaymentPanel
+            key={paymentMethod}
+            method={paymentMethod}
+            label={PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label ?? paymentMethod}
+            number={(paymentSettings[`${paymentMethod}_number`] ?? "").trim()}
+            amount={deliveryFee === null ? null : total}
+            instructionsHtml={paymentSettings[`${paymentMethod}_instructions`] || DEFAULT_STEPS}
+            logo={logoFor(paymentSettings, paymentMethod)}
+            errors={fieldErrors}
+          />
+        )}
+        {paymentMethod === "cod" && <p className="text-body text-charcoal/70">Pay when your order arrives.</p>}
+      </fieldset>
+    </form>
+  );
 
-            <div className="mt-6">
-              {coupon ? (
-                <div className="rounded-btn border border-linen bg-linen/60 p-3 text-body text-charcoal">
-                  <p>
-                    <span className="font-medium">{coupon.code}</span> is applied: {coupon.value_label} off
-                    {coupon.valid_until_text ? `, until ${coupon.valid_until_text}` : ""}.
-                  </p>
-                  <button type="button" onClick={removeCoupon} className="mt-1 min-h-11 text-caption font-medium text-navy underline">
-                    Remove code
+  // The lines of the order, their sums and the delivery charge. A product photo (48 px) only when the cart line has one.
+  const summaryBody = (
+    <>
+      <ul className="space-y-3">
+        {items.map((item) => (
+          <li key={item.key} className="text-body text-charcoal/70">
+            <div className="flex items-start gap-3">
+              {item.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
+                <img src={item.image} alt="" width={48} height={48} loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded bg-linen object-cover" />
+              ) : (
+                <span aria-hidden="true" className="h-12 w-12 shrink-0 rounded bg-linen" />
+              )}
+              <span className="min-w-0 flex-1">
+                {item.name}
+                {item.variantLabel ? ` (${item.variantLabel})` : ""} &times; {item.quantity}
+              </span>
+              <span className="whitespace-nowrap font-medium text-charcoal">{formatPrice(item.price * item.quantity)}</span>
+            </div>
+            {embedded && (
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex items-center rounded-btn border border-stone/80">
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                    className="flex h-11 w-11 items-center justify-center text-charcoal hover:bg-linen"
+                    aria-label={`Fewer ${item.name}`}
+                  >
+                    &minus;
+                  </button>
+                  <span className="flex h-11 min-w-8 items-center justify-center text-body font-medium text-charcoal">{item.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                    className="flex h-11 w-11 items-center justify-center text-charcoal hover:bg-linen"
+                    aria-label={`More ${item.name}`}
+                  >
+                    +
                   </button>
                 </div>
-              ) : (
-                <div>
-                  <label htmlFor={`${uid}-coupon`} className={labelClass}>
-                    Have a code?
-                  </label>
-                  <div className="mt-1 flex gap-2">
-                    <input
-                      id={`${uid}-coupon`}
-                      value={couponInput}
-                      onChange={(event) => setCouponInput(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          void applyCoupon(couponInput);
-                        }
-                      }}
-                      autoComplete="off"
-                      autoCapitalize="characters"
-                      spellCheck={false}
-                      aria-invalid={couponError ? true : undefined}
-                      className="w-full min-w-0 rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void applyCoupon(couponInput)}
-                      disabled={couponBusy || couponInput.trim() === ""}
-                      className="min-h-11 shrink-0 rounded-btn bg-navy px-5 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
-                    >
-                      {couponBusy ? "Checking..." : "Apply"}
-                    </button>
-                  </div>
-                  {couponError && (
-                    <p role="alert" className="mt-1 text-caption text-burgundy">
-                      {couponError}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                <button type="button" onClick={() => removeItem(item.key)} className="min-h-11 text-caption font-medium text-navy underline">
+                  Remove
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 space-y-2 border-t border-linen pt-4 text-body text-charcoal/70">
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span className="font-medium text-charcoal">{formatPrice(subtotal)}</span>
+        </div>
+        {coupon && (
+          <div className="flex justify-between">
+            <span>Code {coupon.code}</span>
+            <span className="font-medium text-charcoal">&minus;{formatPrice(coupon.discount)}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span>Delivery</span>
+          <span className="font-medium text-charcoal">{deliveryFee === null ? "Choose where we deliver" : deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}</span>
+        </div>
+        {freeLeft !== null && <p className="text-caption text-stone">Add {formatPrice(freeLeft)} more for free delivery inside Dhaka.</p>}
+      </div>
+
+      <div className="mt-4 flex justify-between border-t border-linen pt-4 text-base font-semibold text-charcoal">
+        <span>Total</span>
+        <span>
+          {formatPrice(total)}
+          {totalCaption(deliveryFee) && <span className="ml-1 text-caption font-normal text-stone">{totalCaption(deliveryFee)}</span>}
+        </span>
+      </div>
+    </>
+  );
+
+  // "Have a code?" is a link until it is wanted. A code already applied (or being typed, or refused) keeps the field in view.
+  const couponBlock = coupon ? (
+    <div className="rounded-btn border border-linen bg-linen/60 p-3 text-body text-charcoal">
+      <p>
+        <span className="font-medium">{coupon.code}</span> is applied: {coupon.value_label} off
+        {coupon.valid_until_text ? `, until ${coupon.valid_until_text}` : ""}.
+      </p>
+      <button type="button" onClick={removeCoupon} className="mt-1 min-h-11 text-caption font-medium text-navy underline">
+        Remove code
+      </button>
+    </div>
+  ) : couponOpen || couponInput !== "" || couponError ? (
+    <div>
+      <label htmlFor={`${uid}-coupon`} className={labelClass}>
+        Have a code?
+      </label>
+      <div className="mt-1 flex gap-2">
+        <input
+          id={`${uid}-coupon`}
+          value={couponInput}
+          onChange={(event) => setCouponInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void applyCoupon(couponInput);
+            }
+          }}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          aria-invalid={couponError ? true : undefined}
+          className="w-full min-w-0 rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => void applyCoupon(couponInput)}
+          disabled={couponBusy || couponInput.trim() === ""}
+          className="min-h-11 shrink-0 rounded-btn bg-navy px-5 text-button text-ivory transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {couponBusy ? "Checking..." : "Apply"}
+        </button>
+      </div>
+      {couponError && (
+        <p role="alert" className="mt-1 text-caption text-burgundy">
+          {couponError}
+        </p>
+      )}
+    </div>
+  ) : (
+    <button type="button" onClick={() => setCouponOpen(true)} className="flex min-h-11 items-center text-body text-navy underline">
+      Have a code?
+    </button>
+  );
+
+  const terms = (
+    <p className="mt-4 text-center text-caption text-stone">
+      By placing this order you agree to our{" "}
+      <Link href="/pages/terms" className="underline hover:text-navy">
+        Terms
+      </Link>{" "}
+      and{" "}
+      <Link href="/pages/returns" className="underline hover:text-navy">
+        Return policy
+      </Link>
+      .
+    </p>
+  );
+
+  const orderLabel = submitting ? "Placing your order..." : paymentMethod === "cod" ? CTA.order : "Place order";
+
+  // The checkout page. A phone sees, top to bottom: the folded order summary (its total always in sight), the form, the code
+  // link and the order button, with the same total and "Confirm order" in a 64 px bar fixed to the bottom. From 640 px the
+  // summary is a card, and from 1024 px it sits beside the form.
+  if (!embedded) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 pb-10 pt-4 sm:px-6 sm:pt-8">
+        <h1 className="font-serif text-[1.5rem] leading-7 text-charcoal sm:text-h1">Checkout</h1>
+
+        <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-x-10">
+          <div className="rounded-xl border border-linen sm:hidden">
+            <button
+              type="button"
+              onClick={() => setSummaryOpen((open) => !open)}
+              aria-expanded={summaryOpen}
+              aria-controls={`${uid}-summary`}
+              className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2 text-left"
+            >
+              <span className="flex min-w-0 items-center gap-2 text-body font-medium text-charcoal">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={`h-4 w-4 shrink-0 transition-transform ${summaryOpen ? "rotate-180" : ""}`}>
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+                <span className="truncate">Order summary ({itemsLabel(itemCount)})</span>
+              </span>
+              <span data-checkout-total className="shrink-0 text-right leading-tight">
+                <span className="block text-body font-semibold text-charcoal">{formatPrice(total)}</span>
+                {totalCaption(deliveryFee) && <span className="block text-caption text-stone">{totalCaption(deliveryFee)}</span>}
+              </span>
+            </button>
+            {summaryOpen && (
+              <div id={`${uid}-summary`} className="border-t border-linen px-4 pb-4 pt-4">
+                {summaryBody}
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">{checkoutForm}</div>
+
+          <section className="hidden rounded-xl border border-linen p-6 sm:block lg:col-start-2 lg:row-start-1 lg:rounded-b-none lg:border-b-0 lg:pb-0">
+            <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
+            <div className="mt-4">{summaryBody}</div>
+          </section>
+
+          <div className="rounded-xl border border-linen p-4 sm:p-6 lg:col-start-2 lg:row-start-2 lg:self-start lg:rounded-t-none lg:border-t-0 lg:pt-4">
+            <div>{couponBlock}</div>
+            <button
+              type="submit"
+              form="checkout-form"
+              disabled={submitting || !guard.ready}
+              className="mt-4 min-h-[3.25rem] w-full scroll-mb-[calc(var(--cookie-top,0px)+1rem)] rounded-btn bg-burgundy px-4 py-3 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {orderLabel}
+            </button>
+            {paymentMethod === "cod" && <p className="mt-3 text-center text-caption text-stone">Cash on delivery: pay when your order arrives.</p>}
+            {terms}
+          </div>
+        </div>
+
+        {phone && (
+          <div
+            data-bottom-bar
+            className="fixed inset-x-0 bottom-0 z-30 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center justify-between gap-3 border-t border-linen bg-ivory px-4 pb-[env(safe-area-inset-bottom)]"
+          >
+            <p className="min-w-0 leading-tight">
+              <span className="block text-caption text-stone">Total{deliveryFee === null ? " + delivery" : ""}</span>
+              <span className="block text-body font-semibold text-charcoal">{formatPrice(total)}</span>
+            </p>
+            <button
+              type="submit"
+              form="checkout-form"
+              disabled={submitting || !guard.ready}
+              className="h-11 shrink-0 rounded-btn bg-navy px-6 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting ? "Placing..." : "Confirm order"}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // The same checkout inside a landing page: stacked, quantities editable, a bar of its own on a phone.
+  return (
+    <div>
+      <div>
+        <h2 className="font-serif text-charcoal text-h2">{heading || "Your order"}</h2>
+        {intro && <p className="mt-2 text-body text-stone">{intro}</p>}
+      </div>
+
+      <div className="mt-6 flex flex-col gap-8">
+        {checkoutForm}
+
+        <aside className="w-full">
+          <div className="rounded-xl border border-linen p-6">
+            <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
+            <div className="mt-4">{summaryBody}</div>
+            <div className="mt-6">{couponBlock}</div>
 
             <div
-              {...(embedded ? { "data-bottom-bar": "" } : {})}
-              className={
-                embedded
-                  ? "fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0"
-                  : "mt-6 flex flex-col items-center gap-4 pr-16 sm:flex-row sm:pr-0"
-              }
+              data-bottom-bar
+              className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-linen bg-ivory p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0"
             >
-              {paymentSettings?.cod_enabled !== false && (
-                <span className={embedded ? "hidden lg:block" : undefined}>
-                  <Seal message="Cash on delivery" />
-                </span>
-              )}
-              {embedded && (
-                <span className="shrink-0 text-body font-semibold text-charcoal lg:hidden">
-                  {formatPrice(Math.max(0, subtotal - (coupon?.discount ?? 0)) + (deliveryFee ?? 0))}
-                </span>
-              )}
+              <span className="shrink-0 text-body font-semibold text-charcoal lg:hidden">{formatPrice(total)}</span>
               <button
                 type="submit"
                 form="checkout-form"
-                onClick={embedded ? handleStickyOrder : undefined}
+                onClick={handleStickyOrder}
                 disabled={submitting || !guard.ready}
                 className="w-full flex-1 scroll-mb-[calc(var(--cookie-top,0px)+1rem)] rounded-btn bg-burgundy px-4 py-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {submitting ? "Placing your order..." : paymentMethod === "cod" ? CTA.order : "Place order"}
+                {orderLabel}
               </button>
             </div>
 
-            <p className={`mt-4 text-center text-caption text-stone ${embedded ? "" : "pr-16 sm:pr-0"}`}>
-              By placing this order you agree to our{" "}
-              <Link href="/pages/terms" className="underline hover:text-navy">
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link href="/pages/returns" className="underline hover:text-navy">
-                Return policy
-              </Link>
-              .
-            </p>
+            {terms}
           </div>
         </aside>
       </div>

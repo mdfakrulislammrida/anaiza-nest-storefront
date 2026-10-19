@@ -37,6 +37,11 @@ interface Product {
   bar: { h: number } | null;
 }
 
+interface Checkout {
+  totalBottom: number | null;
+  bar: { h: number } | null;
+}
+
 interface Snapshot {
   path: string;
   width: number;
@@ -44,9 +49,10 @@ interface Snapshot {
   clientWidth: number;
   scrollWidth: number;
   overflowX: boolean;
-  header: { rightmost: number; cart: { left: number; right: number; w: number; h: number } | null } | null;
+  header: { rightmost: number; cart: { left: number; right: number; w: number; h: number } | null; cartOptional?: boolean } | null;
   hero: Hero | null;
   product: Product | null;
+  checkout: Checkout | null;
   h1: number;
   pour: { label: string; hidden: boolean }[];
   frames: { inset: number; short: number; hidden: boolean }[];
@@ -69,6 +75,7 @@ function page(overrides: Partial<Snapshot> = {}): Snapshot {
     header: { rightmost: 374, cart: { left: 330, right: 374, w: 44, h: 44 } },
     hero: null,
     product: null,
+    checkout: null,
     h1: 1,
     pour: [],
     frames: [],
@@ -341,5 +348,56 @@ describe("the product page on a phone", () => {
     // The old default put the bubble where the bar is until the bar had been measured.
     const covered = fixed.map((item) => (item.label.includes("WhatsApp") ? { ...item, y: 560 } : item));
     assert.ok(has(phone({ fixed: covered, product: { titleTop: 581.8, titleHeight: 56, bar: { h: 64 } } }), "Fixed items overlap"));
+  });
+});
+// The checkout on a phone. Before: the total stood at y 1891 on a 640 px screen (three screens down) and there was no bar at
+// all. Now the total is in the folded summary at the top, and the bar (the total and "Confirm order") is 64 px.
+describe("the checkout on a phone", () => {
+  const has = (snapshot: Snapshot, text: string) => probe.check(snapshot).some((problem) => problem.includes(text));
+
+  const phone = (width: number, height: number, checkout: Checkout | null): Snapshot =>
+    page({
+      path: "/checkout",
+      width,
+      height,
+      clientWidth: width,
+      scrollWidth: width,
+      header: { rightmost: width - 16, cart: { left: width - 60, right: width - 16, w: 44, h: 44 } },
+      checkout,
+    });
+
+  it("passes with the total in the first screen and a 64 px bar, at 360, 375, 390 and 1366", () => {
+    for (const [width, height] of [[360, 640], [375, 667], [390, 844]] as const) {
+      assert.deepEqual(probe.check(phone(width, height, { totalBottom: 252, bar: { h: 64 } })), [], `${width} px`);
+    }
+    assert.deepEqual(probe.check(page({ path: "/checkout", width: 1366, height: 800, clientWidth: 1351, scrollWidth: 1351, checkout: { totalBottom: 590, bar: null } })), []);
+  });
+
+  it("does not ask the checkout's small header for a cart, but still wants it on the screen", () => {
+    const small = (rightmost: number) => ({ ...phone(360, 640, { totalBottom: 252, bar: { h: 64 } }), header: { rightmost, cart: null, cartOptional: true } });
+
+    assert.deepEqual(probe.check(small(344)), []);
+    assert.ok(has(small(400), "The header reaches 40 px past the screen edge"));
+    assert.ok(has({ ...phone(360, 640, null), header: { rightmost: 344, cart: null } }, "no cart button"), "every other page still needs one");
+  });
+
+  it("catches a total below the first screen (before: y 1891 at 360 x 640)", () => {
+    assert.ok(has(phone(360, 640, { totalBottom: 1915.4, bar: null }), "order total ends at 1915 px, below the first screen (640 px high)"));
+  });
+
+  it("catches a bar taller than 64 px", () => {
+    assert.ok(has(phone(360, 640, { totalBottom: 252, bar: { h: 96 } }), "The checkout bar is 96 px tall; the limit is 64 px"));
+  });
+
+  it("keeps the bubble above the bar and the cookie banner above both, with no overlap", () => {
+    const fixed = [
+      { label: "div.fixed checkout bar", x: 0, y: 576, w: 360, h: 64, modal: false, bottom: true },
+      { label: "section.fixed cookie banner", x: 0, y: 431, w: 360, h: 145, modal: false, bottom: true },
+      { label: "a.fixed WhatsApp", x: 292, y: 371, w: 48, h: 48, modal: false, bottom: false },
+    ];
+    assert.deepEqual(probe.check({ ...phone(360, 640, { totalBottom: 252, bar: { h: 64 } }), fixed }), []);
+
+    const covered = fixed.map((item) => (item.label.includes("WhatsApp") ? { ...item, y: 560 } : item));
+    assert.ok(has({ ...phone(360, 640, { totalBottom: 252, bar: { h: 64 } }), fixed: covered }, "Fixed items overlap"));
   });
 });
