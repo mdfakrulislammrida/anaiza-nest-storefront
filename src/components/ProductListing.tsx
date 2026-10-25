@@ -46,6 +46,8 @@ export default function ProductListing({
   const fixedParamsRef = useRef(fixedParams);
 
   const search = searchParams.get("search") ?? undefined;
+  // A product page's tag chip opens the shop with ?tag=<slug>.
+  const tag = searchParams.get("tag") ?? undefined;
   const minPrice = searchParams.get("min_price") ? Number(searchParams.get("min_price")) : undefined;
   const maxPrice = searchParams.get("max_price") ? Number(searchParams.get("max_price")) : undefined;
   const sortParam = searchParams.get("sort");
@@ -59,7 +61,7 @@ export default function ProductListing({
   // The build-time data only describes the unfiltered first page, so it can
   // stand in for the first fetch only when the URL asks for exactly that.
   const isDefaultView =
-    !search && minPrice === undefined && maxPrice === undefined && !sort && currentPage === 1;
+    !search && !tag && minPrice === undefined && maxPrice === undefined && !sort && currentPage === 1;
   const refreshQuietlyOnce = useRef(Boolean(initialResult));
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function ProductListing({
     getProducts({
       ...fixedParamsRef.current,
       search,
+      tag,
       min_price: minPrice,
       max_price: maxPrice,
       sort,
@@ -98,12 +101,13 @@ export default function ProductListing({
     };
     // isDefaultView is derived from the same params already listed here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, minPrice, maxPrice, sort, currentPage, breadcrumbLabel]);
+  }, [search, tag, minPrice, maxPrice, sort, currentPage, breadcrumbLabel]);
 
   const buildHref = (overrides: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();
     const next: Record<string, string | number | undefined> = {
       search,
+      tag,
       min_price: minPrice,
       max_price: maxPrice,
       sort: sortParam ?? undefined,
@@ -120,7 +124,9 @@ export default function ProductListing({
   const products = result?.data ?? [];
   const meta = result?.meta;
   const showSkeleton = loading && !result;
-  const filtersActive = Boolean(search) || minPrice !== undefined || maxPrice !== undefined;
+  const filtersActive = Boolean(search) || Boolean(tag) || minPrice !== undefined || maxPrice !== undefined;
+  // The tag's name as the products carry it, else its slug read as words ("eid-gift" is "eid gift").
+  const tagName = tag ? (products.flatMap((product) => product.tags ?? []).find((item) => item.slug === tag)?.name ?? tag.replace(/-/g, " ")) : null;
 
   // Nothing to filter or sort: say so calmly instead of showing a toolbar over an empty grid.
   if (!showSkeleton && !result && failed) {
@@ -160,6 +166,15 @@ export default function ProductListing({
           <SortDropdown />
         </PhoneListBar>
         <p className="my-4 text-body text-stone sm:hidden">{showSkeleton ? "Loading…" : countOf(meta?.total ?? 0, "product")}</p>
+
+        {tag && (
+          <p className="mb-6 text-body text-stone">
+            Tagged: <span className="text-charcoal">{tagName}</span>.{" "}
+            <Link href={buildHref({ tag: undefined })} className="text-navy underline">
+              Show all
+            </Link>
+          </p>
+        )}
 
         <div className="flex flex-col gap-8 sm:flex-row">
           <aside className="hidden shrink-0 sm:block sm:w-56">

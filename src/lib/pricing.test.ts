@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { pricedView, priceView, saleApplies, withCheckedPrices } from "./pricing.ts";
-import { cardTag, countOf, isLowStock, isSoldOut } from "./cardTag.ts";
+import { cardTag, countOf, isLowStock, isSoldOut, stockWords } from "./cardTag.ts";
+import { detailRows, MAX_TAGS, shownTags, SPEC_ROWS_SHOWN } from "./productDisplay.ts";
 
 describe("what counts as a sale", () => {
   it("is a sale price above 0 and below the regular price", () => {
@@ -98,5 +99,61 @@ describe("a product as it comes from the API", () => {
   it("leaves a product without variants alone", () => {
     const fixed = withCheckedPrices({ price: 1000, sale_price: null, effective_price: 1000, discount_percent: null });
     assert.equal("variants" in fixed, false);
+  });
+});
+
+describe("the one line about stock", () => {
+  it("says In stock, Only a few left (3 or fewer) or Sold out, and nothing else", () => {
+    assert.equal(stockWords(10), "In stock");
+    assert.equal(stockWords(4), "In stock");
+    assert.equal(stockWords(3), "Only a few left");
+    assert.equal(stockWords(1), "Only a few left");
+    assert.equal(stockWords(0), "Sold out");
+    assert.equal(stockWords(-2), "Sold out");
+  });
+});
+
+describe("the rows of the specification list", () => {
+  it("drops a row with no label or no value, and a repeated label, keeping the order", () => {
+    const rows = detailRows([
+      { label: "Material", value: "Ceramic" },
+      { label: "  ", value: "orphan value" },
+      { label: "Colour", value: "" },
+      { label: "Weight", value: " About 220 g " },
+      { label: "material", value: "Porcelain" },
+      { label: null, value: null },
+    ]);
+
+    assert.deepEqual(rows, [
+      { label: "Material", value: "Ceramic" },
+      { label: "Weight", value: "About 220 g" },
+    ]);
+  });
+
+  it("adds the attributes whose name is not already a row", () => {
+    const rows = detailRows([{ label: "Material", value: "Ceramic" }], [
+      { attribute_name: "Colour", value: "Blue" },
+      { attribute_name: "material", value: "Glass" },
+      { attribute_name: "Size", value: "" },
+    ]);
+
+    assert.deepEqual(rows.map((row) => row.label), ["Material", "Colour"]);
+  });
+
+  it("is empty for a product with nothing, and shows eight rows before Show all", () => {
+    assert.deepEqual(detailRows(null, undefined), []);
+    assert.equal(SPEC_ROWS_SHOWN, 8);
+  });
+});
+
+describe("the tags", () => {
+  const tag = (id: number, name: string | null) => ({ id, name, slug: "t" + id });
+
+  it("shows at most five, each once, and none without a name", () => {
+    const shown = shownTags([tag(1, "Eid gift"), tag(2, " "), tag(3, "eid gift"), tag(4, "Wedding"), tag(5, "A"), tag(6, "B"), tag(7, "C"), tag(8, "D")]);
+
+    assert.equal(MAX_TAGS, 5);
+    assert.deepEqual(shown.map((item) => item.name), ["Eid gift", "Wedding", "A", "B", "C"]);
+    assert.deepEqual(shownTags(undefined), []);
   });
 });

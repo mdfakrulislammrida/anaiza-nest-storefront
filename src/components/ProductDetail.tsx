@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { pricedView } from "@/lib/pricing";
+import { stockWords } from "@/lib/cardTag";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
@@ -119,10 +120,8 @@ export default function ProductDetail({
               <span className="text-price-page text-navy">{formatPrice(view.current)}</span>
               {view.old !== null && <span className="font-sans text-body line-through text-stone">{formatPrice(view.old)}</span>}
             </p>
-            <p className="mt-1 text-body text-stone">
-              {stockQuantity > 0 ? "In stock" : "Out of stock"}
-              {product.gift_box_included && <span>, gift box included</span>}
-            </p>
+            {/* One quiet line about stock: three words, no badge. */}
+            <p className="mt-1 text-[0.9375rem] leading-6 text-stone">{stockWords(stockQuantity)}</p>
           </div>
 
           {/* How it arrives and how it is paid, from the delivery settings (the days are never written here). */}
@@ -218,7 +217,7 @@ export default function ProductDetail({
         </section>
       )}
 
-      <ProductSpecs specifications={product.specifications ?? []} />
+      <ProductSpecs specifications={product.specifications ?? []} attributes={product.attribute_values ?? []} tags={product.tags ?? []} />
 
       {careInstructions && (
         <section className="mt-12 max-w-3xl">

@@ -41,3 +41,10 @@ export function cardTag(product: {
 export function countOf(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
+
+// The one quiet line about stock on the product page: three words and nothing else.
+export function stockWords(stock: number): "In stock" | "Only a few left" | "Sold out" {
+  if (isSoldOut(stock)) return "Sold out";
+
+  return isLowStock(stock) ? "Only a few left" : "In stock";
+}

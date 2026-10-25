@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart, type CartAddableProduct } from "@/context/CartContext";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { formatPrice } from "@/lib/format";
+import { pricedView } from "@/lib/pricing";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { CTA } from "@/lib/brand";
 import type { Product, ProductVariant } from "@/lib/types";
@@ -49,14 +50,11 @@ export default function AddToCartForm({
   const inStock = stockQuantity > 0;
   const maxQuantity = Math.max(stockQuantity, 0);
   // Shown in the phone's sticky bar.
-  const unitPrice = selectedVariant?.effective_price ?? product.effective_price;
-  const regularPrice = selectedVariant?.price ?? product.price;
-  const onSale = unitPrice < regularPrice;
-  const lowStockAt = siteSettings?.low_stock_threshold ?? 5;
-  const lowStock = inStock && lowStockAt > 0 && stockQuantity <= lowStockAt;
-  const lowStockText = /colou?r/i.test(selectedVariant?.name ?? "")
-    ? "Only a few left in this colour."
-    : "Only a few left.";
+  // From the regular and the sale price alone (a sale price of 0 is no sale).
+  const view = pricedView(product, selectedVariant);
+  const unitPrice = view.current;
+  const regularPrice = view.old ?? view.current;
+  const onSale = view.onSale;
 
   function cartAddableProduct(): CartAddableProduct {
     return {
@@ -84,8 +82,6 @@ export default function AddToCartForm({
 
   return (
     <div className="space-y-4">
-      {lowStock && <p className="text-body text-charcoal">{lowStockText}</p>}
-
       {variants.length > 0 && (
         <div>
           <p className="mb-2 text-caption font-medium text-stone">Options</p>
@@ -103,7 +99,7 @@ export default function AddToCartForm({
                 }`}
               >
                 {variant.name}: {variant.value}
-                {variant.stock_quantity <= 0 ? " (Out of stock)" : ""}
+                {variant.stock_quantity <= 0 ? " (Sold out)" : ""}
               </button>
             ))}
           </div>
@@ -141,7 +137,7 @@ export default function AddToCartForm({
           disabled={!inStock}
           className="h-[3.25rem] rounded-btn bg-navy px-4 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {inStock ? "Add to cart" : "Out of stock"}
+          {inStock ? "Add to cart" : "Sold out"}
         </button>
         <button
           type="button"
@@ -171,7 +167,7 @@ export default function AddToCartForm({
             disabled={!inStock}
             className="h-11 shrink-0 rounded-btn bg-navy px-6 text-button text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {inStock ? "Add to cart" : "Out of stock"}
+            {inStock ? "Add to cart" : "Sold out"}
           </button>
         </div>
       )}

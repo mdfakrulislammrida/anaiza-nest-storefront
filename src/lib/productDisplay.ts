@@ -87,3 +87,54 @@ export function metaDescription(product: {
   const cut = text.slice(0, 155);
   return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 100)).replace(/[\s,;:.-]+$/, "")}…`;
 }
+
+// ---- The details under the description: a short list of what it is made of, and a few tags ------------------------------
+
+// The list shows this many rows and then a "Show all" button; the rest are in the page, hidden.
+export const SPEC_ROWS_SHOWN = 8;
+
+// At most this many tags are shown.
+export const MAX_TAGS = 5;
+
+export interface DetailRow {
+  label: string;
+  value: string;
+}
+
+// The rows of the list: the specifications the admin wrote, then the product's attributes (a colour or a size picked from the
+// shop's lists) whose name is not already a row. A row with no label or no value is dropped (an empty row is a blank line in the
+// list), and so is a second row with the same label.
+export function detailRows(
+  specifications?: { label?: string | null; value?: string | null }[] | null,
+  attributes?: { attribute_name?: string | null; value?: string | null }[] | null,
+): DetailRow[] {
+  const rows: DetailRow[] = [];
+  const seen = new Set<string>();
+
+  const add = (label: string | null | undefined, value: string | null | undefined) => {
+    const name = label?.trim();
+    const text = value?.trim();
+    if (!name || !text || seen.has(name.toLowerCase())) return;
+    seen.add(name.toLowerCase());
+    rows.push({ label: name, value: text });
+  };
+
+  for (const spec of specifications ?? []) add(spec.label, spec.value);
+  for (const attribute of attributes ?? []) add(attribute.attribute_name, attribute.value);
+
+  return rows;
+}
+
+// The tags to show: those with a name, each once, the first five.
+export function shownTags<T extends { name?: string | null; slug?: string | null }>(tags?: T[] | null): T[] {
+  const seen = new Set<string>();
+
+  return (tags ?? [])
+    .filter((tag) => {
+      const name = tag.name?.trim().toLowerCase();
+      if (!name || seen.has(name)) return false;
+      seen.add(name);
+      return true;
+    })
+    .slice(0, MAX_TAGS);
+}
