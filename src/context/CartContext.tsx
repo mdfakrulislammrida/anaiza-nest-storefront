@@ -21,6 +21,9 @@ export interface CartAddableProduct {
   slug: string;
   name: string;
   effective_price: number;
+  // The regular price (a Product has it as `price`). Kept on a cart line only when it is above the price charged, so the
+  // cart can say how much is saved.
+  price?: number;
   stock_quantity: number;
   // The product's SKU, which is its id in the product feeds (the product id stands in when it has none).
   sku?: string | null;
@@ -33,6 +36,8 @@ export interface CartItem {
   slug: string;
   name: string;
   price: number;
+  // What it costs without the sale, when it is on sale. Carts saved before this was kept have none.
+  regularPrice?: number;
   image: string | null;
   variantId: number | null;
   variantLabel: string | null;
@@ -122,6 +127,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             slug: product.slug,
             name: product.name,
             price: product.effective_price,
+            ...(product.price !== undefined && product.price > product.effective_price ? { regularPrice: product.price } : {}),
             image: product.images?.[0]?.url ?? null,
             variantId: variant?.id ?? null,
             variantLabel: variant ? `${variant.name}: ${variant.value}` : null,

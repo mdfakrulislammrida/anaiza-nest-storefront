@@ -16,7 +16,8 @@ import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
 import { resolvePolicy } from "@/lib/policy";
-import { beginCheckoutDue, deliveryChargeFor, freeDeliveryRemaining, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
+import { beginCheckoutDue, deliveryChargeFor, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
+import FreeDeliveryProgress from "@/components/FreeDeliveryProgress";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import {
@@ -193,7 +194,6 @@ export default function CheckoutForm({
   const discounted = Math.max(0, subtotal - (coupon?.discount ?? 0));
   const total = discounted + (deliveryFee ?? 0);
   // The nudge needs the shop's own threshold: with the settings not loaded there is none, and none is assumed.
-  const freeLeft = freeDeliveryRemaining(siteSettings?.policy?.free_delivery_threshold, zone, subtotal);
 
   // InitiateCheckout and the "checkout started" stage fire once. On the checkout page that is when it opens; inside a landing
   // page, where the form is far down the page, it is the first time the visitor touches the form.
@@ -870,7 +870,7 @@ export default function CheckoutForm({
                 // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
                 <img src={logoFor(paymentSettings, method.value) ?? undefined} alt="" height={28} loading="lazy" decoding="async" className="h-7 w-auto" />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-caption font-semibold text-ivory">
+                <span className="flex h-7 w-7 items-center justify-center rounded-btn bg-navy text-caption font-semibold text-ivory">
                   {method.initial}
                 </span>
               )}
@@ -914,9 +914,9 @@ export default function CheckoutForm({
             <div className="flex items-start gap-3">
               {item.image ? (
                 // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
-                <img src={item.image} alt="" width={48} height={48} loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded bg-linen object-cover" />
+                <img src={item.image} alt="" width={48} height={48} loading="lazy" decoding="async" className="h-12 w-12 shrink-0 bg-linen object-cover" />
               ) : (
-                <span aria-hidden="true" className="h-12 w-12 shrink-0 rounded bg-linen" />
+                <span aria-hidden="true" className="h-12 w-12 shrink-0 bg-linen" />
               )}
               <span className="min-w-0 flex-1">
                 {item.name}
@@ -924,6 +924,9 @@ export default function CheckoutForm({
               </span>
               <span className="whitespace-nowrap font-medium text-charcoal">{formatPrice(item.price * item.quantity)}</span>
             </div>
+            {item.regularPrice !== undefined && item.regularPrice > item.price && (
+              <p className="mt-1 pl-[3.75rem] text-caption text-stone">You save {formatPrice((item.regularPrice - item.price) * item.quantity)}</p>
+            )}
             {embedded && (
               <div className="mt-2 flex items-center gap-3">
                 <div className="flex items-center rounded-btn border border-stone/80">
@@ -969,7 +972,7 @@ export default function CheckoutForm({
           <span>Delivery</span>
           <span className="font-medium text-charcoal">{deliveryFee === null ? "Choose where we deliver" : deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}</span>
         </div>
-        {freeLeft !== null && <p className="text-caption text-stone">Add {formatPrice(freeLeft)} more for free delivery inside Dhaka.</p>}
+        <FreeDeliveryProgress subtotal={subtotal} zone={zone} />
       </div>
 
       <div className="mt-4 flex justify-between border-t border-linen pt-4 text-base font-semibold text-charcoal">
@@ -1061,7 +1064,7 @@ export default function CheckoutForm({
         <h1 className="font-serif text-[1.5rem] leading-7 text-charcoal sm:text-h1">Checkout</h1>
 
         <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-x-10">
-          <div className="rounded-xl border border-linen sm:hidden">
+          <div className="rounded-btn border border-linen sm:hidden">
             <button
               type="button"
               onClick={() => setSummaryOpen((open) => !open)}
@@ -1089,12 +1092,12 @@ export default function CheckoutForm({
 
           <div className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">{checkoutForm}</div>
 
-          <section className="hidden rounded-xl border border-linen p-6 sm:block lg:col-start-2 lg:row-start-1 lg:rounded-b-none lg:border-b-0 lg:pb-0">
+          <section className="hidden rounded-btn border border-linen p-6 sm:block lg:col-start-2 lg:row-start-1 lg:rounded-b-none lg:border-b-0 lg:pb-0">
             <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
             <div className="mt-4">{summaryBody}</div>
           </section>
 
-          <div className="rounded-xl border border-linen p-4 sm:p-6 lg:col-start-2 lg:row-start-2 lg:self-start lg:rounded-t-none lg:border-t-0 lg:pt-4">
+          <div className="rounded-btn border border-linen p-4 sm:p-6 lg:col-start-2 lg:row-start-2 lg:self-start lg:rounded-t-none lg:border-t-0 lg:pt-4">
             <div>{couponBlock}</div>
             <button
               type="submit"
@@ -1144,7 +1147,7 @@ export default function CheckoutForm({
         {checkoutForm}
 
         <aside className="w-full">
-          <div className="rounded-xl border border-linen p-6">
+          <div className="rounded-btn border border-linen p-6">
             <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
             <div className="mt-4">{summaryBody}</div>
             <div className="mt-6">{couponBlock}</div>

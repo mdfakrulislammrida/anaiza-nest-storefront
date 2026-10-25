@@ -87,7 +87,7 @@ export default function TrackOrderPage() {
       </form>
 
       {order && (
-        <div className="mt-10 rounded-xl border border-linen p-6">
+        <div className="mt-10 rounded-btn border border-linen p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-charcoal text-h2">Order #{order.id}</h2>
             <span className="rounded-btn bg-linen px-4 py-1 text-caption font-medium text-navy">

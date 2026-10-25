@@ -137,7 +137,7 @@ export default function SearchableSelect({
             <div className="absolute inset-0 bg-deepink/40" onClick={close} />
 
             <div
-              className="absolute inset-x-0 bottom-0 flex max-h-[70vh] flex-col rounded-t-2xl border border-linen bg-ivory sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+              className="absolute inset-x-0 bottom-0 flex max-h-[70vh] flex-col rounded-t-btn border border-linen bg-ivory sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-btn"
             >
               <div className="flex items-center justify-between border-b border-linen px-4 py-4">
                 <p className="font-serif text-body text-charcoal">{label}</p>
@@ -145,7 +145,7 @@ export default function SearchableSelect({
                   type="button"
                   onClick={close}
                   aria-label="Close"
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal hover:bg-linen"
+                  className="flex h-11 w-11 items-center justify-center rounded-btn text-charcoal hover:bg-linen"
                 >
                   <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
                     <path d="M18 6 6 18M6 6l12 12" />

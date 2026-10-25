@@ -1,11 +1,6 @@
 import Link from "next/link";
 
-const PRICE_RANGES = [
-  { label: "Under ৳1,500", min: undefined, max: 1500 },
-  { label: "৳1,500 – ৳3,000", min: 1500, max: 3000 },
-  { label: "৳3,000 – ৳6,000", min: 3000, max: 6000 },
-  { label: "Above ৳6,000", min: 6000, max: undefined },
-] as const;
+import { PRICE_RANGES } from "@/lib/priceRanges";
 
 export default function PriceFilterPanel({
   buildHref,

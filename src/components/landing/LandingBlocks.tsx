@@ -164,6 +164,7 @@ function ProductItem({
       slug: product.slug,
       name: product.name,
       effective_price: unit,
+      price: regular,
       stock_quantity: stock,
       sku: product.sku,
       images: image ? [{ url: image.url }] : product.images,

@@ -45,15 +45,15 @@ export default function CountdownTimer({
       <div className="flex items-center gap-1 font-mono">
         {days > 0 && (
           <>
-            <span className="rounded bg-ivory/10 px-2 py-1">{days}d</span>
+            <span className="rounded-btn bg-ivory/10 px-2 py-1">{days}d</span>
             <span>:</span>
           </>
         )}
-        <span className="rounded bg-ivory/10 px-2 py-1">{pad(hours)}</span>
+        <span className="rounded-btn bg-ivory/10 px-2 py-1">{pad(hours)}</span>
         <span>:</span>
-        <span className="rounded bg-ivory/10 px-2 py-1">{pad(minutes)}</span>
+        <span className="rounded-btn bg-ivory/10 px-2 py-1">{pad(minutes)}</span>
         <span>:</span>
-        <span className="rounded bg-ivory/10 px-2 py-1">{pad(seconds)}</span>
+        <span className="rounded-btn bg-ivory/10 px-2 py-1">{pad(seconds)}</span>
       </div>
     </div>
   );

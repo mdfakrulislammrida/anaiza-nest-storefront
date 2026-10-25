@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { BRAND, resolveTagline } from "@/lib/brand";
 import { openCookieSettings } from "@/lib/consent";
 import type { FooterColumn } from "@/lib/types";
 import Logo from "./Logo";
+import PourLine from "./PourLine";
 
 const FALLBACK_FOOTER_COLUMNS: FooterColumn[] = [
   {
@@ -102,13 +104,23 @@ export default function Footer({ cookieBanner = false }: { cookieBanner?: boolea
   const socialLinks = siteSettings?.social_links ?? [];
   const copyrightText = siteSettings?.footer_copyright_text ?? FALLBACK_COPYRIGHT_TEXT;
 
+  // A layout has one pour line. The footer's is the page's one unless the page already draws its own (the home hero, an
+  // article or a category's about text), in which case the footer keeps a plain hairline. It starts as the hairline so the
+  // HTML never has two; the pour line replaces it once the page is known to have none.
+  const [ownPour, setOwnPour] = useState(false);
+  useEffect(() => {
+    // One-time check of the page that is already on screen.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOwnPour(!document.querySelector("main .pour-line, main .an-pour"));
+  }, []);
+
   return (
     // A deep ink area: ivory logo, ivory text, champagne for the small accents (never gold text).
     <footer className="bg-deepink text-ivory">
       <div className={`mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 ${GRID_COLUMNS[Math.min(5, columns.length + 2)] ?? "lg:grid-cols-3"}`}>
         <div>
           <Logo variant="ivory" />
-          {tagline && <p className="mt-2 text-caption text-champagne">{tagline}</p>}
+          {tagline && <p className="mt-2 text-tagline text-champagne">{tagline}</p>}
           <p className="mt-4 max-w-xs text-body text-ivory/80">{about}</p>
           {socialLinks.length > 0 && (
             <div className="mt-4 flex gap-4">
@@ -119,7 +131,7 @@ export default function Footer({ cookieBanner = false }: { cookieBanner?: boolea
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={social.platform}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-ivory/40 text-ivory transition-colors hover:border-champagne hover:text-champagne"
+                  className="flex h-11 w-11 items-center justify-center rounded-btn border border-ivory/40 text-ivory transition-colors hover:border-champagne hover:text-champagne"
                 >
                   <SocialIcon platform={social.platform} />
                 </a>
@@ -152,20 +164,22 @@ export default function Footer({ cookieBanner = false }: { cookieBanner?: boolea
             {siteSettings?.contact_phone && <p>{siteSettings.contact_phone}</p>}
             {siteSettings?.contact_email && <p>{siteSettings.contact_email}</p>}
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {paymentMethods.map((method) => (
-              <span
-                key={method}
-                className="rounded-btn border border-ivory/30 px-2 py-1 text-caption text-ivory/80"
-              >
+          {/* Quiet champagne words, not boxes (a bordered box reads as a field to fill in). */}
+          <ul aria-label="Ways to pay" className="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-caption text-champagne">
+            {paymentMethods.map((method, index) => (
+              <li key={method} className="flex items-center gap-3">
+                {index > 0 && <span aria-hidden="true" className="text-champagne/50">·</span>}
                 {method}
-              </span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-ivory/20 px-4 py-4 text-center text-caption text-ivory/70 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {ownPour ? <PourLine orientation="horizontal" /> : <div aria-hidden="true" className="h-px bg-champagne/40" />}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 px-4 py-4 text-center text-caption text-ivory/70 sm:px-6">
         <span>
           © {new Date().getFullYear()} {siteName}. {copyrightText}
         </span>

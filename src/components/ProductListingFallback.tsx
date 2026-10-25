@@ -4,6 +4,7 @@ import PriceFilterPanel from "./PriceFilterPanel";
 import ProductGrid from "./ProductGrid";
 import EmptyState from "./EmptyState";
 import type { ProductListResponse } from "@/lib/types";
+import { countOf } from "@/lib/cardTag";
 
 // Rendered as the <Suspense fallback> around ProductListing. ProductListing
 // reads useSearchParams(), which makes a statically built page skip rendering
@@ -58,7 +59,7 @@ export default function ProductListingFallback({
         <PhoneListBar>
           <PriceFilterPanel buildHref={buildHref} bar />
         </PhoneListBar>
-        <p className="my-4 text-body text-stone sm:hidden">{result.meta.total} products</p>
+        <p className="my-4 text-body text-stone sm:hidden">{countOf(result.meta.total, "product")}</p>
 
         <div className="flex flex-col gap-8 sm:flex-row">
           <aside className="hidden shrink-0 sm:block sm:w-56">
@@ -67,7 +68,7 @@ export default function ProductListingFallback({
 
           <div className="flex-1">
             <div className="mb-6 hidden items-center justify-between sm:flex">
-              <p className="text-body text-stone">{result.meta.total} products</p>
+              <p className="text-body text-stone">{countOf(result.meta.total, "product")}</p>
             </div>
 
             <ProductGrid products={result.data} />

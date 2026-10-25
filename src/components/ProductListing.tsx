@@ -12,6 +12,7 @@ import PriceFilterPanel from "./PriceFilterPanel";
 import SortDropdown from "./SortDropdown";
 import EmptyState from "./EmptyState";
 import type { ProductListParams, ProductListResponse, ProductSort } from "@/lib/types";
+import { countOf } from "@/lib/cardTag";
 
 const VALID_SORTS: ProductSort[] = ["newest", "price_asc", "price_desc"];
 
@@ -158,7 +159,7 @@ export default function ProductListing({
           <PriceFilterPanel buildHref={buildHref} activeMin={minPrice} activeMax={maxPrice} bar />
           <SortDropdown />
         </PhoneListBar>
-        <p className="my-4 text-body text-stone sm:hidden">{showSkeleton ? "Loading…" : `${meta?.total ?? 0} products`}</p>
+        <p className="my-4 text-body text-stone sm:hidden">{showSkeleton ? "Loading…" : countOf(meta?.total ?? 0, "product")}</p>
 
         <div className="flex flex-col gap-8 sm:flex-row">
           <aside className="hidden shrink-0 sm:block sm:w-56">
@@ -168,7 +169,7 @@ export default function ProductListing({
           <div className="flex-1">
             <div className="mb-6 hidden items-center justify-between sm:flex">
               <p className="text-body text-stone">
-                {showSkeleton ? "Loading…" : `${meta?.total ?? 0} products`}
+                {showSkeleton ? "Loading…" : countOf(meta?.total ?? 0, "product")}
               </p>
               <SortDropdown />
             </div>
@@ -178,7 +179,12 @@ export default function ProductListing({
             ) : products.length > 0 ? (
               <ProductGrid products={products} dimmed={loading} />
             ) : (
-              <p className="py-20 text-center text-stone">Nothing matches those filters yet. Try loosening them, or let the Gift finder help you find the right gift.</p>
+              <EmptyState
+                title="Nothing matches yet"
+                text="Try loosening the filters, or let the Gift finder help you find the right gift."
+                linkHref="/gift-finder"
+                linkLabel="Find the right gift"
+              />
             )}
 
             {meta && meta.last_page > 1 && (
@@ -187,7 +193,7 @@ export default function ProductListing({
                   <Link
                     key={page}
                     href={buildHref({ page })}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-body font-medium transition-colors ${
+                    className={`flex h-9 w-9 items-center justify-center rounded-btn text-body font-medium transition-colors ${
                       page === meta.current_page ? "bg-navy text-ivory" : "text-charcoal/70 hover:bg-linen"
                     }`}
                   >

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 // One menu entry. A top-level entry may have one level of children. An entry with no url is only a heading
@@ -33,12 +32,7 @@ function Chevron({ open }: { open: boolean }) {
 // phone accordion is added when opened), and the items follow the site settings, which refresh once on load.
 export default function MainNav({ items }: { items: MenuItem[] }) {
   const [openDesktop, setOpenDesktop] = useState<number | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [expanded, setExpanded] = useState<number | null>(null);
   const desktopRef = useRef<HTMLUListElement>(null);
-  const phone = useSiteSettings().siteSettings?.contact_phone;
-  // A product page has its own row for the way back and the menu, so the Menu bar is not repeated above it.
-  const onProduct = usePathname().startsWith("/product/");
 
   useEffect(() => {
     if (openDesktop === null) return;
@@ -57,24 +51,6 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [openDesktop]);
-
-  // The product page's own Menu button asks for the menu through this event.
-  useEffect(() => {
-    function toggle() {
-      setMenuOpen((open) => !open);
-    }
-    window.addEventListener("anaiza:menu", toggle);
-    return () => window.removeEventListener("anaiza:menu", toggle);
-  }, []);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
 
   return (
     <>
@@ -151,98 +127,113 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
         </ul>
       </nav>
 
-      {/* Phone: a Menu bar that opens an accordion. */}
-      <div className={`bg-ivory md:hidden ${onProduct && !menuOpen ? "" : "border-b border-t border-linen"}`}>
-        <button
-          type="button"
-          onClick={() => setMenuOpen((open) => !open)}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-menu"
-          className={`min-h-12 w-full items-center justify-between px-4 text-body font-medium text-charcoal ${onProduct ? "hidden" : "flex"}`}
-        >
-          <span className="flex items-center gap-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true" className="h-5 w-5">
-              {menuOpen ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-            </svg>
-            Menu
-          </span>
-          <Chevron open={menuOpen} />
-        </button>
-
-        {menuOpen && (
-          <nav id="mobile-menu" aria-label="Main menu" className="max-h-[70vh] overflow-y-auto border-t border-linen">
-            <ul className="divide-y divide-linen">
-              {items.map((item, index) => {
-                const children = item.children ?? [];
-                const isExpanded = expanded === index;
-
-                return (
-                  <li key={`${item.label}-${index}`}>
-                    <div className="flex items-stretch">
-                      {item.url ? (
-                        <a href={item.url} className="flex min-h-11 flex-1 items-center px-4 text-body font-medium text-charcoal">
-                          {item.label}
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setExpanded(isExpanded ? null : index)}
-                          aria-expanded={isExpanded}
-                          className="flex min-h-11 flex-1 items-center px-4 text-left text-body font-medium text-charcoal"
-                        >
-                          {item.label}
-                        </button>
-                      )}
-                      {children.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setExpanded(isExpanded ? null : index)}
-                          aria-expanded={isExpanded}
-                          aria-label={`${isExpanded ? "Hide" : "Show"} ${item.label} links`}
-                          className="flex min-h-11 w-12 items-center justify-center border-l border-linen text-charcoal"
-                        >
-                          <Chevron open={isExpanded} />
-                        </button>
-                      )}
-                    </div>
-                    {children.length > 0 && isExpanded && (
-                      <ul className="bg-linen/50">
-                        {children.map((child) => (
-                          <li key={child.url}>
-                            <a href={child.url} className="flex min-h-11 items-center pl-8 pr-4 text-body text-charcoal">
-                              {child.label}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-            {/* What the header and the promo bar show from sm up, on a phone: the account, order tracking and a call. */}
-            <ul className="divide-y divide-linen border-t border-linen sm:hidden">
-              <li>
-                <a href="/account" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
-                  Account
-                </a>
-              </li>
-              <li>
-                <a href="/track-order" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
-                  Track order
-                </a>
-              </li>
-              {phone && (
-                <li>
-                  <a href={`tel:${phone.replace(/\s+/g, "")}`} className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
-                    Call {phone}
-                  </a>
-                </li>
-              )}
-            </ul>
-          </nav>
-        )}
-      </div>
     </>
+  );
+}
+
+// The phone menu: an accordion with rows at least 44px tall that opens under the header (the header's Menu button asks
+// for it through the "anaiza:menu" event). It sits inside the sticky header, so it is where the visitor is looking
+// wherever the page is scrolled to. Every link is in the HTML once it is opened; the desktop list above is always in it.
+export function PhoneMenu({ items }: { items: MenuItem[] }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const phone = useSiteSettings().siteSettings?.contact_phone;
+
+  useEffect(() => {
+    function toggle() {
+      setMenuOpen((open) => !open);
+    }
+    window.addEventListener("anaiza:menu", toggle);
+    return () => window.removeEventListener("anaiza:menu", toggle);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
+  if (!menuOpen) return null;
+
+  return (
+    <nav id="mobile-menu" aria-label="Main menu" className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-b border-t border-linen bg-ivory md:hidden">
+      <ul className="divide-y divide-linen">
+        {items.map((item, index) => {
+          const children = item.children ?? [];
+          const isExpanded = expanded === index;
+
+          return (
+            <li key={`${item.label}-${index}`}>
+              <div className="flex items-stretch">
+                {item.url ? (
+                  <a href={item.url} className="flex min-h-11 flex-1 items-center px-4 text-body font-medium text-charcoal">
+                    {item.label}
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(isExpanded ? null : index)}
+                    aria-expanded={isExpanded}
+                    className="flex min-h-11 flex-1 items-center px-4 text-left text-body font-medium text-charcoal"
+                  >
+                    {item.label}
+                  </button>
+                )}
+                {children.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(isExpanded ? null : index)}
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? "Hide" : "Show"} ${item.label} links`}
+                    className="flex min-h-11 w-12 items-center justify-center border-l border-linen text-charcoal"
+                  >
+                    <Chevron open={isExpanded} />
+                  </button>
+                )}
+              </div>
+              {children.length > 0 && isExpanded && (
+                <ul className="bg-linen/50">
+                  {children.map((child) => (
+                    <li key={child.url}>
+                      <a href={child.url} className="flex min-h-11 items-center pl-8 pr-4 text-body text-charcoal">
+                        {child.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {/* What the header and the promo bar show from 768 px, on a phone: the account, the wishlist, order tracking and a call. */}
+      <ul className="divide-y divide-linen border-t border-linen">
+        <li>
+          <a href="/account" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+            Account
+          </a>
+        </li>
+        <li>
+          <a href="/wishlist" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+            Wishlist
+          </a>
+        </li>
+        <li>
+          <a href="/track-order" className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+            Track order
+          </a>
+        </li>
+        {phone && (
+          <li>
+            <a href={`tel:${phone.replace(/s+/g, "")}`} className="flex min-h-11 items-center px-4 text-body font-medium text-charcoal">
+              Call {phone}
+            </a>
+          </li>
+        )}
+      </ul>
+    </nav>
   );
 }

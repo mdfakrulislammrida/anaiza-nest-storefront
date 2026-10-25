@@ -15,7 +15,7 @@ export default function CartLineItem({ item }: { item: CartItem }) {
           real navigation, not next/link's client-side routing. */}
       <a
         href={`/product/${item.slug}`}
-        className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-linen"
+        className="relative h-16 w-16 shrink-0 overflow-hidden bg-linen"
       >
         {item.image ? (
           <Image src={item.image} alt={item.name} fill className="object-cover" />
@@ -39,9 +39,12 @@ export default function CartLineItem({ item }: { item: CartItem }) {
               </p>
             )}
           </div>
-          <p className="whitespace-nowrap font-medium text-charcoal">
-            {formatPrice(item.price * item.quantity)}
-          </p>
+          <div className="text-right">
+            <p className="whitespace-nowrap font-medium text-charcoal">{formatPrice(item.price * item.quantity)}</p>
+            {item.regularPrice !== undefined && item.regularPrice > item.price && (
+              <p className="text-caption text-stone">You save {formatPrice((item.regularPrice - item.price) * item.quantity)}</p>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between">

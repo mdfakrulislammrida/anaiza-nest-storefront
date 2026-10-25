@@ -27,7 +27,7 @@ export default function WhatsAppButton() {
       // --cookie-top is how far the cookie banner reaches up from the bottom of the screen and --bar-top how far the
       // fixed order bar does (each absent when there is none), so the bubble sits above whichever is higher. The bar's
       // height is measured, not guessed.
-      className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-champagne text-navy transition-transform hover:scale-105 sm:bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))] ${
+      className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-btn bg-champagne text-navy sm:bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))] ${
         isProductPage
           ? "bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))]"
           : "bottom-[max(1.25rem,calc(max(var(--bar-top,0px),var(--cookie-top,0px))+0.75rem))]"

@@ -1,54 +1,24 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { getHomepageSections, getProducts } from "@/lib/api";
-import ProductListing from "@/components/ProductListing";
-import ProductListingFallback from "@/components/ProductListingFallback";
-import HotDealsCountdown from "@/components/HotDealsCountdown";
+"use client";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/hot-deals" },
-  title: "Special prices",
-  description: "Selected Anaiza Nest pieces at lower prices.",
-};
+import { useEffect } from "react";
 
-export default async function HotDealsPage() {
-  // First page at build time (same query the client makes), so the cards are in the static HTML.
-  const initialResult = await getProducts({ on_sale: true, page: 1, per_page: 24 }).catch(() => null);
-  // The countdown shows only when the admin has set a real "Deal ends at" on the Special prices section.
-  const sections = await getHomepageSections().catch(() => []);
-  const dealEndsAt = sections.find((section) => section.type === "hot_deals")?.deal_ends_at ?? null;
+// Special prices used to live at /hot-deals. The host redirects that address with a 301 (public/.htaccess); this page is
+// for a request that gets here anyway (the dev server, or a host that does not read .htaccess): it sends the visitor on to
+// /special-prices at once, keeping any search or filter in the address.
+export default function HotDealsMoved() {
+  useEffect(() => {
+    window.location.replace(`/special-prices${window.location.search}${window.location.hash}`);
+  }, []);
 
   return (
-    <div>
-      <div className="relative flex min-h-[14rem] flex-col justify-end bg-deepink p-8 text-ivory sm:p-16">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-h1">Special prices</h1>
-            <p className="mt-2 text-body text-ivory/80">Selected pieces at lower prices.</p>
-          </div>
-          <HotDealsCountdown initialEndsAt={dealEndsAt} className="rounded-btn bg-ivory/10 px-4 py-2" />
-        </div>
-      </div>
-
-      <Suspense
-        fallback={
-          <ProductListingFallback result={initialResult} breadcrumbLabel="Special prices"
-            basePath="/hot-deals"
-            emptyTitle="No special prices right now"
-            emptyText="Nothing is marked down at the moment. Have a look at the full collection, or check back soon."
-            emptyLink={{ href: "/shop", label: "See all gifts" }}
-          />
-        }
-      >
-        <ProductListing
-          fixedParams={{ on_sale: true }}
-          breadcrumbLabel="Special prices"
-          initialResult={initialResult}
-          emptyTitle="No special prices right now"
-          emptyText="Nothing is marked down at the moment. Have a look at the full collection, or check back soon."
-          emptyLink={{ href: "/shop", label: "See all gifts" }}
-        />
-      </Suspense>
+    <div className="mx-auto max-w-xl px-4 py-24 text-center">
+      <p className="text-body text-stone">
+        Special prices has a new address.{" "}
+        <a href="/special-prices" className="text-navy underline">
+          Go to Special prices
+        </a>
+        .
+      </p>
     </div>
   );
 }

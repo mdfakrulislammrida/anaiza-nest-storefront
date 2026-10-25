@@ -28,16 +28,18 @@ What it checks, per page:
 | Rule | Limit |
 | --- | --- |
 | h1 | exactly one |
-| Pour line (`.pour-line`, `.an-pour`) | at most one, hidden from screen readers |
+| Pour line (`.pour-line`, `.an-pour`) | at most one, hidden from screen readers. The footer draws it on a page that has none of its own; where the page has one (the home hero, an article, a category's about text) the footer keeps a plain hairline |
 | Gift frame | inset 4% of the short side (within 1.5 px), hidden from screen readers |
-| Seal | at most one |
+| Seal | at most one (the product page's photograph, or an empty state) |
 | Burgundy | once: fills plus italic lines together |
-| Shadow | only the product-photo shadow (`shadow-warm`) |
+| Shadow | only the product-photo shadow (`shadow-warm`), which is now only on a landing page's product photograph: none on a product card or the product gallery |
+| Radius | 2px on everything; a photograph has none. The seal is the one round thing. Tailwind's named radius steps are all set to 2px in `globals.css` |
 | Gradient | only an element marked `data-scrim` (a text scrim over a photo; see the list below) |
 | Fixed items | none overlapping (a dialog covers the page by design) |
 | Fixed bars at the bottom | the order bar and the cookie banner together take at most 38% of the screen height, or 320 px if that is more (the bars are as tall on a short phone as on a tall one) |
-| Header | every control inside the screen; the cart whole and at least 44 x 44 px |
+| Header | every control inside the screen; the cart whole and at least 44 x 44 px. Under 768 px it is one row of 56 px: menu, wordmark centred, search, bag |
 | Hero (home) | the headline and the badge whole, inside the screen and inside the text panel; with a picture set, the gift frame and the pour line inside the text panel and never over the photograph; from 640 px the hero's left edge and the tiles' right edge within 1 px of the header's logo and cart edges |
+| Product page (phone) | the title's first two lines in the first screen (the whole title when it is shorter); the sticky bar at most 64 px |
 | Checkout (phone) | the order total in the first screen (in the folded summary at the top) and the fixed bar (total and Confirm order) at most 64 px; the small header has no cart on purpose, and every other header rule still holds |
 | Sideways scroll | measured as `scrollWidth` against `clientWidth` (a phone that scrolls sideways reports an `innerWidth` as wide as the page, which once hid the header overflow) |
 

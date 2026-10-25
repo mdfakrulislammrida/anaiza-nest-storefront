@@ -17,7 +17,7 @@ export default function ArticleCard({ article }: { article: Article }) {
             alt={article.title}
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-linen">

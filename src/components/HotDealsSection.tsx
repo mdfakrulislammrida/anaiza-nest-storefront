@@ -2,7 +2,7 @@ import type { Product } from "@/lib/types";
 import ProductCard from "./ProductCard";
 import CountdownTimer from "./CountdownTimer";
 
-// The "Special prices" section (the section type key stays hot_deals, and so does the /hot-deals URL).
+// The "Special prices" section (the section type key stays hot_deals, and the old /hot-deals URL redirects to /special-prices).
 export default function HotDealsSection({
   products,
   title = "Special prices",

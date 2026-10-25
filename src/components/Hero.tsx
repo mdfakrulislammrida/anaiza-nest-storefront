@@ -94,7 +94,7 @@ function HeroPanel({
 
       <div className="grid grid-rows-2 gap-0.5">
         <Tile
-          href="/hot-deals"
+          href="/special-prices"
           background="bg-navy"
           title="Special prices"
           text={wording.hot_deals_tile_text}

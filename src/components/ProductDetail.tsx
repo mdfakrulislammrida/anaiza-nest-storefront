@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
+import { pricedView } from "@/lib/pricing";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartForm from "@/components/AddToCartForm";
 import ProductCard from "@/components/ProductCard";
@@ -52,11 +53,9 @@ export default function ProductDetail({
   // A variant only overrides price/stock/image when the admin actually set
   // one; otherwise it behaves exactly like the plain product (see the
   // effective_* accessors on ProductVariant in the API).
-  const effectivePrice = selectedVariant?.effective_price ?? product.effective_price;
-  const discountPercent = selectedVariant?.discount_percent ?? product.discount_percent;
-  const regularPrice = selectedVariant?.price ?? product.price;
+  // A sale price of 0, or one not below the price, is no sale: never ৳0, never "Save 100%".
+  const view = pricedView(product, selectedVariant);
   const stockQuantity = selectedVariant?.stock_quantity ?? product.stock_quantity;
-  const onSale = discountPercent !== null;
   // Both sections are hidden when empty.
   const boxContents = (product.box_contents ?? []).filter((line) => line.trim() !== "");
   const careInstructions = product.care_instructions?.trim() || null;
@@ -75,41 +74,15 @@ export default function ProductDetail({
   // short text under the title. `order-*` does it, so every word stays in the HTML once.
   return (
     <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6">
-      {/* A phone: one row for the way back and the menu (the menu bar is not repeated above it on a product page). */}
-      <div className="flex h-11 items-center justify-between sm:hidden">
-        <Link
-          href={`/category/${product.category.slug}`}
-          aria-label={`Back to ${product.category.name}`}
-          className="-ml-2 flex min-h-11 items-center gap-1 px-2 text-body text-stone hover:text-navy"
-        >
-          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
-            <path d="m15 6-6 6 6 6" />
-          </svg>
+      {/* The way back: "Anaiza Nest · Category", Inter 13 stone. The menu is in the header on every page. */}
+      <nav aria-label="Breadcrumb" className="flex min-h-11 items-center text-caption text-stone sm:pt-6">
+        <Link href="/" className="inline-flex min-h-11 items-center hover:text-navy">
+          Anaiza Nest
+        </Link>
+        <span aria-hidden="true" className="mx-2">·</span>
+        <Link href={`/category/${product.category.slug}`} className="inline-flex min-h-11 items-center hover:text-navy">
           {product.category.name}
         </Link>
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event("anaiza:menu"))}
-          aria-controls="mobile-menu"
-          className="-mr-2 flex min-h-11 items-center gap-2 px-2 text-body font-medium text-charcoal"
-        >
-          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-          Menu
-        </button>
-      </div>
-
-      <nav className="mb-6 hidden pt-10 text-caption text-stone sm:block">
-        <Link href="/" className="hover:text-navy">
-          Home
-        </Link>
-        <span className="mx-1.5">/</span>
-        <Link href={`/category/${product.category.slug}`} className="hover:text-navy">
-          {product.category.name}
-        </Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-charcoal">{product.name}</span>
       </nav>
 
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:gap-12">
@@ -120,11 +93,13 @@ export default function ProductDetail({
             video={product.video}
             productName={product.name}
             selectedImageId={selectedVariant?.image?.id ?? null}
+            // The layout's one seal sits on the corner of the main photo.
+            corner={<Seal message="Gift-ready" />}
           />
         </div>
 
         <div className="flex min-w-0 flex-col gap-3">
-          <h1 title={product.name} className="order-10 line-clamp-2 pr-14 font-serif text-[1.5rem] leading-7 text-charcoal sm:line-clamp-none sm:pr-0 sm:text-[1.75rem] sm:leading-[2.125rem] lg:text-h1">
+          <h1 title={product.name} className="order-10 font-serif text-product-title text-charcoal">
             {product.name}
           </h1>
 
@@ -141,25 +116,16 @@ export default function ProductDetail({
             </div>
           )}
 
-          {/* Price and stock together, with the seal where it has always been: beside them. */}
-          <div className="order-40 flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-h2 font-semibold text-charcoal">{formatPrice(effectivePrice)}</span>
-                {onSale && (
-                  <>
-                    <span className="text-body text-stone line-through">{formatPrice(regularPrice)}</span>
-                    <span className="rounded-btn bg-linen px-2 py-1 text-caption font-medium text-navy">Save {discountPercent}%</span>
-                  </>
-                )}
-              </p>
-              <p className="mt-1 text-body text-stone">
-                {stockQuantity > 0 ? "In stock" : "Out of stock"}
-                {product.gift_box_included && <span>, gift box included</span>}
-              </p>
-            </div>
-            {/* The layout's one seal. */}
-            <Seal message="Gift-ready" />
+          {/* The price in Fraunces 500 32px navy; on a real sale the regular price beside it, struck through. */}
+          <div className="order-40">
+            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-price-page text-navy">{formatPrice(view.current)}</span>
+              {view.old !== null && <span className="font-sans text-body line-through text-stone">{formatPrice(view.old)}</span>}
+            </p>
+            <p className="mt-1 text-body text-stone">
+              {stockQuantity > 0 ? "In stock" : "Out of stock"}
+              {product.gift_box_included && <span>, gift box included</span>}
+            </p>
           </div>
 
           {/* How it arrives and how it is paid, from the delivery settings (the days are never written here). */}

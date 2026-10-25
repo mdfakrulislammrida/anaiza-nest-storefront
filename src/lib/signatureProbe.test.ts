@@ -34,6 +34,7 @@ interface Hero {
 interface Product {
   titleTop: number;
   titleHeight: number;
+  titleLine?: number | null;
   bar: { h: number } | null;
 }
 
@@ -60,6 +61,7 @@ interface Snapshot {
   burgundyFills: string[];
   burgundyItalic: string[];
   shadows: { label: string; value: string }[];
+  radii?: { label: string; value: string; photo: boolean }[];
   gradients: { label: string; allowed: boolean }[];
   fixed: { label: string; x: number; y: number; w: number; h: number; modal: boolean; bottom: boolean }[];
 }
@@ -143,6 +145,12 @@ describe("what it catches", () => {
     const landing = page({ burgundyFills: ["hero cta", "product button", "order bar"] });
     assert.ok(has(landing, "Burgundy is used 3 times"));
     assert.ok(has(page({ burgundyFills: ["bar"], burgundyItalic: ["em"] }), "Burgundy is used 2 times"));
+  });
+
+  it("a corner rounder than 2px, and a rounded photograph", () => {
+    assert.ok(has(page({ radii: [{ label: "button.cart", value: "9999px", photo: false }] }), "A corner rounder than 2px"));
+    assert.ok(has(page({ radii: [{ label: "img", value: "2px", photo: true }] }), "A photograph with rounded corners"));
+    assert.deepEqual(probe.check(page({ radii: [] })), []);
   });
 
   it("a shadow that is not on a product photograph", () => {
@@ -324,6 +332,11 @@ describe("the product page on a phone", () => {
     const low = phone({ product: { titleTop: 727.8, titleHeight: 102, bar: null } });
 
     assert.ok(has(low, "The product title ends at 830 px, below the first screen (640 px high)"));
+  });
+
+  it("asks only for the first two lines of a title that runs to three (30 px on a 360 px phone)", () => {
+    assert.deepEqual(probe.check(phone({ product: { titleTop: 562, titleHeight: 108, titleLine: 36, bar: null } })), []);
+    assert.ok(has(phone({ product: { titleTop: 610, titleHeight: 108, titleLine: 36, bar: null } }), "The product title ends at 682 px"));
   });
 
   it("holds a taller phone and a wide screen to nothing about the fold", () => {

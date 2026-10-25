@@ -32,10 +32,8 @@ describe("signature visuals in the source", () => {
     assert.deepEqual(filesWith(/box-shadow\s*:/).filter((name) => name !== "app/globals.css"), []);
   });
 
-  it("uses the product shadow on product photography only", () => {
+  it("has no shadow on a product card or the product gallery, only on a landing page's product photograph", () => {
     assert.deepEqual(filesWith(/\bshadow-warm\b/).filter((name) => name !== "app/globals.css"), [
-      "components/ProductCard.tsx",
-      "components/ProductGallery.tsx",
       "components/landing/LandingBlocks.tsx",
     ]);
   });
@@ -53,9 +51,14 @@ describe("signature visuals in the source", () => {
     assert.deepEqual(filesWith(/linear-gradient\(/), ["app/prose.css"]);
   });
 
-  it("draws the pour line in one place, and keeps the seal to the product page (the checkout has a text label instead)", () => {
-    assert.deepEqual(filesWith(/<PourLine\b/), ["components/Hero.tsx"]);
-    assert.deepEqual(filesWith(/<Seal\b/), ["components/ProductDetail.tsx"]);
+  it("draws the pour line in two places (the home hero, and the footer where the page has no other) and the seal in two (the product photograph, and an empty state)", () => {
+    assert.deepEqual(filesWith(/<PourLine\b/), ["components/Footer.tsx", "components/Hero.tsx"]);
+    assert.deepEqual(filesWith(/<Seal\b/), ["components/EmptyState.tsx", "components/ProductDetail.tsx"]);
+  });
+
+  it("writes one radius, 2px: no pill, circle or arbitrary radius (the seal is the one round thing)", () => {
+    assert.deepEqual(filesWith(/\brounded-(full|sm|md|lg|xl|2xl|3xl)\b/).filter((name) => name !== "components/Seal.tsx"), []);
+    assert.deepEqual(filesWith(/\brounded-\[/), []);
   });
 
   it("puts a burgundy fill only on the order buttons, never on the landing page's blocks", () => {

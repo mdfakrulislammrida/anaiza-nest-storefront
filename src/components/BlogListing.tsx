@@ -94,7 +94,7 @@ export default function BlogListing({
               <Link
                 key={page}
                 href={buildHref(page)}
-                className={`flex h-9 w-9 items-center justify-center rounded-full text-body font-medium transition-colors ${
+                className={`flex h-9 w-9 items-center justify-center rounded-btn text-body font-medium transition-colors ${
                   page === meta.current_page ? "bg-navy text-ivory" : "text-charcoal/70 hover:bg-linen"
                 }`}
               >

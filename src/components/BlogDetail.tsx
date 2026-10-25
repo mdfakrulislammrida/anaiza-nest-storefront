@@ -47,7 +47,7 @@ export default function BlogDetail({ article }: { article: Article }) {
       </p>
 
       {article.featured_image && (
-        <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl bg-linen">
+        <div className="relative mt-8 aspect-[16/9] overflow-hidden bg-linen">
           <Image
             src={article.featured_image}
             alt={article.title}
@@ -60,7 +60,7 @@ export default function BlogDetail({ article }: { article: Article }) {
       )}
 
       {body && body.toc.length >= 2 && (
-        <nav aria-label="Table of contents" className="mt-8 rounded-xl border border-linen bg-linen p-6">
+        <nav aria-label="Table of contents" className="mt-8 rounded-btn border border-linen bg-linen p-6">
           <p className="text-caption font-semibold text-stone">In this article</p>
           <ol className="mt-4 list-decimal space-y-1.5 pl-6 text-body">
             {body.toc.map((item) => (
@@ -76,13 +76,13 @@ export default function BlogDetail({ article }: { article: Article }) {
 
       {body && (
         <div
-          className="an-prose mt-8 [&_img]:rounded-lg"
+          className="an-prose mt-8 "
           dangerouslySetInnerHTML={{ __html: body.html }}
         />
       )}
 
       {authorName && authorBio && (
-        <aside className="mt-12 rounded-xl border border-linen p-6 text-body">
+        <aside className="mt-12 rounded-btn border border-linen p-6 text-body">
           <p className="text-caption font-semibold text-stone">About the author</p>
           <p className="mt-2 font-medium text-charcoal">{authorName}</p>
           <p className="mt-1 leading-relaxed text-charcoal/80">{authorBio}</p>

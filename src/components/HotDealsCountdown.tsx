@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getHomepageSections } from "@/lib/api";
 import CountdownTimer from "./CountdownTimer";
 
-// The /hot-deals banner's countdown. Seeded with the end time baked in at build, then refreshed
+// The /special-prices banner's countdown. Seeded with the end time baked in at build, then refreshed
 // once from the API so an edit (or clearing the date) in the admin takes effect without a rebuild.
 // Renders nothing when no end time is set or it has passed.
 export default function HotDealsCountdown({

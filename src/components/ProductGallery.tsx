@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import ResponsiveImage from "@/components/ResponsiveImage";
 import ProductVideoTile, { hasPlayableVideo, videoPosterOf } from "@/components/ProductVideoTile";
 import type { ProductImage, ProductVideo } from "@/lib/types";
@@ -15,6 +15,7 @@ export default function ProductGallery({
   video = null,
   productName,
   selectedImageId = null,
+  corner = null,
 }: {
   images: ProductImage[];
   video?: ProductVideo | null;
@@ -22,6 +23,8 @@ export default function ProductGallery({
   // Set when the chosen variant has its own image -- jumps the gallery to it, same as if the visitor had clicked
   // that thumbnail themselves.
   selectedImageId?: number | null;
+  // Something that sits on the corner of the main photo (the page's one seal).
+  corner?: ReactNode;
 }) {
   const slides: Slide[] = images.map((image) => ({ kind: "image", image }));
   if (video && hasPlayableVideo(video)) slides.push({ kind: "video", video });
@@ -52,7 +55,8 @@ export default function ProductGallery({
 
   return (
     <div>
-      <div className="relative overflow-hidden rounded-xl bg-linen shadow-warm">
+      {/* A photograph: no corners, no shadow. */}
+      <div className="relative overflow-hidden bg-linen">
         {count > 0 ? (
           <ul
             ref={track}
@@ -87,10 +91,12 @@ export default function ProductGallery({
           </div>
         )}
 
+        {corner && <div className="absolute left-3 top-3 z-10">{corner}</div>}
+
         {/* Dots on a phone, over the foot of the photo so they take no room of their own. */}
         {count > 1 && (
           <div className="absolute inset-x-0 bottom-2 flex justify-center md:hidden">
-            <div className="flex items-center rounded-full bg-ivory/90 px-1">
+            <div className="flex items-center rounded-btn bg-ivory/90 px-1">
               {slides.map((slide, index) => (
                 <button
                   key={slide.kind === "image" ? slide.image.id : "video"}
@@ -100,7 +106,7 @@ export default function ProductGallery({
                   aria-current={index === active}
                   className="flex h-6 w-6 items-center justify-center"
                 >
-                  <span className={`h-2 w-2 rounded-full ${index === active ? "bg-navy" : "bg-stone/50"}`} />
+                  <span className={`h-2 w-2 rounded-btn ${index === active ? "bg-navy" : "bg-stone/50"}`} />
                 </button>
               ))}
             </div>
@@ -118,7 +124,7 @@ export default function ProductGallery({
               onClick={() => goTo(index)}
               aria-label={slide.kind === "video" ? "Show the video" : `Show photo ${index + 1}`}
               aria-current={index === active}
-              className={`relative aspect-square overflow-hidden rounded-lg border ${index === active ? "border-navy" : "border-transparent"}`}
+              className={`relative aspect-square overflow-hidden border ${index === active ? "border-navy" : "border-linen"}`}
             >
               {slide.kind === "image" ? (
                 <ResponsiveImage

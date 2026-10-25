@@ -37,7 +37,7 @@ function ReviewItem({ review }: { review: Review }) {
             <li key={photo.url}>
               <a href={photo.url} target="_blank" rel="noreferrer noopener">
                 {/* eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized. */}
-                <img src={photo.thumb} alt="" loading="lazy" decoding="async" className="h-20 w-20 rounded-btn object-cover" />
+                <img src={photo.thumb} alt="" loading="lazy" decoding="async" className="h-20 w-20 object-cover" />
               </a>
             </li>
           ))}

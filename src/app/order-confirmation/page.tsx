@@ -70,25 +70,28 @@ export default function OrderConfirmationPage() {
     );
   }
 
+  // A link to the shop's WhatsApp about this order, only when the shop has a number saved in its settings.
+  const orderWhatsAppHref = whatsappLink(whatsapp.number, `Hello, I placed order #${order.id}.`);
+
   // A wallet order is not confirmed until its payment has been checked.
   const waitingOnPayment = order.payment_status === "awaiting_verification" || order.payment_status === "failed";
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
       <p className="text-caption font-medium text-navy">{waitingOnPayment ? "Order received" : "Order confirmed"}</p>
-      <h1 className="mt-2 font-serif text-charcoal text-h1">
-        Thank you, {order.customer.name.split(" ")[0]}.
+      {/* The page's one italic line (Fraunces italic 300), said as the host. A wallet order whose payment is still being
+          checked is not being packed yet, so it says what is true. */}
+      <h1 className="mt-2 text-emotional text-navy sm:text-[1.75rem] sm:leading-9">
+        {waitingOnPayment ? "Thank you. Your order is received." : "Thank you. Your gift is being packed by hand."}
       </h1>
-      {/* The kit's order-confirmed line, said as the host. */}
       <p className="mt-4 text-body text-charcoal/80">
         {waitingOnPayment ? (
           <>
-            Order <span className="font-semibold text-charcoal">#{order.id}</span> is received.
+            Order <span className="font-semibold text-charcoal">#{order.id}</span> is received, {order.customer.name.split(" ")[0]}.
           </>
         ) : (
           <>
-            Order <span className="font-semibold text-charcoal">#{order.id}</span> is confirmed. Your order is being
-            packed by hand and will be with you soon.
+            Order <span className="font-semibold text-charcoal">#{order.id}</span> is confirmed, {order.customer.name.split(" ")[0]}. It will be with you soon.
           </>
         )}
       </p>
@@ -98,7 +101,7 @@ export default function OrderConfirmationPage() {
         </div>
       )}
 
-      <div className="mt-10 rounded-xl border border-linen p-6">
+      <div className="mt-10 rounded-btn border border-linen p-6">
         <h2 className="font-serif text-charcoal text-h2">Order details</h2>
 
         <ul className="mt-4 divide-y divide-linen">
@@ -139,7 +142,18 @@ export default function OrderConfirmationPage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-linen p-6 text-body text-charcoal/70">
+      {orderWhatsAppHref && (
+        <a
+          href={orderWhatsAppHref}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="mt-4 inline-flex min-h-11 items-center text-body text-navy underline"
+        >
+          Follow this order on WhatsApp
+        </a>
+      )}
+
+      <div className="mt-6 rounded-btn border border-linen p-6 text-body text-charcoal/70">
         <h2 className="font-serif text-charcoal text-h2">Shipping to</h2>
         <p className="mt-2">{order.customer.name}</p>
         <p>{order.customer.address}</p>
@@ -151,7 +165,7 @@ export default function OrderConfirmationPage() {
       </div>
 
       {order.is_gift && (
-        <div className="mt-6 rounded-xl border border-linen p-6 text-body text-charcoal/70">
+        <div className="mt-6 rounded-btn border border-linen p-6 text-body text-charcoal/70">
           <h2 className="font-serif text-charcoal text-h2">Your gift note</h2>
           {order.gift_message ? (
             <p className="mt-2 whitespace-pre-line break-words text-charcoal">{order.gift_message}</p>
@@ -161,7 +175,7 @@ export default function OrderConfirmationPage() {
         </div>
       )}
 
-      <section className="mt-6 rounded-xl border border-linen p-6">
+      <section className="mt-6 rounded-btn border border-linen p-6">
         <h2 className="font-serif text-charcoal text-h2">What happens next</h2>
         <ol className="mt-4 space-y-4 text-body text-charcoal/70">
           <li>

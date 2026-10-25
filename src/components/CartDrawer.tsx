@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { maxQuantityFor, useCart } from "@/context/CartContext";
 import { itemsLabel } from "@/lib/checkout";
+import FreeDeliveryProgress from "@/components/FreeDeliveryProgress";
 import { formatPrice } from "@/lib/format";
 
 export default function CartDrawer() {
@@ -27,7 +28,7 @@ export default function CartDrawer() {
             type="button"
             onClick={closeDrawer}
             aria-label="Close cart"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal hover:bg-linen"
+            className="flex h-11 w-11 items-center justify-center rounded-btn text-charcoal hover:bg-linen"
           >
             <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -48,7 +49,7 @@ export default function CartDrawer() {
                   <a
                     href={`/product/${item.slug}`}
                     onClick={closeDrawer}
-                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-linen"
+                    className="relative h-16 w-16 shrink-0 overflow-hidden bg-linen"
                   >
                     {item.image && (
                       <Image src={item.image} alt={item.name} fill className="object-cover" />
@@ -101,8 +102,11 @@ export default function CartDrawer() {
                           +
                         </button>
                       </div>
-                      <span className="text-body font-medium text-charcoal">
-                        {formatPrice(item.price * item.quantity)}
+                      <span className="text-right">
+                        <span className="block text-body font-medium text-charcoal">{formatPrice(item.price * item.quantity)}</span>
+                        {item.regularPrice !== undefined && item.regularPrice > item.price && (
+                          <span className="block text-caption text-stone">You save {formatPrice((item.regularPrice - item.price) * item.quantity)}</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -118,6 +122,7 @@ export default function CartDrawer() {
               <span className="text-stone">Subtotal</span>
               <span className="font-semibold text-charcoal">{formatPrice(subtotal)}</span>
             </div>
+            <FreeDeliveryProgress subtotal={subtotal} className="mt-3" />
             <p className="mt-1 text-caption text-stone">
               Shipping and payment method (bKash / Nagad / Rocket / COD) selected at checkout.
             </p>

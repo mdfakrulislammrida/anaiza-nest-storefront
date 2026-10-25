@@ -14,6 +14,10 @@ import type { PopupConfig, PopupPage, PopupSettings } from "@/lib/types";
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
+// Whatever the admin chose (a short delay, a scroll, an exit), no popup opens in the first 30 seconds of a visit: someone who
+// has only just arrived is looking at the shop, not at a message about it.
+const FIRST_QUIET_MS = 30_000;
+
 // Popups never appear while someone is buying: not in the cart, checkout or on the confirmation,
 // whatever the admin chose in "Show on". An interruption there costs the order.
 const NO_POPUP_PATHS = ["/cart", "/checkout", "/order-confirmation"];
@@ -84,8 +88,17 @@ function PopupController({
       onShown();
     };
 
+    // Milliseconds left of the quiet first 30 seconds (performance.now() counts from the page's start).
+    const quietFor = () => Math.max(0, FIRST_QUIET_MS - performance.now());
+    let gateTimer: ReturnType<typeof setTimeout> | undefined;
+    const showWhenQuiet = () => {
+      const wait = quietFor();
+      if (wait === 0) show();
+      else gateTimer = setTimeout(show, wait);
+    };
+
     if (config.trigger === "delay") {
-      const timer = setTimeout(show, config.delay_seconds * 1000);
+      const timer = setTimeout(show, Math.max(config.delay_seconds * 1000, quietFor()));
       return () => clearTimeout(timer);
     }
 
@@ -95,11 +108,14 @@ function PopupController({
         const scrolledPast = scrollable > 0 ? window.scrollY / scrollable : 0;
         if (scrolledPast > 0.5) {
           window.removeEventListener("scroll", onScroll);
-          show();
+          showWhenQuiet();
         }
       };
       window.addEventListener("scroll", onScroll, { passive: true });
-      return () => window.removeEventListener("scroll", onScroll);
+      return () => {
+        window.removeEventListener("scroll", onScroll);
+        clearTimeout(gateTimer);
+      };
     }
 
     // exit_intent: mouse leaving toward the top of the viewport (the
@@ -108,11 +124,14 @@ function PopupController({
     const onMouseOut = (event: MouseEvent) => {
       if (event.clientY <= 0 && !event.relatedTarget) {
         document.removeEventListener("mouseout", onMouseOut);
-        show();
+        showWhenQuiet();
       }
     };
     document.addEventListener("mouseout", onMouseOut);
-    return () => document.removeEventListener("mouseout", onMouseOut);
+    return () => {
+      document.removeEventListener("mouseout", onMouseOut);
+      clearTimeout(gateTimer);
+    };
   }, [config, pathname, canShow, storageKey, onShown]);
 
   // An already-open popup is closed (without starting the 24h cooldown) if the visitor heads

@@ -1,12 +1,36 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import GiftFrame from "./GiftFrame";
 import type { OccasionTile } from "@/lib/types";
 
 const tileClass =
-  "group relative flex aspect-[4/3] items-end overflow-hidden rounded-btn border border-linen bg-linen p-4 text-charcoal transition-colors hover:border-gold";
+  "group relative flex aspect-[4/5] items-end overflow-hidden bg-linen p-4 text-charcoal";
 
-// "Shop by occasion": two tiles to a row on phones, a small WebP picture (or a plain linen panel
-// when there is none) and the label. Nothing is rendered when the admin has no tile switched on,
-// so an empty section leaves no heading behind.
+// The picture from the admin, taken away again if the file cannot be loaded, so a tile is never a broken box: it is the
+// quiet linen tile with its label.
+function TilePicture({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) return null;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
+
+// "Shop by occasion": tiles 4:5, two to a row on phones, each a small WebP picture (or a plain linen panel when there is
+// none), the gift frame (a thin gold line inset 4%) and the label in Fraunces. Nothing is rendered when the admin has no
+// tile switched on, so an empty section leaves no heading behind.
 export default function OccasionsSection({
   title,
   subtitle,
@@ -29,20 +53,12 @@ export default function OccasionsSection({
         {tiles.map((tile) => {
           const content = (
             <>
-              {tile.image && (
-                // eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized.
-                <img
-                  src={tile.image}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              )}
+              {tile.image && <TilePicture src={tile.image} />}
+              <GiftFrame tone="gold" />
               <span
                 className={
                   tile.image
-                    ? "relative rounded-btn bg-ivory/90 px-2 py-1 font-serif text-body text-charcoal"
+                    ? "relative bg-ivory/90 px-3 py-2 font-serif text-body text-charcoal"
                     : "relative font-serif text-body text-charcoal"
                 }
               >

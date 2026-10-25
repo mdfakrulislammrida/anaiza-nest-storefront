@@ -9,7 +9,7 @@ export default function ProductSpecs({ specifications }: { specifications: Produ
   return (
     <section className="mt-16 max-w-3xl">
       <h2 className="mb-4 font-serif text-charcoal text-h2">Specifications</h2>
-      <div className="overflow-x-auto rounded-lg border border-linen">
+      <div className="overflow-x-auto rounded-btn border border-linen">
         <table className="w-full min-w-[20rem] border-collapse text-left text-body">
           <thead className="bg-linen text-charcoal">
             <tr>

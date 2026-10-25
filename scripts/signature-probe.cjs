@@ -13,6 +13,9 @@
   // The one shadow the kit allows: product photography (the shadow-warm utility in globals.css).
   var PRODUCT_SHADOW = "rgba(42, 38, 34, 0.35) 0px 12px 28px -14px";
   var BURGUNDY = "rgb(102, 30, 41)";
+  // One radius for the whole shop: 2px. Photographs have none. Only the seal (and the pour line's drop, a pseudo-element)
+  // is round.
+  var MAX_RADIUS = 2;
   // The fixed order bar and the cookie banner together may take this much of a phone's height, but never less than
   // MIN_STACK_ALLOWED px: the bars are as tall as they are (a 166 px order bar and a 145 px banner) on a 640 px phone
   // as on an 844 px one, so a percentage alone would flag the same bars on a shorter screen.
@@ -20,7 +23,8 @@
   var MIN_STACK_ALLOWED = 320;
   // The product page's sticky Add to cart bar: the price and one button, never taller than this.
   var MAX_PRODUCT_BAR = 64;
-  // Under this width the product's title must be whole in the first screen.
+  // Under this width the product's title must be in the first screen: the whole of it, or its first two lines when it runs
+  // longer (a 30 px title is three lines on a 360 px phone, and the rest of it is a short scroll away).
   var PHONE_WIDTH = 480;
 
   // ---- Browser side: take a snapshot of the page ----------------------------------------------------------------
@@ -72,6 +76,7 @@
       burgundyFills: [],
       burgundyItalic: [],
       shadows: [],
+      radii: [],
       gradients: [],
       fixed: [],
     };
@@ -153,6 +158,7 @@
       snapshot.product = {
         titleTop: Math.round((titleRect.top + window.scrollY) * 10) / 10,
         titleHeight: Math.round(titleRect.height * 10) / 10,
+        titleLine: Math.round(parseFloat(window.getComputedStyle(productTitle).lineHeight) * 10) / 10 || null,
         bar: barFixed ? { h: Math.round(productBar.getBoundingClientRect().height * 10) / 10 } : null,
       };
     }
@@ -183,6 +189,12 @@
       if (style.color === BURGUNDY && style.fontStyle === "italic" && hasText) snapshot.burgundyItalic.push(label(element));
 
       if (shadowShows(style.boxShadow)) snapshot.shadows.push({ label: label(element), value: style.boxShadow });
+
+      // A corner rounder than the shop's 2px (a percentage, as on a circle, counts as round), or any corner on a photograph.
+      var radius = style.borderTopLeftRadius || "0px";
+      var rounded = radius.indexOf("%") >= 0 ? parseFloat(radius) > 0 : parseFloat(radius) > MAX_RADIUS;
+      var photo = element.tagName === "IMG" && parseFloat(radius) > 0;
+      if ((rounded || photo) && !element.closest("[data-seal]") && !element.classList.contains("sr-only")) snapshot.radii.push({ label: label(element), value: radius, photo: photo });
 
       if (style.backgroundImage && style.backgroundImage.indexOf("gradient") >= 0) {
         snapshot.gradients.push({ label: label(element), allowed: element.hasAttribute("data-scrim") });
@@ -263,8 +275,9 @@
     // A product page: the whole title in the first screen on a phone, and the sticky bar no taller than the limit.
     var product = snapshot.product;
     if (product) {
-      if (snapshot.width <= PHONE_WIDTH && product.titleTop + product.titleHeight > snapshot.height) {
-        problems.push("The product title ends at " + Math.round(product.titleTop + product.titleHeight) + " px, below the first screen (" + snapshot.height + " px high).");
+      var titleShown = Math.min(product.titleHeight, 2 * (product.titleLine || product.titleHeight));
+      if (snapshot.width <= PHONE_WIDTH && product.titleTop + titleShown > snapshot.height) {
+        problems.push("The product title ends at " + Math.round(product.titleTop + titleShown) + " px, below the first screen (" + snapshot.height + " px high).");
       }
       if (product.bar && product.bar.h > MAX_PRODUCT_BAR) {
         problems.push("The sticky bar is " + product.bar.h + " px tall; the limit is " + MAX_PRODUCT_BAR + " px.");
@@ -306,6 +319,10 @@
 
     snapshot.shadows.forEach(function (shadow) {
       if (shadow.value !== PRODUCT_SHADOW) problems.push("A shadow outside product photography: " + shadow.label + " (" + shadow.value + ").");
+    });
+
+    (snapshot.radii || []).forEach(function (corner) {
+      problems.push((corner.photo ? "A photograph with rounded corners: " : "A corner rounder than 2px: ") + corner.label + " (" + corner.value + ").");
     });
 
     snapshot.gradients.forEach(function (gradient) {

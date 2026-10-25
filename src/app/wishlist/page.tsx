@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
+import EmptyState from "@/components/EmptyState";
 
 export default function WishlistPage() {
   const { items, removeItem } = useWishlist();
@@ -22,15 +23,12 @@ export default function WishlistPage() {
       <h1 className="font-serif text-charcoal text-h1">Your wishlist</h1>
 
       {items.length === 0 ? (
-        <>
-          <p className="mt-4 text-body text-stone">Tap the heart on anything you would like to keep.</p>
-          <Link
-            href="/shop?search=tea%20sets"
-            className="mt-8 inline-flex items-center justify-center rounded-btn bg-navy px-8 py-4 text-button text-ivory transition-opacity hover:opacity-90"
-          >
-            Shop tea sets
-          </Link>
-        </>
+        <EmptyState
+          title="Nothing saved yet"
+          text="Tap the heart on anything you would like to keep."
+          linkHref="/shop?search=tea%20sets"
+          linkLabel="Shop tea sets"
+        />
       ) : (
         <div className="mt-8 divide-y divide-linen">
           {items.map((item) => (
@@ -55,7 +53,7 @@ function WishlistRow({
     <div className="flex items-center gap-4 py-6">
       {/* Plain <a>: /product/<slug> is a single static shell that needs a
           real navigation, not next/link's client-side routing. */}
-      <a href={`/product/${item.slug}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-linen">
+      <a href={`/product/${item.slug}`} className="relative h-20 w-20 shrink-0 overflow-hidden bg-linen">
         {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" />}
       </a>
       <div className="flex-1">

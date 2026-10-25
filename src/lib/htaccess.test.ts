@@ -89,3 +89,13 @@ describe("the rewrite rules", () => {
     assert.ok(htaccess.indexOf(rule) > htaccess.indexOf("RewriteCond %{REQUEST_FILENAME}.html -f"), "a built page still wins");
   });
 });
+
+describe("the old Special prices address", () => {
+  it("is redirected with a 301 to /special-prices, before any real-file rule can answer it", () => {
+    const rule = htaccess.match(/^RewriteRule \^hot-deals\(\\\.html\)\?\/\?\$ \/special-prices \[R=301,L\]$/m);
+    assert.ok(rule, "the redirect rule is there");
+    const firstFileRule = htaccess.indexOf("RewriteCond %{REQUEST_FILENAME} -f");
+    assert.ok(firstFileRule > 0 && (rule?.index ?? Infinity) < firstFileRule);
+    assert.ok(htaccess.indexOf("RewriteEngine On") < (rule?.index ?? 0));
+  });
+});

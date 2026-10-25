@@ -57,7 +57,7 @@ export default function ProductVideoTile({ video }: { video: ProductVideo }) {
       {/* eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized. */}
       <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
       <span className="absolute inset-0 flex items-center justify-center bg-deepink/20 transition-colors group-hover:bg-deepink/30">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ivory text-navy">
+        <span className="flex h-14 w-14 items-center justify-center rounded-btn bg-ivory text-navy">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-6 w-6">
             <path d="M8 5v14l11-7z" />
           </svg>

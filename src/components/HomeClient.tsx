@@ -11,6 +11,8 @@ import ProductSection from "./ProductSection";
 import CustomHtmlSection from "./CustomHtmlSection";
 import OccasionsSection from "./OccasionsSection";
 import WhyUsSection from "./WhyUsSection";
+import GiftByBudget from "./GiftByBudget";
+import ProofLine from "./ProofLine";
 
 // Seeded directly from the statically-built catalog/section order, so first
 // render already shows real content -- no loading state. On mount we
@@ -58,6 +60,8 @@ export default function HomeClient({
     };
   }, []);
 
+  const hasOccasions = sections.some((section) => section.type === "occasions");
+
   return (
     <>
       {sections.map((section, index) => {
@@ -71,6 +75,9 @@ export default function HomeClient({
               <Fragment key={section.id}>
                 <Hero slider={slider} />
                 <TrustBadges />
+                <ProofLine />
+                {/* With no "Shop by occasion" section on the page, the budget tiles follow the hero instead. */}
+                {!hasOccasions && <GiftByBudget />}
               </Fragment>
             );
           case "hot_deals":
@@ -111,12 +118,10 @@ export default function HomeClient({
             );
           case "occasions":
             return (
-              <OccasionsSection
-                key={section.id}
-                title={section.custom_title}
-                subtitle={section.custom_subtitle}
-                tiles={section.tiles ?? []}
-              />
+              <Fragment key={section.id}>
+                <OccasionsSection title={section.custom_title} subtitle={section.custom_subtitle} tiles={section.tiles ?? []} />
+                <GiftByBudget />
+              </Fragment>
             );
           case "why_us":
             return (

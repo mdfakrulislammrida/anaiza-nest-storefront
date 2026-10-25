@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "./config";
 import { fetchJsonStrict } from "./buildFetch";
+import { withCheckedPrices } from "./pricing";
 import type { FormProof } from "./formGuard";
 import type { RecoveredCart } from "./cartRecovery";
 import type { SessionPayload } from "./recovery";
@@ -139,7 +140,8 @@ export async function getProducts(
   if (params.per_page) query.set("per_page", String(params.per_page));
 
   const qs = query.toString();
-  return apiFetch<ProductListResponse>(`/products${qs ? `?${qs}` : ""}`);
+  const result = await apiFetch<ProductListResponse>(`/products${qs ? `?${qs}` : ""}`);
+  return { ...result, data: result.data.map(withCheckedPrices) };
 }
 
 /**
@@ -226,7 +228,7 @@ export async function getProduct(slug: string): Promise<Product> {
   const { data } = await apiFetch<{ data: Product }>(
     `/products/${encodeURIComponent(slug)}`,
   );
-  return data;
+  return withCheckedPrices(data);
 }
 
 export async function getProductReviews(slug: string, page = 1): Promise<ReviewsPage> {

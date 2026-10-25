@@ -42,8 +42,21 @@
   --font-sans: "Taka", var(--font-inter), var(--font-bn-sans), Arial, sans-serif;
   --font-serif-italic: "Taka", var(--font-fraunces-italic), var(--font-fraunces), var(--font-bn-serif), Georgia, serif;
 
-  /* Buttons, inputs and chips: 2px. */
+  /* One radius for the whole shop: 2px on buttons, inputs, chips, cards, panels and the drawer; photographs have none.
+     Tailwind's named steps (sm to 3xl) are all set to it, so a stray larger step still comes out as 2px.
+     The only circles left are the seal, the pour line's drop and a bullet in prose, which the kit draws round. */
   --radius-btn: 2px;
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
+
+  /* Motion: a change of colour or opacity takes 200 ms, ease-out. Nothing bounces, loops or slides. */
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: ease-out;
 }
 
 /* Kit type scale. Display, H1 and H2 step down on phones so a long product name still fits. */
@@ -97,6 +110,54 @@
 @utility text-caption {
   font-size: 0.8125rem; /* 13/19 */
   line-height: 1.1875rem;
+}
+
+/* The footer's tagline: Fraunces italic 300, champagne on the dark footer. */
+@utility text-tagline {
+  font-family: var(--font-serif-italic);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 1.125rem; /* 18/28 */
+  line-height: 1.75rem;
+}
+
+/* The product card: the name in Fraunces 16/22, the price in Inter 600 15px, the tag in Inter 500 12px. */
+@utility text-card-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.375rem;
+  font-weight: 400;
+}
+
+@utility text-card-price {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem; /* 15/22 */
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+
+@utility text-card-tag {
+  font-family: var(--font-sans);
+  font-size: 0.75rem; /* 12/16 */
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+/* The product page: the price in Fraunces 500 32px, the title 30px on a phone and 40px from 768px. */
+@utility text-price-page {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  line-height: 2.5rem;
+  font-weight: 500;
+}
+
+@utility text-product-title {
+  font-size: 1.875rem; /* 30/36 on phones */
+  line-height: 2.25rem;
+  @media (min-width: 48rem) {
+    font-size: 2.5rem; /* 40/46 */
+    line-height: 2.875rem;
+  }
 }
 
 body {

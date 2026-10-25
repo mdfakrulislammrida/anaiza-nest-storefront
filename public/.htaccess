@@ -4,6 +4,11 @@ Options -Indexes
 
 RewriteEngine On
 
+# 0. Special prices moved from /hot-deals to /special-prices: a permanent redirect, any query string kept. It comes first,
+#    before a real-file match could serve hot-deals.html (a small page that sends the visitor on in the browser, for a
+#    host that does not read this file).
+RewriteRule ^hot-deals(\.html)?/?$ /special-prices [R=301,L]
+
 # 1. Requests that map directly to a real file (assets, or an explicit
 #    .html/.txt hit) pass through untouched.
 RewriteCond %{REQUEST_FILENAME} -f

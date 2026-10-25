@@ -471,6 +471,9 @@ export interface SiteSetting {
   // The line under the logo; null when the admin cleared it.
   tagline?: string | null;
   low_stock_threshold?: number;
+  // One line of proof under the home page's trust strip, typed by the owner (for example about the group's years in trade).
+  // Absent or empty: nothing is shown. Needs a Site settings field in the API; an API without it simply sends none.
+  home_proof_line?: string | null;
   // The intro on /corporate-gifting; null means the built-in sentence.
   corporate_intro?: string | null;
   // False when the admin has switched cash on delivery off in Payment Settings.
