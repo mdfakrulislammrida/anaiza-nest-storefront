@@ -30,7 +30,7 @@ What it checks, per page:
 | h1 | exactly one |
 | Pour line (`.pour-line`, `.an-pour`) | at most one, hidden from screen readers. The footer draws it on a page that has none of its own; where the page has one (the home hero, an article, a category's about text) the footer keeps a plain hairline |
 | Gift frame | inset 4% of the short side (within 1.5 px), hidden from screen readers |
-| Seal | at most one (the product page's photograph, or an empty state) |
+| Seal | at most one, and never on a product photograph (the empty states carry it; the product page has none) |
 | Burgundy | once: fills plus italic lines together |
 | Shadow | only the product-photo shadow (`shadow-warm`), which is now only on a landing page's product photograph: none on a product card or the product gallery |
 | Radius | 2px on everything; a photograph has none. The seal is the one round thing. Tailwind's named radius steps are all set to 2px in `globals.css` |

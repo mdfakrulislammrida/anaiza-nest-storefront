@@ -66,7 +66,7 @@ function Icon({ children, size }: { children: ReactNode; size: string }) {
 
 // `compact` is the one-row version for a product page and the cart: the kit's three messages as an icon and a
 // title each, no subtitles and no delivery line (the page says that already). `omit` leaves out a message the page
-// already carries, such as the product page's "Gift-ready" seal.
+// already says. The product page leaves "Gift-ready" out: no seal or badge of it goes near a product photograph.
 export default function TrustBadges({ compact = false, omit = [] }: { compact?: boolean; omit?: string[] }) {
   const { siteSettings } = useSiteSettings();
   const policy = resolvePolicy(siteSettings);

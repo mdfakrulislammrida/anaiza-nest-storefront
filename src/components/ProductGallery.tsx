@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import ResponsiveImage from "@/components/ResponsiveImage";
 import ProductVideoTile, { hasPlayableVideo, videoPosterOf } from "@/components/ProductVideoTile";
 import type { ProductImage, ProductVideo } from "@/lib/types";
@@ -15,7 +15,6 @@ export default function ProductGallery({
   video = null,
   productName,
   selectedImageId = null,
-  corner = null,
 }: {
   images: ProductImage[];
   video?: ProductVideo | null;
@@ -23,8 +22,6 @@ export default function ProductGallery({
   // Set when the chosen variant has its own image -- jumps the gallery to it, same as if the visitor had clicked
   // that thumbnail themselves.
   selectedImageId?: number | null;
-  // Something that sits on the corner of the main photo (the page's one seal).
-  corner?: ReactNode;
 }) {
   const slides: Slide[] = images.map((image) => ({ kind: "image", image }));
   if (video && hasPlayableVideo(video)) slides.push({ kind: "video", video });
@@ -90,8 +87,6 @@ export default function ProductGallery({
             <span className="font-serif text-h2 text-charcoal/70">Anaiza Nest</span>
           </div>
         )}
-
-        {corner && <div className="absolute left-3 top-3 z-10">{corner}</div>}
 
         {/* Dots on a phone, over the foot of the photo so they take no room of their own. */}
         {count > 1 && (

@@ -131,11 +131,10 @@ export default function CheckoutForm({
   const [division, setDivision] = useState<BdDivision | "">("");
   const [district, setDistrict] = useState("");
   const [thana, setThana] = useState("");
-  // What is shown on a phone: the folded summary, the coupon field, the optional email and note.
+  // What is shown on a phone: the folded summary, the coupon field and the optional note.
   const phone = useMediaQuery("(max-width: 639px)");
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [couponOpen, setCouponOpen] = useState(false);
-  const [emailOpen, setEmailOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [phoneNote, setPhoneNote] = useState<string | null>(null);
   // add_shipping_info and add_payment_info: once for a choice, and for the default payment method at the order if never chosen.
@@ -700,8 +699,9 @@ export default function CheckoutForm({
           </div>
         </div>
 
-        {/* The email is optional, so it stays folded away until it is wanted (it is still in the form, empty, for a saved reminder to fill). */}
-        <div className={emailOpen ? "" : "hidden"}>
+        {/* The email is optional but always open, right under the name and the phone number: empty is fine, and one that is
+            typed has to be a real address (the browser checks it, and the order is checked again on the server). */}
+        <div>
           <label htmlFor={`${uid}-email`} className={labelClass}>
             Email (optional)
           </label>
@@ -711,6 +711,7 @@ export default function CheckoutForm({
             type="email"
             inputMode="email"
             autoComplete="email"
+            placeholder="name@example.com"
             aria-invalid={fieldErrors.customer_email ? true : undefined}
             className={inputClass}
           />
@@ -721,11 +722,6 @@ export default function CheckoutForm({
             </p>
           )}
         </div>
-        {!emailOpen && (
-          <button type="button" onClick={() => setEmailOpen(true)} className="flex min-h-11 items-center text-body text-navy underline">
-            Add an email (optional)
-          </button>
-        )}
 
         <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body text-charcoal">
           <input type="checkbox" name="whatsapp_optin" onChange={handleContactBlur} className="h-5 w-5 accent-navy" />

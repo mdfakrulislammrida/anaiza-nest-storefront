@@ -10,7 +10,6 @@ import ProductCard from "@/components/ProductCard";
 import Accordion from "@/components/Accordion";
 import ClampedText from "@/components/ClampedText";
 import ProductSpecs from "@/components/ProductSpecs";
-import Seal from "@/components/Seal";
 import TrustBadges from "@/components/TrustBadges";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { formatDays, resolvePolicy } from "@/lib/policy";
@@ -93,8 +92,6 @@ export default function ProductDetail({
             video={product.video}
             productName={product.name}
             selectedImageId={selectedVariant?.image?.id ?? null}
-            // The layout's one seal sits on the corner of the main photo.
-            corner={<Seal message="Gift-ready" />}
           />
         </div>
 

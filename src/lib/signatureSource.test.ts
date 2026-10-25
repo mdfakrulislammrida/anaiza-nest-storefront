@@ -51,9 +51,19 @@ describe("signature visuals in the source", () => {
     assert.deepEqual(filesWith(/linear-gradient\(/), ["app/prose.css"]);
   });
 
-  it("draws the pour line in two places (the home hero, and the footer where the page has no other) and the seal in two (the product photograph, and an empty state)", () => {
+  it("draws the pour line in two places (the home hero, and the footer where the page has no other) and the seal in one (an empty state: never on a product photograph)", () => {
     assert.deepEqual(filesWith(/<PourLine\b/), ["components/Footer.tsx", "components/Hero.tsx"]);
-    assert.deepEqual(filesWith(/<Seal\b/), ["components/EmptyState.tsx", "components/ProductDetail.tsx"]);
+    assert.deepEqual(filesWith(/<Seal\b/), ["components/EmptyState.tsx"]);
+  });
+
+  it("puts no Gift-ready seal, badge or tag on or beside a product photograph (cards, gallery, cart, wishlist)", () => {
+    const photoFiles = ["components/ProductCard.tsx", "components/ProductGallery.tsx", "components/CartDrawer.tsx", "components/CartLineItem.tsx", "app/wishlist/page.tsx"];
+    assert.deepEqual(filesWith(/Gift-ready/i).filter((name) => photoFiles.includes(name)), []);
+    // The product page may only name it to leave it out of the trust row.
+    const detail = files.find((file) => file.name === "components/ProductDetail.tsx")?.text ?? "";
+    const mentions = detail.match(/.*Gift-ready.*/gi) ?? [];
+    assert.equal(mentions.length, 1);
+    assert.match(mentions[0], /omit=/);
   });
 
   it("writes one radius, 2px: no pill, circle or arbitrary radius (the seal is the one round thing)", () => {
