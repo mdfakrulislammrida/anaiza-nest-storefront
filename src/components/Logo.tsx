@@ -9,9 +9,12 @@ import { useSiteSettings } from "@/context/SiteSettingsContext";
 export default function Logo({
   variant = "navy",
   className = "",
+  lazy = false,
 }: {
   variant?: "navy" | "ivory";
   className?: string;
+  // A logo below the first screen (the footer's) is fetched when it comes near, so it does not queue with the pictures that are on show.
+  lazy?: boolean;
 }) {
   const { siteSettings } = useSiteSettings();
   const siteName = siteSettings?.site_name ?? "Anaiza Nest";
@@ -23,7 +26,7 @@ export default function Logo({
   if (src) {
     // Screen minimum 120px wide; height-bound otherwise so the master is never stretched.
     // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL
-    return <img src={src} alt={siteName} className={`block h-7 w-auto min-w-[120px] max-w-full object-contain object-left ${className}`} />;
+    return <img src={src} alt={siteName} loading={lazy ? "lazy" : undefined} decoding="async" className={`block h-7 w-auto min-w-[120px] max-w-full object-contain object-left ${className}`} />;
   }
 
   return (

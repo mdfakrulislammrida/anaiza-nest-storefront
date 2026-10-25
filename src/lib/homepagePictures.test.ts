@@ -169,7 +169,8 @@ describe("the hero and tile markup", () => {
     const [heroImage, tileImage] = hero.match(/<img[\s\S]*?\/>/g) ?? ["", ""];
 
     assert.ok(heroImage.includes("loading={loading}") && heroImage.includes("fetchPriority={fetchPriority}"));
-    assert.ok(tileImage.includes('loading="lazy"') && !tileImage.includes("fetchPriority"));
+    // The tiles are lazy and low priority, so on a phone they do not take the connection from the hero picture beside which they load.
+    assert.ok(tileImage.includes('loading="lazy"') && tileImage.includes('fetchPriority="low"'));
     assert.equal((hero.match(/loading="eager"/g) ?? []).length, 0, "eagerness comes from heroLoading, in one place");
   });
 

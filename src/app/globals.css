@@ -178,66 +178,80 @@ h4 {
 
 /* Graphic devices ----------------------------------------------------------------------- */
 
-/* Pour line: one 1px line that draws itself once when it scrolls into view. The component
-   sets data-drawn when the IntersectionObserver fires; reduced motion shows it already drawn. */
+/* Pour line: one 1px line that draws itself once when it scrolls into view. The component sets data-drawn when the
+   IntersectionObserver fires; reduced motion shows it already drawn.
+   It is drawn by sliding (transform), never by growing (height): a growing height is repainted on the main thread on every
+   frame, a transform runs on the compositor. The element is a 7px-wide window the height of the line and its drop, clipping
+   what is above it; the line and the drop (::before and ::after) start above the window and slide down into it together. */
 .pour-line {
   position: absolute;
   top: 0;
-  width: 1px;
-  height: 0;
-  background: var(--champagne);
+  width: 7px;
+  height: calc(var(--pour-length, 8rem) + 5px);
+  margin-right: -3px; /* the line is 3px in from the window's edge, so it sits where the 1px element used to */
+  overflow: hidden;
 }
+.pour-line::before,
 .pour-line::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -5px;
+  background: var(--champagne);
+  transform: translateY(calc(-1 * (var(--pour-length, 8rem) + 5px)));
+}
+.pour-line::before {
+  left: 3px;
+  top: 0;
+  width: 1px;
+  height: var(--pour-length, 8rem);
+}
+.pour-line::after {
+  left: 0;
+  top: calc(var(--pour-length, 8rem) - 2px);
   width: 7px;
   height: 7px;
-  margin-left: -3.5px;
   border-radius: 9999px;
-  background: var(--champagne);
-  opacity: 0;
 }
-.pour-line[data-drawn="true"] {
-  height: var(--pour-length, 8rem);
-  transition: height 1.8s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
+.pour-line[data-drawn="true"]::before,
 .pour-line[data-drawn="true"]::after {
-  opacity: 1;
-  transition: opacity 0.4s ease-out 1.6s;
+  transform: translateY(0);
+  transition: transform 1.8s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 /* On a photograph the line is gold: champagne disappears on a bright one, and gold holds on a dark one as well. */
-.pour-line-gold,
+.pour-line-gold::before,
 .pour-line-gold::after {
   background: var(--gold);
 }
+/* The horizontal divider is the element itself, drawn by scaling it from the left (also a transform). */
 .pour-line-h {
   position: static;
   width: 100%;
   height: 1px;
+  margin: 0;
+  overflow: visible;
+  background: var(--champagne);
   transform-origin: left center;
   transform: scaleX(0);
 }
+.pour-line-h.pour-line-gold {
+  background: var(--gold);
+}
+.pour-line-h::before,
 .pour-line-h::after {
   display: none;
 }
 .pour-line-h[data-drawn="true"] {
-  height: 1px;
   transform: scaleX(1);
   transition: transform 1.8s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 @media (prefers-reduced-motion: reduce) {
-  .pour-line[data-drawn],
+  .pour-line[data-drawn]::before,
   .pour-line[data-drawn]::after,
   .pour-line-h[data-drawn] {
     transition: none !important;
   }
-  .pour-line {
-    height: var(--pour-length, 8rem);
-  }
+  .pour-line::before,
   .pour-line::after {
-    opacity: 1;
+    transform: none;
   }
   .pour-line-h {
     transform: none;
@@ -257,6 +271,14 @@ h4 {
 /* Product photography only: a soft, warm shadow (never on cards). */
 @utility shadow-warm {
   box-shadow: 0 12px 28px -14px rgba(42, 38, 34, 0.35);
+}
+
+/* The WhatsApp bubble: 20px from the bottom, lifted (a transform, so nothing in the layout moves and no layout shift is counted) above
+   whichever is higher of the cookie banner and the fixed order bar, with 12px between. */
+.whatsapp-bubble {
+  bottom: 1.25rem;
+  transform: translateY(calc(-1 * max(0px, max(var(--bar-top, 0px), var(--cookie-top, 0px)) - 0.5rem)));
+  transition: transform 200ms ease-out;
 }
 
 /* The product page's Add to Cart bar is fixed to the bottom of a phone screen. Its parent spaces children with

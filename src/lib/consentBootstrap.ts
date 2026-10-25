@@ -6,6 +6,12 @@
 //   3. loads the Meta and TikTok pixels only when marketing is allowed, and again later if the visitor allows it;
 //   4. exposes window.anaizaConsent so the banner, the footer link, UTM capture and checkout use the same state.
 //
+// With config.defer on (the live site), the tags' own files are fetched late: on the visitor's first touch, tap, key press or scroll, or
+// 4 seconds after the page has loaded, whichever comes first. What the tags need to hear in the meantime (Consent Mode, the data
+// layer, the pixels' queues of events) is set up at once, so nothing is lost, only the 300 KB of other people's JavaScript no longer
+// competes with the shop's own page for a phone's processor while it is first drawn. The checkout and the confirmation load them
+// at once, because a sale must be counted even if the visitor leaves in a second.
+//
 // In notice mode nothing waits: with no choice yet everything is allowed, and a choice the visitor makes is
 // still honoured. In opt-in mode analytics and marketing are denied until the visitor chooses.
 // The choice is a first-party cookie, "a1m0" style (analytics, marketing), kept for 12 months.
@@ -24,6 +30,8 @@ export interface ConsentConfig {
   ga4: string | null;
   meta: string | null;
   tiktok: string | null;
+  // Fetch the tags' files late (see above). Off by default, so the script behaves as it always did when nothing asks for this.
+  defer?: boolean;
 }
 
 export function consentBootstrapSource(config: ConsentConfig): string {
@@ -49,7 +57,20 @@ var def=signal(eff());
 if(!choice&&optIn)def.wait_for_update=500;
 gtag("consent","default",def);
 }
-function inject(src){var s=d.createElement("script");s.async=true;s.src=src;var f=d.getElementsByTagName("script")[0];f.parentNode.insertBefore(s,f);}
+var idle=!cfg.defer,pending=[];
+function flush(){idle=true;var p=pending;pending=[];for(var i=0;i<p.length;i++){try{p[i]();}catch(e){}}}
+function later(fn){if(idle){fn();return;}pending.push(fn);}
+if(!idle){
+var path=(w.location&&w.location.pathname)||"";
+if(path.indexOf("/checkout")===0||path.indexOf("/order-confirmation")===0){idle=true;}
+else if(w.addEventListener){
+var touch=["pointerdown","keydown","scroll","touchstart"],wake=function(){for(var i=0;i<touch.length;i++)w.removeEventListener(touch[i],wake);flush();};
+for(var i=0;i<touch.length;i++)w.addEventListener(touch[i],wake,{passive:true});
+var timer=function(){setTimeout(function(){wake();},4000);};
+if(d.readyState==="complete")timer();else w.addEventListener("load",timer);
+}else{idle=true;}
+}
+function inject(src){later(function(){var s=d.createElement("script");s.async=true;s.src=src;var f=d.getElementsByTagName("script")[0];f.parentNode.insertBefore(s,f);});}
 function gtm(){
 if(!cfg.gtm||L.gtm)return;L.gtm=1;
 w.dataLayer.push({"gtm.start":new Date().getTime(),event:"gtm.js"});
@@ -60,14 +81,34 @@ if(cfg.gtm||!cfg.ga4||L.ga4)return;L.ga4=1;
 inject("https://www.googletagmanager.com/gtag/js?id="+encodeURIComponent(cfg.ga4));
 gtag("js",new Date());gtag("config",cfg.ga4);
 }
+function metaFile(){
+if(L.metaJs)return;L.metaJs=1;
+later(function(){
+if(!eff().m){L.metaJs=0;return;}
+var t=d.createElement("script");t.async=true;t.src="https://connect.facebook.net/en_US/fbevents.js";var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s);
+});
+}
 function meta(){
-if(!cfg.meta||L.meta)return;L.meta=1;
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(w,d,"script","https://connect.facebook.net/en_US/fbevents.js");
+if(!cfg.meta)return;
+if(!L.meta){L.meta=1;
+!function(f){var n;if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];}(w);
 w.fbq("init",cfg.meta);w.fbq("track","PageView");
 }
+metaFile();
+}
+function ttFile(){
+if(L.ttJs)return;L.ttJs=1;
+later(function(){
+if(!eff().m){L.ttJs=0;return;}
+if(w.ttq&&w.ttq._ins)w.ttq._ins();
+});
+}
 function tiktok(){
-if(!cfg.tiktok||L.tt)return;L.tt=1;
-!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=d.createElement("script");n.type="text/javascript",n.async=!0,n.src=i+"?sdkid="+e+"&lib="+t;e=d.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};ttq.load(cfg.tiktok);ttq.page();}(w,d,"ttq");
+if(!cfg.tiktok)return;
+if(L.tt){ttFile();return;}
+L.tt=1;
+!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};ttq._ins=function(){n=d.createElement("script");n.type="text/javascript",n.async=!0,n.src=i+"?sdkid="+e+"&lib="+t;e=d.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)}};ttq.load(cfg.tiktok);ttq.page();}(w,d,"ttq");
+ttFile();
 }
 function marketing(){meta();tiktok();}
 w.anaizaConsent={

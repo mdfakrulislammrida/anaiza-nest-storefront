@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Modal from "./Modal";
 import { getPopupSettings, subscribeToNewsletter } from "@/lib/api";
+import { afterLoad } from "@/lib/afterLoad";
 import { calmMessage } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
@@ -263,11 +264,14 @@ export default function PopupManager() {
   const consentPending = useSyncExternalStore(subscribeToConsent, consentIsPending, () => false);
 
   useEffect(() => {
-    getPopupSettings()
-      .then(setSettings)
-      .catch(() => {
-        // No popups is a perfectly fine outcome if the settings fetch fails.
-      });
+    // No popup opens in the first 30 seconds, so there is no hurry: the settings are asked for once the page has loaded.
+    return afterLoad(() => {
+      getPopupSettings()
+        .then(setSettings)
+        .catch(() => {
+          // No popups is a perfectly fine outcome if the settings fetch fails.
+        });
+    });
   }, []);
 
   if (!settings) return null;

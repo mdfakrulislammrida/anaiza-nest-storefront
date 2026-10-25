@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { getBannerSlider, getHomeCatalog, getHomepageSections, type HomeCatalog } from "@/lib/api";
+import { afterLoad } from "@/lib/afterLoad";
 import type { BannerSlider, HomepageSection } from "@/lib/types";
 import Hero from "./Hero";
 import TrustBadges from "./TrustBadges";
@@ -36,27 +37,32 @@ export default function HomeClient({
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([getHomeCatalog(), getHomepageSections()])
-      .then(([freshCatalog, freshSections]) => {
-        if (cancelled) return;
-        setCatalog(freshCatalog);
-        if (freshSections.length > 0) setSections(freshSections);
-      })
-      .catch(() => {
-        // Static content already rendered is still correct enough to show.
-      });
+    // These are checks that the build's copy is still current. They wait until the page has loaded, so the pictures and scripts the
+    // visitor is waiting for have the connection to themselves (the featured products alone are 60 KB).
+    const cancelLater = afterLoad(() => {
+      Promise.all([getHomeCatalog(), getHomepageSections()])
+        .then(([freshCatalog, freshSections]) => {
+          if (cancelled) return;
+          setCatalog(freshCatalog);
+          if (freshSections.length > 0) setSections(freshSections);
+        })
+        .catch(() => {
+          // Static content already rendered is still correct enough to show.
+        });
 
-    // The slider is refreshed on its own so a slide that ended, or a new one, shows without waiting for a rebuild.
-    getBannerSlider()
-      .then((fresh) => {
-        if (!cancelled) setSlider(fresh);
-      })
-      .catch(() => {
-        // The slides already rendered stay.
-      });
+      // The slider is refreshed on its own so a slide that ended, or a new one, shows without waiting for a rebuild.
+      getBannerSlider()
+        .then((fresh) => {
+          if (!cancelled) setSlider(fresh);
+        })
+        .catch(() => {
+          // The slides already rendered stay.
+        });
+    });
 
     return () => {
       cancelled = true;
+      cancelLater();
     };
   }, []);
 

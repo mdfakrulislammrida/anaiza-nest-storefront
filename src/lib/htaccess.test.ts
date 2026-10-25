@@ -99,3 +99,63 @@ describe("the old Special prices address", () => {
     assert.ok(htaccess.indexOf("RewriteEngine On") < (rule?.index ?? 0));
   });
 });
+
+describe("the navigation files Next asks for ahead of a tap", () => {
+  // The rules are read out of the file itself and run here as JavaScript patterns (the syntax is the same for these).
+  const rules = [...htaccess.matchAll(/^RewriteCond %\{DOCUMENT_ROOT\}\/(\S+) -f\nRewriteRule (\S+) (\S+) \[L\]$/gm)].map((match) => ({ target: match[1], pattern: new RegExp(match[2]), to: match[3] })).filter((rule) => rule.target.includes("__next"));
+
+  // The files the build writes (names as on disk).
+  const onDisk = new Set([
+    "gift-finder/__next.gift-finder/__PAGE__.txt",
+    "shop/__next.shop/__PAGE__.txt",
+    "auth/callback/__next.auth/callback/__PAGE__.txt",
+    "blog/how-to-choose/__next.blog/$d$slug/__PAGE__.txt",
+    "__next.__PAGE__.txt",
+    "gift-finder/__next._full.txt",
+  ]);
+
+  const rewritten = (path: string): string | null => {
+    for (const rule of rules) {
+      const found = path.match(rule.pattern);
+      if (!found) continue;
+      const fill = (text: string) => text.replace(/\$(\d)/g, (_all, n: string) => found[Number(n)] ?? "");
+      if (onDisk.has(fill(rule.target))) return fill(rule.to);
+    }
+
+    return null;
+  };
+
+  it("has a rule for each depth of file name", () => {
+    assert.equal(rules.length, 3);
+  });
+
+  it("points the dotted request at the nested file the build wrote", () => {
+    assert.equal(rewritten("gift-finder/__next.gift-finder.__PAGE__.txt"), "gift-finder/__next.gift-finder/__PAGE__.txt");
+    assert.equal(rewritten("shop/__next.shop.__PAGE__.txt"), "shop/__next.shop/__PAGE__.txt");
+    assert.equal(rewritten("auth/callback/__next.auth.callback.__PAGE__.txt"), "auth/callback/__next.auth/callback/__PAGE__.txt");
+    assert.equal(rewritten("blog/how-to-choose/__next.blog.$d$slug.__PAGE__.txt"), "blog/how-to-choose/__next.blog/$d$slug/__PAGE__.txt");
+  });
+
+  it("leaves a file that is already there, and a file that does not exist, alone", () => {
+    assert.equal(rewritten("__next.__PAGE__.txt"), null);
+    assert.equal(rewritten("gift-finder/__next._full.txt"), null);
+    assert.equal(rewritten("nowhere/__next.nowhere.__PAGE__.txt"), null, "no such file: it stays a 404");
+  });
+
+  it("comes before the rule that passes real files through", () => {
+    assert.ok(htaccess.indexOf("__next\.") < htaccess.indexOf("RewriteCond %{REQUEST_FILENAME} -f"));
+  });
+});
+
+describe("the cache lifetimes", () => {
+  it("keeps hashed build files for a year as immutable, images for a year, and always revalidates the pages", () => {
+    assert.match(htaccess, /m#\^\/_next\/static\/#">\s*Header set Cache-Control "public, max-age=31536000, immutable"/);
+    assert.match(htaccess, /\\.\(woff2\?\|ttf\|otf\|eot\|png\|jpe\?g\|gif\|webp\|avif\|svg\)\$">\s*Header set Cache-Control "public, max-age=31536000, immutable"/);
+    assert.match(htaccess, /\\.\(html\|txt\|xml\)\$">\s*Header set Cache-Control "no-cache"/);
+  });
+
+  it("sets no HSTS and no enforced content security policy beyond framing", () => {
+    assert.equal(headerValue("Strict-Transport-Security"), null);
+    assert.equal(headerValue("Content-Security-Policy"), "frame-ancestors 'self'");
+  });
+});

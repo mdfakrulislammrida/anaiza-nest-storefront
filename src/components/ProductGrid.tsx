@@ -12,14 +12,18 @@ export default function ProductGrid({
   dimmed?: boolean;
 }) {
   return (
-    <div
-      className={`grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 transition-opacity ${
-        dimmed ? "opacity-60" : "opacity-100"
-      }`}
-    >
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
-    </div>
+    <>
+      {/* The cards' names are h3s: this keeps the page's headings in order (h1, h2, h3) where the list follows the title directly. */}
+      <h2 className="sr-only">Products</h2>
+      <div
+        className={`grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 transition-opacity ${
+          dimmed ? "opacity-60" : "opacity-100"
+        }`}
+      >
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </>
   );
 }

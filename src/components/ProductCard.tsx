@@ -45,7 +45,7 @@ export default function ProductCard({
       {/* Plain <a>, not next/link: /product/<slug> is served by a single
           static shell (see src/app/product/page.tsx) that only resolves
           correctly on a real browser navigation, not a client-side one. */}
-      <a href={`/product/${product.slug}`} className="block" aria-label={product.name} tabIndex={-1}>
+      <a href={`/product/${product.slug}`} className="block" aria-hidden="true" tabIndex={-1}>
         {/* A photograph: 4:5, no corners, no shadow, whatever ratio was uploaded. */}
         <div className={`relative aspect-[4/5] overflow-hidden ${dark ? "bg-ivory/10" : "bg-linen"}`}>
           {image ? (
@@ -60,14 +60,15 @@ export default function ProductCard({
               <span className={`font-serif text-body ${dark ? "text-ivory/70" : "text-charcoal/70"}`}>Anaiza Nest</span>
             </div>
           )}
-
-          {tag && (
-            <span className={`absolute left-2 top-2 rounded-btn px-2.5 py-1.5 text-card-tag ${TAG_CLASS[tag.kind]}`}>
-              {tag.text}
-            </span>
-          )}
         </div>
       </a>
+
+      {/* The tag is the card's own text, not part of the picture's link (which is only a second way to the same page). */}
+      {tag && (
+        <span className={`pointer-events-none absolute left-2 top-2 rounded-btn px-2.5 py-1.5 text-card-tag ${TAG_CLASS[tag.kind]}`}>
+          {tag.text}
+        </span>
+      )}
 
       <button
         type="button"

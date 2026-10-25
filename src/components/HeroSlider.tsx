@@ -235,7 +235,7 @@ export default function HeroSlider({ slides, settings }: { slides: Banner[]; set
             }}
             className="flex h-8 w-8 items-center justify-center"
           >
-            <span className={`block h-2 rounded-btn transition-all ${index === active ? "w-6 bg-navy" : "w-2 bg-navy/30"}`} />
+            <span className={`block h-2 rounded-btn transition-colors ${index === active ? "w-6 bg-navy" : "w-2 bg-navy/30"}`} />
           </button>
         ))}
       </div>

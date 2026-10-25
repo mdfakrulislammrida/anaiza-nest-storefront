@@ -10,6 +10,7 @@ import Logo from "./Logo";
 import MainNav, { PhoneMenu, type MenuItem } from "./MainNav";
 import { resolveTagline } from "@/lib/brand";
 import { getCategories } from "@/lib/api";
+import { afterLoad } from "@/lib/afterLoad";
 import type { CategorySummary, NavLink } from "@/lib/types";
 
 const FALLBACK_NAV_LINKS: NavLink[] = [
@@ -41,16 +42,20 @@ export default function Header({ categories: initialCategories = [] }: { categor
   useEffect(() => {
     let cancelled = false;
 
-    getCategories()
-      .then((fresh) => {
-        if (!cancelled) setCategories(fresh);
-      })
-      .catch(() => {
-        // Keep the build-time list.
-      });
+    // A check that the build's list is still current: it waits until the page has loaded.
+    const cancelLater = afterLoad(() => {
+      getCategories()
+        .then((fresh) => {
+          if (!cancelled) setCategories(fresh);
+        })
+        .catch(() => {
+          // Keep the build-time list.
+        });
+    });
 
     return () => {
       cancelled = true;
+      cancelLater();
     };
   }, []);
 
@@ -93,7 +98,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
               type="button"
               onClick={() => window.dispatchEvent(new Event("anaiza:menu"))}
               aria-label="Menu"
-              aria-controls="mobile-menu"
+              aria-haspopup="true"
               className={`-ml-3 ${ICON_BUTTON_CLASS}`}
             >
               <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5">
@@ -104,7 +109,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
 
           {/* Clear space around the logo is the header's own padding on top, bottom and left, plus
               the right margin here; the tagline sits under it on desktop only. */}
-          <Link href="/" className="flex min-w-0 flex-col items-center justify-center md:mr-4 md:shrink-0 md:items-start" aria-label={`${siteName} home`}>
+          <Link href="/" prefetch={false} className="flex min-w-0 flex-col items-center justify-center md:mr-4 md:shrink-0 md:items-start" aria-label={`${siteName} home`}>
             <Logo variant="navy" className="max-md:object-center" />
             {tagline && <span className="mt-1 hidden text-caption text-stone md:block">{tagline}</span>}
           </Link>
@@ -131,7 +136,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
               )}
             </button>
             {/* On a phone the account and the wishlist are in the menu: the row holds the menu, the wordmark, search and the bag. */}
-            <Link href="/account" aria-label="Account" className={`${ICON_BUTTON_CLASS} hidden md:flex`}>
+            <Link href="/account" prefetch={false} aria-label="Account" className={`${ICON_BUTTON_CLASS} hidden md:flex`}>
               <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" />
@@ -139,6 +144,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
             </Link>
             <Link
               href="/wishlist"
+              prefetch={false}
               aria-label={`Wishlist, ${wishlistItems.length} item${wishlistItems.length === 1 ? "" : "s"}`}
               className={`relative ${ICON_BUTTON_CLASS} hidden md:flex`}
             >

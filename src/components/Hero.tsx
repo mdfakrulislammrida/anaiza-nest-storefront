@@ -61,12 +61,14 @@ function HeroPanel({
       <div className="flex flex-wrap gap-4">
         <Link
           href="/shop?search=tea%20sets"
+          prefetch={false}
           className="rounded-btn bg-ivory px-8 py-4 text-button text-navy transition-opacity hover:opacity-90"
         >
           {CTA.shopTeaSets}
         </Link>
         <Link
           href="/gift-finder"
+          prefetch={false}
           className="rounded-btn border border-ivory/50 px-8 py-4 text-button text-ivory transition-colors hover:bg-ivory/10"
         >
           {CTA.findGift}
@@ -183,7 +185,7 @@ function Tile({
 }) {
   if (!picture) {
     return (
-      <Link href={href} className={`relative flex min-h-[13rem] flex-col justify-end ${background} p-6 text-ivory`}>
+      <Link href={href} prefetch={false} className={`relative flex min-h-[13rem] flex-col justify-end ${background} p-6 text-ivory`}>
         <p className="font-serif text-h2">{title}</p>{" "}
         <p className="mt-1 text-body text-ivory/80">{text} →</p>
       </Link>
@@ -191,7 +193,7 @@ function Tile({
   }
 
   return (
-    <Link href={href} className={`relative flex min-h-[13rem] flex-col justify-end overflow-hidden ${background} text-ivory`}>
+    <Link href={href} prefetch={false} className={`relative flex min-h-[13rem] flex-col justify-end overflow-hidden ${background} text-ivory`}>
       {/* eslint-disable-next-line @next/next/no-img-element -- next/image is inert under images.unoptimized. */}
       <img
         src={picture.image.src}
@@ -201,6 +203,7 @@ function Tile({
         height={picture.image.height}
         alt={picture.alt}
         loading="lazy"
+        fetchPriority="low"
         decoding="async"
         className="absolute inset-0 h-full w-full object-cover"
       />

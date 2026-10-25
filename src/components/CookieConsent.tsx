@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getCookieConsentSettings } from "@/lib/api";
+import { afterLoad } from "@/lib/afterLoad";
 import type { CookieConsentSettings } from "@/lib/types";
 
 const DESCRIPTIONS = {
@@ -29,16 +30,25 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
   // built into the page's head script.
   useEffect(() => {
     let cancelled = false;
-    getCookieConsentSettings()
-      .then((fresh) => {
-        if (!cancelled) setSettings(fresh);
-      })
-      .catch(() => {
-        // Keep the wording from the build.
-      });
+    const refresh = () =>
+      getCookieConsentSettings()
+        .then((fresh) => {
+          if (!cancelled) setSettings(fresh);
+        })
+        .catch(() => {
+          // Keep the wording from the build.
+        });
+
+    // With the build's wording this is a check that it is still current, so it waits until the page has loaded; without it the
+    // banner needs it now.
+    const cancelLater = settings ? afterLoad(() => void refresh()) : (void refresh(), () => {});
+
     return () => {
       cancelled = true;
+      cancelLater();
     };
+    // Only the first render's state matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const enabled = Boolean(settings?.enabled);

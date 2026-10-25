@@ -32,9 +32,10 @@ export default function FreeDeliveryProgress({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="mt-2 h-0.5 bg-linen"
+        className="mt-2 h-0.5 overflow-hidden bg-linen"
       >
-        <div className="h-full bg-gold transition-[width] duration-200 ease-out" style={{ width: `${percent}%` }} />
+        {/* Scaled from the left, not resized: a transform runs on the compositor. */}
+        <div className="h-full w-full origin-left bg-gold transition-transform duration-200 ease-out" style={{ transform: `scaleX(${percent / 100})` }} />
       </div>
     </div>
   );

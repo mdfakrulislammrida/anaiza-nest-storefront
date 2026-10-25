@@ -119,7 +119,7 @@ export default function Footer({ cookieBanner = false }: { cookieBanner?: boolea
     <footer className="bg-deepink text-ivory">
       <div className={`mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 ${GRID_COLUMNS[Math.min(5, columns.length + 2)] ?? "lg:grid-cols-3"}`}>
         <div>
-          <Logo variant="ivory" />
+          <Logo variant="ivory" lazy />
           {tagline && <p className="mt-2 text-tagline text-champagne">{tagline}</p>}
           <p className="mt-4 max-w-xs text-body text-ivory/80">{about}</p>
           {socialLinks.length > 0 && (

@@ -188,3 +188,121 @@ describe("consent script, the other tags", () => {
     assert.ok(!source.includes("</script>"));
   });
 });
+
+// The tags' own files are fetched late on the live site: what they must hear is set up at once, the files wait for a touch or for 4 seconds.
+function runDeferred(config: Partial<ConsentConfig>, path = "/", readyState = "loading") {
+  const scripts: string[] = [];
+  const handlers = new Map<string, (() => void)[]>();
+  const timers: { fn: () => void; ms: number }[] = [];
+  const document = {
+    cookie: "",
+    readyState,
+    createElement: () => ({}) as Record<string, unknown>,
+    getElementsByTagName: () => [{ parentNode: { insertBefore: (element: { src?: string }) => scripts.push(String(element.src)) } }],
+  };
+  const sandbox: Record<string, unknown> = {
+    document,
+    location: { protocol: "https:", pathname: path },
+    CustomEvent: class {},
+    dispatchEvent: () => true,
+    addEventListener: (name: string, fn: () => void) => handlers.set(name, [...(handlers.get(name) ?? []), fn]),
+    removeEventListener: (name: string, fn: () => void) => handlers.set(name, (handlers.get(name) ?? []).filter((item) => item !== fn)),
+    setTimeout: (fn: () => void, ms: number) => timers.push({ fn, ms }),
+  };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(consentBootstrapSource({ enabled: true, mode: "notice", ...IDS, defer: true, ...config } as ConsentConfig), sandbox);
+
+  return {
+    scripts,
+    timers,
+    fire: (name: string) => [...(handlers.get(name) ?? [])].forEach((fn) => fn()),
+    listening: () => [...handlers.entries()].filter(([, list]) => list.length > 0).map(([name]) => name).sort(),
+    sandbox,
+    consent: sandbox.anaizaConsent as { set: (analytics: boolean, marketing: boolean) => void },
+  };
+}
+
+describe("consent script, tags fetched late", () => {
+  it("sets up Consent Mode, the data layer and the pixels' queues at once, and fetches no file yet", () => {
+    const page = runDeferred({});
+
+    assert.deepEqual(page.scripts, []);
+    const layer = Array.from(page.sandbox.dataLayer as ArrayLike<unknown>[], (item) => (Array.isArray(item) || typeof (item as ArrayLike<unknown>).length === "number" ? Array.from(item as ArrayLike<unknown>) : item));
+    assert.equal(JSON.parse(JSON.stringify(layer[0]))[0], "consent");
+    assert.equal((layer[1] as { event?: string }).event, "gtm.js");
+    assert.equal(typeof page.sandbox.fbq, "function", "the Meta queue is there, so an event sent now is kept");
+    assert.ok(page.sandbox.ttq, "the TikTok queue is there");
+  });
+
+  it("fetches every file, once each, on the first touch", () => {
+    const page = runDeferred({});
+
+    assert.ok(page.listening().includes("pointerdown") && page.listening().includes("scroll") && page.listening().includes("keydown"));
+    page.fire("pointerdown");
+
+    assert.equal(page.scripts.length, 3);
+    assert.ok(loaded(page.scripts, "googletagmanager.com/gtm.js?id=GTM-TEST"));
+    assert.ok(loaded(page.scripts, "fbevents.js"));
+    assert.ok(loaded(page.scripts, "analytics.tiktok.com"));
+
+    page.fire("scroll");
+    assert.equal(page.scripts.length, 3, "a second touch fetches nothing more");
+    assert.deepEqual(page.listening(), ["load"].filter((name) => page.listening().includes(name)), "the touch listeners are gone");
+  });
+
+  it("fetches them 4 seconds after the page has loaded when nobody touches it", () => {
+    const page = runDeferred({});
+
+    page.fire("load");
+    assert.equal(page.timers.length, 1);
+    assert.equal(page.timers[0].ms, 4000);
+    assert.deepEqual(page.scripts, []);
+
+    page.timers[0].fn();
+    assert.equal(page.scripts.length, 3);
+  });
+
+  it("starts the 4 seconds at once when the page has already loaded", () => {
+    const page = runDeferred({}, "/", "complete");
+
+    assert.equal(page.timers[0].ms, 4000);
+  });
+
+  it("fetches at once in the checkout and on the confirmation, where a sale must be counted", () => {
+    assert.equal(runDeferred({}, "/checkout").scripts.length, 3);
+    assert.equal(runDeferred({}, "/order-confirmation").scripts.length, 3);
+  });
+
+  it("still keeps a rejected pixel away, and loads one that was allowed while waiting only once", () => {
+    const rejected = runDeferred({}, "/", "loading");
+    rejected.consent.set(true, false);
+    rejected.fire("pointerdown");
+    assert.ok(loaded(rejected.scripts, "gtm.js"));
+    assert.ok(!loaded(rejected.scripts, "fbevents.js"), "marketing was not allowed");
+
+    const allowed = runDeferred({}, "/", "loading");
+    allowed.consent.set(true, true);
+    allowed.fire("pointerdown");
+    allowed.fire("keydown");
+    assert.equal(allowed.scripts.filter((src) => src.includes("fbevents.js")).length, 1);
+  });
+
+  it("fetches a pixel that was rejected while waiting if the visitor allows it afterwards", () => {
+    const page = runDeferred({}, "/", "loading");
+
+    page.consent.set(true, false);
+    page.fire("pointerdown");
+    assert.ok(!loaded(page.scripts, "fbevents.js") && !loaded(page.scripts, "analytics.tiktok.com"));
+
+    page.consent.set(true, true);
+    assert.equal(page.scripts.filter((src) => src.includes("fbevents.js")).length, 1);
+    assert.equal(page.scripts.filter((src) => src.includes("analytics.tiktok.com")).length, 1);
+  });
+
+  it("without the setting it behaves as before: everything at once", () => {
+    const page = runDeferred({ defer: false } as Partial<ConsentConfig>);
+
+    assert.equal(page.scripts.length, 3);
+  });
+});

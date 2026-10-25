@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getHomepageSections } from "@/lib/api";
+import { afterLoad } from "@/lib/afterLoad";
 import CountdownTimer from "./CountdownTimer";
 
 // The /special-prices banner's countdown. Seeded with the end time baked in at build, then refreshed
@@ -19,17 +20,20 @@ export default function HotDealsCountdown({
   useEffect(() => {
     let cancelled = false;
 
-    getHomepageSections()
-      .then((sections) => {
-        if (cancelled) return;
-        setEndsAt(sections.find((section) => section.type === "hot_deals")?.deal_ends_at ?? null);
-      })
-      .catch(() => {
-        // Keep the build-time value.
-      });
+    const cancelLater = afterLoad(() => {
+      getHomepageSections()
+        .then((sections) => {
+          if (cancelled) return;
+          setEndsAt(sections.find((section) => section.type === "hot_deals")?.deal_ends_at ?? null);
+        })
+        .catch(() => {
+          // Keep the build-time value.
+        });
+    });
 
     return () => {
       cancelled = true;
+      cancelLater();
     };
   }, []);
 

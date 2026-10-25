@@ -9,6 +9,18 @@ RewriteEngine On
 #    host that does not read this file).
 RewriteRule ^hot-deals(\.html)?/?$ /special-prices [R=301,L]
 
+# 0b. When a visitor's phone has a link in view, Next fetches that page's small navigation file ahead of the tap. It asks for
+#     /gift-finder/__next.gift-finder.__PAGE__.txt, but the build wrote it as /gift-finder/__next.gift-finder/__PAGE__.txt (the dots
+#     of the name are folders on disk). Without these rules every such request was a 404: a red error in the browser console, and a
+#     whole error page downloaded each time. Each rule fires only when the file it points to exists, one rule per depth (the
+#     longest names are a page inside a dynamic route, like /blog/<slug>/__next.blog.$d$slug.__PAGE__.txt).
+RewriteCond %{DOCUMENT_ROOT}/$1__next.$2/$3.txt -f
+RewriteRule ^(.*/)?__next\.([^./]+)\.([^./]+)\.txt$ $1__next.$2/$3.txt [L]
+RewriteCond %{DOCUMENT_ROOT}/$1__next.$2/$3/$4.txt -f
+RewriteRule ^(.*/)?__next\.([^./]+)\.([^./]+)\.([^./]+)\.txt$ $1__next.$2/$3/$4.txt [L]
+RewriteCond %{DOCUMENT_ROOT}/$1__next.$2/$3/$4/$5.txt -f
+RewriteRule ^(.*/)?__next\.([^./]+)\.([^./]+)\.([^./]+)\.([^./]+)\.txt$ $1__next.$2/$3/$4/$5.txt [L]
+
 # 1. Requests that map directly to a real file (assets, or an explicit
 #    .html/.txt hit) pass through untouched.
 RewriteCond %{REQUEST_FILENAME} -f
@@ -105,6 +117,11 @@ ErrorDocument 404 /404.html
   # either, so replacing one of those means giving it a new filename.)
   <FilesMatch "\.(woff2?|ttf|otf|eot|png|jpe?g|gif|webp|avif|svg)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # The favicon keeps its name when it changes, so a day, not a year.
+  <FilesMatch "\.ico$">
+    Header set Cache-Control "public, max-age=86400"
   </FilesMatch>
 
   # HTML, the navigation payloads (.txt), sitemap/robots/llms.txt: always

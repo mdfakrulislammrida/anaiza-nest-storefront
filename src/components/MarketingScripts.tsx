@@ -44,6 +44,8 @@ export function MarketingHeadScripts({
           ga4,
           meta,
           tiktok,
+          // The tags' own files load late (first touch, or 4 s after the page has loaded; at once in the checkout).
+          defer: true,
         }),
       }}
     />
