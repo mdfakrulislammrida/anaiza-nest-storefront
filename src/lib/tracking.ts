@@ -22,6 +22,14 @@ declare global {
 
 const CURRENCY = "BDT";
 
+// When a Google Tag Manager container is set in Marketing Settings, GTM owns every browser tag (GA4, the Meta pixel, the TikTok
+// pixel): this site then only fills the data layer and never calls fbq(), ttq() or gtag() itself, so nothing can be counted twice.
+// Without a GTM container the pixels are loaded and called directly, as before. The page's consent script (consentBootstrap.ts)
+// records which mode the page was built for.
+export function gtmOwnsBrowserTags(): boolean {
+  return typeof window !== "undefined" && Boolean(window.anaizaConsent?.config?.gtm);
+}
+
 function pushDataLayer(event: Record<string, unknown>) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
@@ -36,7 +44,7 @@ function pushDataLayer(event: Record<string, unknown>) {
 // the same action (see SendMetaConversionEvent/SendTikTokConversionEvent on
 // the backend, which must be sent the identical id).
 function fbqTrack(event: string, params?: Record<string, unknown>, eventId?: string) {
-  if (typeof window === "undefined" || typeof window.fbq !== "function") return;
+  if (typeof window === "undefined" || typeof window.fbq !== "function" || gtmOwnsBrowserTags()) return;
   if (eventId) {
     window.fbq("track", event, params, { eventID: eventId });
   } else {
@@ -45,13 +53,25 @@ function fbqTrack(event: string, params?: Record<string, unknown>, eventId?: str
 }
 
 function ttqTrack(event: string, params?: Record<string, unknown>, eventId?: string) {
-  if (typeof window === "undefined" || typeof window.ttq === "undefined") return;
+  if (typeof window === "undefined" || typeof window.ttq === "undefined" || gtmOwnsBrowserTags()) return;
   window.ttq.track(event, params, eventId ? { event_id: eventId } : undefined);
 }
 
-/** Fires fbq PageView / ttq.page() on a client-side route change. The base
- * install snippets only fire these once, on initial script load. */
+/** A client-side route change (the first page of a visit is counted by the tags themselves when they load).
+ * Direct mode: fbq PageView / ttq.page() (the base install snippets only fire these once, on initial script load).
+ * GTM mode: a `page_view` event in the data layer, which the container's Meta and TikTok page-view tags listen for. */
 export function trackPageView() {
+  if (gtmOwnsBrowserTags()) {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: "page_view",
+      page_location: window.location?.href ?? "",
+      page_path: window.location?.pathname ?? "",
+      page_title: typeof document === "undefined" ? "" : document.title,
+    });
+    return;
+  }
+
   fbqTrack("PageView");
   if (typeof window !== "undefined" && typeof window.ttq !== "undefined") {
     window.ttq.page();
@@ -167,6 +187,31 @@ export function trackViewItemList(products: Product[], listName: string) {
       items: products.map((p) => ga4Item(p)),
     },
   });
+}
+
+// The cart page, when it has something in it.
+export function trackViewCart(items: CartItem[], value: number) {
+  if (items.length === 0) return;
+  pushDataLayer({
+    event: "view_cart",
+    ecommerce: {
+      currency: CURRENCY,
+      value,
+      items: items.map((item) => ({
+        item_id: lineItemId(item, item.productId),
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+    },
+  });
+}
+
+// A search on the shop page (the term as typed, trimmed). GA4's own `search` event; the pixels have no equivalent we use.
+export function trackSearch(term: string) {
+  const clean = term.trim();
+  if (clean === "") return;
+  pushDataLayer({ event: "search", search_term: clean });
 }
 
 export function trackAddToCart(product: CartAddableProduct, quantity: number, variant: { sku?: string | null } | null = null) {
@@ -294,7 +339,7 @@ function marketingAllowedNow(): boolean {
 // Meta advanced matching: the same hashed fields as the server's Purchase event, handed to the pixel just before it.
 function fbqAdvancedMatching(userData: MetaUserData) {
   const pixelId = typeof window === "undefined" ? null : (window.anaizaConsent?.config?.meta ?? null);
-  if (!pixelId || typeof window.fbq !== "function") return;
+  if (!pixelId || typeof window.fbq !== "function" || gtmOwnsBrowserTags()) return;
   window.fbq("init", pixelId, userData);
 }
 
@@ -327,6 +372,9 @@ export async function trackPurchase(order: Order): Promise<void> {
 
   pushDataLayer({
     event: "purchase",
+    // The same id the shop's server sends with its Meta / TikTok purchase, so the platforms count the sale once. A GTM Meta or
+    // TikTok purchase tag must send exactly this as its event id.
+    event_id: eventId,
     ecommerce: {
       transaction_id: String(order.id),
       value: order.total,
@@ -334,7 +382,8 @@ export async function trackPurchase(order: Order): Promise<void> {
       shipping: order.delivery_fee,
       items: ga4Items,
     },
-    ...(userData ? { user_data: userData.google } : {}),
+    // Hashed (SHA-256) in the browser, only when the visitor's cookie choice allows marketing: never a raw email, phone or name.
+    ...(userData ? { user_data: userData.google, meta_user_data: userData.meta } : {}),
   });
   if (userData) fbqAdvancedMatching(userData.meta);
   fbqTrack(

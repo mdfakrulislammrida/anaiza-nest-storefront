@@ -9,8 +9,8 @@ export interface ConsentChoice {
 
 export interface AnaizaConsent {
   optIn: boolean;
-  /** The tag IDs the page was built with (the Meta pixel's, here, for advanced matching). */
-  config?: { meta: string | null; enabled?: boolean };
+  /** The tag IDs the page was built with (the Meta pixel's, for advanced matching; the GTM container's, which decides who owns the tags). */
+  config?: { meta: string | null; gtm?: string | null; enabled?: boolean };
   /** The saved choice, or null if the visitor has not chosen yet. */
   get: () => ConsentChoice | null;
   /** What applies right now: the saved choice, or the default for the mode (everything in notice mode, nothing in opt-in). */

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
@@ -9,9 +10,18 @@ import CartRecoveryRestore from "@/components/CartRecoveryRestore";
 import EmptyState from "@/components/EmptyState";
 import TrustBadges from "@/components/TrustBadges";
 import { CTA } from "@/lib/brand";
+import { trackViewCart } from "@/lib/tracking";
 
 export default function CartPage() {
   const { items, subtotal, ready } = useCart();
+
+  // GA4's view_cart: once per visit to this page, when the saved cart has been read and has something in it.
+  const cartViewed = useRef(false);
+  useEffect(() => {
+    if (!ready || cartViewed.current || items.length === 0) return;
+    cartViewed.current = true;
+    trackViewCart(items, subtotal);
+  }, [ready, items, subtotal]);
 
   if (items.length === 0) {
     return (

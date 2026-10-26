@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { beforeEach, describe, it } from "node:test";
-import { feedItemId, trackAddToCart, trackBeginCheckout, trackPurchase, trackViewItem } from "./tracking.ts";
+import { feedItemId, trackAddToCart, trackBeginCheckout, trackPageView, trackPurchase, trackSearch, trackViewCart, trackViewItem } from "./tracking.ts";
 import type { Order } from "./types.ts";
 
 type Call = unknown[];
@@ -229,5 +229,139 @@ describe("ids match the product feeds", () => {
     await trackPurchase(noSku);
 
     assert.equal((layer()[0] as { ecommerce: { items: { item_id: string }[] } }).ecommerce.items[0].item_id, "7");
+  });
+});
+
+// ---- One owner for the browser tags (see consentBootstrap.ts). With a GTM container the site only fills the data layer; without one it
+// ---- keeps calling the pixels itself. Either way the data layer carries the same events.
+
+/** A page built with a GTM container: the pixels, if the container's tags have defined them, must never be called by the site. */
+function setUpGtmPage() {
+  setUpPage();
+  (win.window as Record<string, unknown>).anaizaConsent = { config: { meta: null, gtm: "GTM-TESTCONT" }, effective: () => ({ a: true, m: true }) };
+  (win.window as Record<string, unknown>).location = { href: "https://anaizanest.com/shop", pathname: "/shop" };
+}
+
+const cartLine = { key: "7:base", productId: 7, slug: "mug", name: "Mug", price: 600, image: null, variantId: null, variantLabel: null, sku: "MUG-RED", quantity: 2, stock: 5 };
+
+describe("GTM mode: the site never calls a pixel itself", () => {
+  beforeEach(() => setUpGtmPage());
+
+  it("pushes the purchase to the data layer and calls neither fbq nor ttq, even though a container's tag has defined them", async () => {
+    await trackPurchase(order("cod"));
+
+    assert.deepEqual(layer().map((entry) => entry.event), ["purchase"]);
+    assert.deepEqual(fbqCalls, []);
+    assert.deepEqual(ttqCalls, []);
+  });
+
+  it("calls no pixel for any other event either", () => {
+    trackViewItem({ id: 7, sku: "MUG-RED", name: "Red mug", effective_price: 600, variants: [] } as never);
+    trackAddToCart({ id: 7, sku: "MUG", slug: "mug", name: "Mug", effective_price: 600, stock_quantity: 5 }, 1);
+    trackBeginCheckout([cartLine], 1200);
+    trackPageView();
+
+    assert.deepEqual(layer().map((entry) => entry.event), ["view_item", "add_to_cart", "begin_checkout", "page_view"]);
+    assert.deepEqual(fbqCalls, []);
+    assert.deepEqual(ttqCalls, []);
+  });
+
+  it("pushes a page_view on a route change, for the container's Meta and TikTok page-view tags", () => {
+    trackPageView();
+
+    assert.deepEqual(layer(), [{ event: "page_view", page_location: "https://anaizanest.com/shop", page_path: "/shop", page_title: "" }]);
+  });
+
+  it("does not hand Meta advanced matching from the site (the container's purchase tag does it from the hashed data layer values)", async () => {
+    (win.window as Record<string, unknown>).anaizaConsent = { config: { meta: "111222333", gtm: "GTM-TESTCONT" }, effective: () => ({ a: true, m: true }) };
+
+    await trackPurchase(order("cod"));
+
+    assert.equal(fbqCalls.filter((call) => call[0] === "init").length, 0);
+  });
+
+  it("gives the purchase the id the server sends, the order id, and the hashed buyer details for both platforms", async () => {
+    await trackPurchase(order("cod"));
+
+    const purchase = layer()[0] as { event_id: string; ecommerce: { transaction_id: string; value: number; currency: string; shipping: number }; user_data: unknown; meta_user_data: Record<string, string> };
+    assert.equal(purchase.event_id, "order-42");
+    assert.deepEqual([purchase.ecommerce.transaction_id, purchase.ecommerce.value, purchase.ecommerce.currency, purchase.ecommerce.shipping], ["42", 680, "BDT", 80]);
+    assert.deepEqual(purchase.meta_user_data, {
+      em: sha("nusrat.jahan@gmail.com"),
+      ph: sha("8801712345678"),
+      fn: sha("nusrat"),
+      ln: sha("jahan"),
+      ct: sha("dhaka"),
+      st: sha("dhaka"),
+      country: sha("bd"),
+    });
+    assert.ok(purchase.user_data);
+
+    const pushed = JSON.stringify(layer());
+    for (const raw of ["Nusrat", "Jahan", "nusrat.jahan@gmail.com", "Nusrat.Jahan", "01712345678", "+8801712345678"]) {
+      assert.ok(!pushed.includes(raw), `${raw} is never in the data layer`);
+    }
+  });
+
+  it("keeps a wallet order out of revenue: only the pending event", async () => {
+    await trackPurchase(order("bkash"));
+
+    assert.deepEqual(layer().map((entry) => entry.event), ["order_pending_payment"]);
+    assert.deepEqual(fbqCalls, []);
+  });
+
+  it("pushes no buyer details when the visitor has not allowed marketing", async () => {
+    (win.window as Record<string, unknown>).anaizaConsent = { config: { meta: null, gtm: "GTM-TESTCONT" }, effective: () => ({ a: true, m: false }) };
+
+    await trackPurchase(order("cod"));
+
+    const purchase = layer()[0] as Record<string, unknown>;
+    assert.equal("user_data" in purchase, false);
+    assert.equal("meta_user_data" in purchase, false);
+    assert.equal(purchase.event_id, "order-42", "the event id is not personal data");
+  });
+});
+
+describe("direct mode: the site calls the pixels, with the same id the data layer and the server use", () => {
+  it("sends Meta's eventID and TikTok's event_id as the same order-<id> as the data layer's event_id", async () => {
+    await trackPurchase(order("cod"));
+
+    const purchase = layer()[0] as { event_id: string };
+    assert.equal(purchase.event_id, "order-42");
+    assert.deepEqual(fbqCalls.find((call) => call[1] === "Purchase")?.[3], { eventID: purchase.event_id });
+    assert.deepEqual(ttqCalls.find((call) => call[0] === "CompletePayment")?.[2], { event_id: purchase.event_id });
+  });
+
+  it("a route change calls fbq PageView and ttq.page, and pushes nothing to the data layer", () => {
+    let ttqPages = 0;
+    (win.window as { ttq: { page: () => void } }).ttq.page = () => ttqPages++;
+
+    trackPageView();
+
+    assert.equal(fbqCalls.filter((call) => call[1] === "PageView").length, 1);
+    assert.equal(ttqPages, 1);
+    assert.deepEqual(layer(), []);
+  });
+});
+
+describe("the cart and search events", () => {
+  beforeEach(() => setUpPage());
+
+  it("view_cart lists the lines by SKU with the cart's value, and says nothing for an empty cart", () => {
+    trackViewCart([], 0);
+    assert.deepEqual(layer(), []);
+
+    trackViewCart([cartLine], 1200);
+    assert.deepEqual(layer(), [
+      { event: "view_cart", ecommerce: { currency: "BDT", value: 1200, items: [{ item_id: "MUG-RED", item_name: "Mug", price: 600, quantity: 2 }] } },
+    ]);
+  });
+
+  it("search carries the trimmed term, and nothing is sent for an empty one", () => {
+    trackSearch("   ");
+    assert.deepEqual(layer(), []);
+
+    trackSearch("  tea set ");
+    assert.deepEqual(layer(), [{ event: "search", search_term: "tea set" }]);
   });
 });

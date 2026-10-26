@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api";
-import { trackViewItemList } from "@/lib/tracking";
+import { trackSearch, trackViewItemList } from "@/lib/tracking";
 import ListBreadcrumb from "./ListBreadcrumb";
 import PhoneListBar from "./PhoneListBar";
 import ProductGrid from "./ProductGrid";
@@ -53,6 +53,11 @@ export default function ProductListing({
   const sortParam = searchParams.get("sort");
   const sort = VALID_SORTS.includes(sortParam as ProductSort) ? (sortParam as ProductSort) : undefined;
   const currentPage = Number(searchParams.get("page") ?? "1") || 1;
+
+  // GA4's search: once for each term the shop page is opened with or changed to.
+  useEffect(() => {
+    if (search) trackSearch(search);
+  }, [search]);
 
   const [result, setResult] = useState<ProductListResponse | null>(initialResult ?? null);
   const [loading, setLoading] = useState(!initialResult);

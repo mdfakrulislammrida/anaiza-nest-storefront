@@ -3,7 +3,10 @@
 //   1. sets Google Consent Mode v2 defaults (analytics_storage, ad_storage, ad_user_data, ad_personalization)
 //      from the visitor's saved choice, or from the mode when there is none yet;
 //   2. loads GTM (and GA4 when there is no GTM) straight away -- Consent Mode tells them what they may store;
-//   3. loads the Meta and TikTok pixels only when marketing is allowed, and again later if the visitor allows it;
+//   3. loads the Meta and TikTok pixels only when marketing is allowed, and again later if the visitor allows it. When a GTM
+//      container is set, GTM owns every browser tag: nothing here loads or starts gtag, Meta or TikTok (they are tags inside
+//      the container, which waits for the Consent Mode signals), so no tag can fire twice. A visitor's choice is also pushed as an
+//      "anaiza_consent_changed" event, so tags the container held back can start (see docs/tracking-spec.md);
 //   4. exposes window.anaizaConsent so the banner, the footer link, UTM capture and checkout use the same state.
 //
 // With config.defer on (the live site), the tags' own files are fetched late: on the visitor's first touch, tap, key press or scroll, or
@@ -110,7 +113,7 @@ L.tt=1;
 !function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};ttq._ins=function(){n=d.createElement("script");n.type="text/javascript",n.async=!0,n.src=i+"?sdkid="+e+"&lib="+t;e=d.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)}};ttq.load(cfg.tiktok);ttq.page();}(w,d,"ttq");
 ttFile();
 }
-function marketing(){meta();tiktok();}
+function marketing(){if(cfg.gtm)return;meta();tiktok();}
 w.anaizaConsent={
 config:cfg,
 optIn:optIn,
@@ -121,6 +124,7 @@ var was=eff();
 choice={a:!!a,m:!!m};
 d.cookie=CK+"=a"+(choice.a?1:0)+"m"+(choice.m?1:0)+"; Max-Age="+MAXAGE+"; Path=/; SameSite=Lax"+(w.location&&w.location.protocol==="https:"?"; Secure":"");
 if(cfg.gtm||cfg.ga4)gtag("consent","update",signal(choice));
+if(cfg.gtm)w.dataLayer.push({event:"anaiza_consent_changed",analytics_consent:st(choice.a),marketing_consent:st(choice.m)});
 if(choice.m)marketing();
 else if(was.m){
 if(L.meta&&typeof w.fbq==="function")w.fbq("consent","revoke");

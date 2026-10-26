@@ -21,8 +21,10 @@ export function MarketingHeadScripts({
   consent: CookieConsentSettings | null;
 }) {
   const gtm = marketing?.gtm_container_id || null;
-  const meta = marketing?.meta_pixel_id || null;
-  const tiktok = marketing?.tiktok_pixel_id || null;
+  // With a GTM container, GTM owns the Meta and TikTok pixels (and GA4): they are not loaded here as well, so a sale or a page view
+  // is never counted twice. The IDs stay in the settings (the API still serves them) for the container to use as constants.
+  const meta = !gtm ? marketing?.meta_pixel_id || null : null;
+  const tiktok = !gtm ? marketing?.tiktok_pixel_id || null : null;
   // If GTM is configured, GA4 is assumed to be wired up inside the GTM container rather than loaded again
   // directly here (avoids double-firing pageviews). The direct gtag.js tag is only a fallback for when there
   // is a GA4 ID but no GTM container at all.
@@ -60,7 +62,8 @@ export function MarketingBodyNoscript({
   consent: CookieConsentSettings | null;
 }) {
   const gtmId = marketing?.gtm_container_id || null;
-  const metaPixelId = marketing?.meta_pixel_id || null;
+  // The Meta no-script image is only for the direct install; with GTM, the container's own no-script frame is the only one.
+  const metaPixelId = !gtmId ? marketing?.meta_pixel_id || null : null;
 
   if (waitsForConsent(consent) || (!gtmId && !metaPixelId)) return null;
 
