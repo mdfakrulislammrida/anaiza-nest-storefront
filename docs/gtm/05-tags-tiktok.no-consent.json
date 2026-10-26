@@ -1,0 +1,538 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-10-26 19:34:05",
+  "containerVersion": {
+    "path": "accounts/6356798755/containers/253239767/versions/0",
+    "accountId": "6356798755",
+    "containerId": "253239767",
+    "containerVersionId": "0",
+    "container": {
+      "path": "accounts/6356798755/containers/253239767",
+      "accountId": "6356798755",
+      "containerId": "253239767",
+      "name": "www.anaizanest.com-web",
+      "publicId": "GTM-MS2HWSWF",
+      "usageContext": [
+        "WEB"
+      ],
+      "fingerprint": "1787251673645",
+      "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6356798755/containers/253239767/workspaces?apiLink=container",
+      "features": {
+        "supportUserPermissions": true,
+        "supportEnvironments": true,
+        "supportWorkspaces": true,
+        "supportGtagConfigs": false,
+        "supportBuiltInVariables": true,
+        "supportClients": false,
+        "supportFolders": true,
+        "supportTags": true,
+        "supportTemplates": true,
+        "supportTriggers": true,
+        "supportVariables": true,
+        "supportVersions": true,
+        "supportZones": true,
+        "supportTransformations": false
+      },
+      "tagIds": [
+        "GTM-MS2HWSWF"
+      ]
+    },
+    "tag": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9021",
+        "name": "AN - TikTok Pixel - base + page",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n!function (w, d, t) {\n  w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || [];\n  ttq.methods = [\"page\",\"track\",\"identify\",\"instances\",\"debug\",\"on\",\"off\",\"once\",\"ready\",\"alias\",\"group\",\"enableCookie\",\"disableCookie\",\"holdConsent\",\"revokeConsent\",\"grantConsent\"];\n  ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } };\n  for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);\n  ttq.instance = function (t) { for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]); return e };\n  ttq.load = function (e, n) { var i = \"https://analytics.tiktok.com/i18n/pixel/events.js\"; ttq._i = ttq._i || {}; ttq._i[e] = []; ttq._i[e]._u = i; ttq._t = ttq._t || {}; ttq._t[e] = +new Date; ttq._o = ttq._o || {}; ttq._o[e] = n || {}; var o = document.createElement(\"script\"); o.type = \"text/javascript\"; o.async = !0; o.src = i + \"?sdkid=\" + e + \"&lib=\" + t; var a = document.getElementsByTagName(\"script\")[0]; a.parentNode.insertBefore(o, a) };\n  ttq.load({{AN - TikTok Pixel ID}});\n  ttq.page();\n}(window, document, 'ttq');\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "2147479553",
+          "9213"
+        ],
+        "tagFiringOption": "ONCE_PER_LOAD",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9022",
+        "name": "AN - TikTok Pixel - page (page change)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\nif (window.ttq) { ttq.page(); }\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9201"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9023",
+        "name": "AN - TikTok Pixel - ViewContent (product)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.ttq) return;\n  var i = ({{AN - DLV ecommerce.items}} || [])[0] || {};\n  ttq.track('ViewContent', { content_id: i.item_id, content_name: i.item_name, content_type: 'product', currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9203"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9024",
+        "name": "AN - TikTok Pixel - ViewContent (landing page)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.ttq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var contents = items.map(function (i) { return { content_id: i.item_id, quantity: i.quantity || 1, price: i.price }; });\n  ttq.track('ViewContent', { contents: contents, content_type: 'product', currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: items.length ? Math.min.apply(null, items.map(function (i) { return i.price; })) : 0 });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9301"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9025",
+        "name": "AN - TikTok Pixel - AddToCart",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.ttq) return;\n  var i = ({{AN - DLV ecommerce.items}} || [])[0] || {};\n  ttq.track('AddToCart', { content_id: i.item_id, content_name: i.item_name, content_type: 'product', currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9205"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9026",
+        "name": "AN - TikTok Pixel - InitiateCheckout",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.ttq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var contents = items.map(function (i) { return { content_id: i.item_id, quantity: i.quantity || 1, price: i.price }; });\n  ttq.track('InitiateCheckout', { contents: contents, currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9208"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9027",
+        "name": "AN - TikTok Pixel - AddPaymentInfo",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.ttq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var contents = items.map(function (i) { return { content_id: i.item_id, quantity: i.quantity || 1, price: i.price }; });\n  ttq.track('AddPaymentInfo', { contents: contents, currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9210"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9028",
+        "name": "AN - TikTok Pixel - CompletePayment (purchase)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.ttq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var contents = items.map(function (i) { return { content_id: i.item_id, quantity: i.quantity || 1, price: i.price }; });\n  ttq.track('CompletePayment', { content_type: 'product', contents: contents, currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} }, { event_id: {{AN - DLV event_id}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9211"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9201",
+        "name": "AN - CE page_view",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "page_view"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9203",
+        "name": "AN - CE view_item",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "view_item"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9205",
+        "name": "AN - CE add_to_cart",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "add_to_cart"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9208",
+        "name": "AN - CE begin_checkout",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "begin_checkout"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9210",
+        "name": "AN - CE add_payment_info",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "add_payment_info"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9211",
+        "name": "AN - CE purchase",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "purchase"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9213",
+        "name": "AN - CE anaiza_consent_changed",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "anaiza_consent_changed"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9301",
+        "name": "AN - CE view_item_list (landing page)",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "view_item_list"
+              }
+            ]
+          }
+        ],
+        "filter": [
+          {
+            "type": "STARTS_WITH",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{AN - DLV ecommerce.item_list_name}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "Landing page:"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      }
+    ],
+    "variable": [],
+    "builtInVariable": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "EVENT",
+        "name": "Event"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_URL",
+        "name": "Page URL"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_HOSTNAME",
+        "name": "Page Hostname"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_PATH",
+        "name": "Page Path"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "REFERRER",
+        "name": "Referrer"
+      }
+    ],
+    "fingerprint": "1793043245080",
+    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6356798755/containers/253239767/versions/0?apiLink=version"
+  }
+}

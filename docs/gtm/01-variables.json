@@ -1,0 +1,497 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-10-26 19:34:05",
+  "containerVersion": {
+    "path": "accounts/6356798755/containers/253239767/versions/0",
+    "accountId": "6356798755",
+    "containerId": "253239767",
+    "containerVersionId": "0",
+    "container": {
+      "path": "accounts/6356798755/containers/253239767",
+      "accountId": "6356798755",
+      "containerId": "253239767",
+      "name": "www.anaizanest.com-web",
+      "publicId": "GTM-MS2HWSWF",
+      "usageContext": [
+        "WEB"
+      ],
+      "fingerprint": "1787251673645",
+      "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6356798755/containers/253239767/workspaces?apiLink=container",
+      "features": {
+        "supportUserPermissions": true,
+        "supportEnvironments": true,
+        "supportWorkspaces": true,
+        "supportGtagConfigs": false,
+        "supportBuiltInVariables": true,
+        "supportClients": false,
+        "supportFolders": true,
+        "supportTags": true,
+        "supportTemplates": true,
+        "supportTriggers": true,
+        "supportVariables": true,
+        "supportVersions": true,
+        "supportZones": true,
+        "supportTransformations": false
+      },
+      "tagIds": [
+        "GTM-MS2HWSWF"
+      ]
+    },
+    "tag": [],
+    "trigger": [],
+    "variable": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9101",
+        "name": "AN - GA4 Measurement ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "G-1V0Q6EN05B"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9102",
+        "name": "AN - Meta Pixel ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "956723840598016"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9103",
+        "name": "AN - TikTok Pixel ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "REPLACE_WITH_TIKTOK_PIXEL_ID"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9104",
+        "name": "AN - Server URL",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "NONE"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9105",
+        "name": "AN - Server URL (omit when none)",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function() {\n  var url = {{AN - Server URL}};\n  return (typeof url === 'string' && url.indexOf('https://') === 0) ? url : undefined;\n}"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9111",
+        "name": "AN - DLV ecommerce.items",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.items"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9112",
+        "name": "AN - DLV ecommerce.value",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.value"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9113",
+        "name": "AN - DLV ecommerce.currency",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.currency"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9114",
+        "name": "AN - DLV ecommerce.transaction_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.transaction_id"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9115",
+        "name": "AN - DLV ecommerce.shipping",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.shipping"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9116",
+        "name": "AN - DLV ecommerce.coupon",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.coupon"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9117",
+        "name": "AN - DLV ecommerce.item_list_name",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.item_list_name"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9118",
+        "name": "AN - DLV ecommerce.payment_type",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.payment_type"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9119",
+        "name": "AN - DLV ecommerce.shipping_tier",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.shipping_tier"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9120",
+        "name": "AN - DLV event_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "event_id"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9121",
+        "name": "AN - DLV search_term",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "search_term"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9122",
+        "name": "AN - DLV user_data",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "variableId": "9123",
+        "name": "AN - DLV meta_user_data",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "meta_user_data"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "formatValue": {}
+      }
+    ],
+    "builtInVariable": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "EVENT",
+        "name": "Event"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_URL",
+        "name": "Page URL"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_HOSTNAME",
+        "name": "Page Hostname"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_PATH",
+        "name": "Page Path"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "REFERRER",
+        "name": "Referrer"
+      }
+    ],
+    "fingerprint": "1793043245080",
+    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6356798755/containers/253239767/versions/0?apiLink=version"
+  }
+}

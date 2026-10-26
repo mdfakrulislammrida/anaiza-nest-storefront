@@ -63,11 +63,11 @@ Press **Save**. (Tokens are secret: never put them in the container, in a messag
 2. **Choose container file:** `docs/gtm-container-anaizanest.json`.
 3. **Choose workspace:** *New* > name it `Anaiza setup`. (Do not import into Default if other people use it.)
 4. **Import option:** *Merge*, then *Rename conflicting tags, triggers, variables*. **Confirm**.
-5. You now have 18 tags, 14 triggers and 18 variables, all starting with `AN - `. Open **Variables** > *User-defined variables* and edit the four constants:
+5. You now have 18 new tags, 14 triggers and 18 variables, all starting with `AN - `. Open **Variables** > *User-defined variables* and edit the four constants:
    - `AN - GA4 Measurement ID`: already `G-1V0Q6EN05B`. Check it.
    - `AN - Meta Pixel ID`: already `956723840598016`. Check it.
    - `AN - TikTok Pixel ID`: **replace `REPLACE_WITH_TIKTOK_PIXEL_ID` with your TikTok pixel ID.** Until you do, TikTok does nothing.
-   - `AN - Server URL`: **leave it empty** (Phase 2 only).
+   - `AN - Server URL`: **leave it as `NONE`** (Phase 2 only). GTM does not keep a constant with nothing in it, so `NONE` is how this one says "empty": while it is not an `https://` address, the Google tag sends nothing to a server container.
 6. Do not touch the other variables or any trigger.
 
 What the tags are (so you know what you are looking at):
@@ -84,6 +84,39 @@ If you open a tag > *Advanced settings* > *Consent settings* you will see this. 
 
 **Manual steps that cannot be in an import file:** (a) the GA4 Enhanced measurement settings in step 1; (b) typing the TikTok pixel ID in step 3; (c) in GTM > Admin > Container settings,
 nothing needs changing; Consent Overview is optional.
+
+### 3a. Read this before you publish: the container already has nine tags
+
+The export of your container (`docs/gtm-export-empty.json`) is **not empty**. It already holds a set of tags, made with Stape's Facebook template and GA4 tags, on the same events as ours:
+
+| Existing tag (type) | Fires on |
+| --- | --- |
+| `GA4 Configuration Tag` (Google tag) | Initialization - All Pages. It sends GA4 to **`https://ywzcczvd.usv.stape.io`** (a Stape server container) and sets `send_page_view` to false |
+| `GA4 Page_view Tag`, `FB page_view Tag` | All Pages |
+| `GA4 view_item Tag`, `FB ViewContent Tag` | the `view_item` event (trigger `view_item - Trigger`) |
+| `GA4 begin_checkout Tag`, `FB InitiateCheckout Tag` | the `begin_checkout` event |
+| `GA4 purchase Tag`, `FB Purchase Tag` | the `purchase` event |
+
+They read data layer names this shop does not push (`content id`, `Total Value`, `User Email`, ...), so what they would send is mostly empty, and **if you leave them active beside ours, every one of those events is counted twice** (two GA4 purchases, two Facebook purchases), and GA4 is configured twice.
+**Before you Publish, in the workspace: pause or delete those nine tags** (click the tag > the three dots > *Pause*; or select them and delete). Do not delete the *variables* or *templates*: nothing else uses them and they do no harm. If you would rather keep the Stape tags and drop ours, say so: the data layer would then need to be changed to match their names.
+
+Their GA4 tag sends to a **server container**. Phase 1 in this guide does not use one, so our Google tag sends GA4 straight from the browser (`AN - Server URL` = `NONE`).
+
+### 3b. If GTM says "File format is invalid"
+
+1. Run `npm run gtm:validate` in the storefront folder: it checks every file against the shapes in your real export and says what it finds. (It was written without being able to try an import in GTM: it cannot promise GTM accepts the file.)
+2. Find the failing part. Import **in this order**, each with *Merge* and *Rename conflicting*, into the **same new workspace** (each file is a whole export that holds only its part; the triggers a tag needs are repeated in its file, so a part can be imported alone once 01 is in):
+
+| Order | File (in `docs/gtm/`) | Holds |
+| --- | --- | --- |
+| 1 | `01-variables.json` | the constants, the Custom JavaScript variable, the Data Layer variables, the built-in variables |
+| 2 | `02-triggers.json` | the 14 Custom Event triggers (they refer to variables by name, so 01 first) |
+| 3 | `03-tags-ga4.json` | the Google tag and the one GA4 events tag |
+| 4 | `04-tags-meta.json` | the 8 Meta tags |
+| 5 | `05-tags-tiktok.json` | the 8 TikTok tags |
+
+3. The first file GTM refuses is where to look. If **04 or 05** is refused, try `04-tags-meta.no-consent.json` / `05-tags-tiktok.no-consent.json` (the same tags with no consent requirement: the consent setting is the one thing in our files that your export has no example of). If those import, add the consent by hand: tag > *Advanced settings* > *Consent settings* > *Require additional consent for tag to fire* > `ad_storage`.
+4. If nothing imports, build by hand with `docs/gtm-manual-build.md`: every variable, trigger and tag as tables with the code to paste.
 
 ## 4. Test, one tool at a time
 
@@ -198,7 +231,7 @@ Shop's Laravel server ----------------------------------------------------------
 ```
 
 - To switch the GA4 stream through Stape you fill **one variable**: in the web container set `AN - Server URL` to your Stape address (for example `https://sgtm.anaizanest.com`).
-  The Google tag then adds `server_container_url`; nothing else changes. Empty it to go back.
+  The Google tag then adds `server_container_url`; nothing else changes. Set it back to `NONE` to go back.
 - **Which events the server container must receive** (the same GA4 events the web tag sends): `page_view`, `view_item_list`, `view_item`, `search`, `add_to_cart`, `remove_from_cart`, `view_cart`,
   `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`. In the server container, add a **GA4 client**, and a **GA4 tag** that forwards each to your GA4 property.
   (`order_pending_payment` and `anaiza_consent_changed` never reach the server container: they are not GA4 events.)
@@ -233,4 +266,4 @@ If both the shop's Laravel server and the Stape container send a Purchase to Met
 2. GA4 DebugView still shows every event, **once** (not twice: it must not also arrive straight from the browser; with `AN - Server URL` filled in, the Google tag sends through the server only).
 3. The Purchase: GA4 shows one `purchase`; Meta Test events shows one merged Purchase (Browser + Server, "Deduplicated"); TikTok the same. No second server copy.
 4. The first-party cookie: in Chrome DevTools > Application > Cookies, the GA cookie is set by the shop's domain.
-5. Empty `AN - Server URL`, publish, and confirm everything returns to the Phase 1 behaviour.
+5. Set `AN - Server URL` back to `NONE`, publish, and confirm everything returns to the Phase 1 behaviour.

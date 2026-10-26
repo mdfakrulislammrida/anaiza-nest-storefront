@@ -1,0 +1,538 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-10-26 19:34:05",
+  "containerVersion": {
+    "path": "accounts/6356798755/containers/253239767/versions/0",
+    "accountId": "6356798755",
+    "containerId": "253239767",
+    "containerVersionId": "0",
+    "container": {
+      "path": "accounts/6356798755/containers/253239767",
+      "accountId": "6356798755",
+      "containerId": "253239767",
+      "name": "www.anaizanest.com-web",
+      "publicId": "GTM-MS2HWSWF",
+      "usageContext": [
+        "WEB"
+      ],
+      "fingerprint": "1787251673645",
+      "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6356798755/containers/253239767/workspaces?apiLink=container",
+      "features": {
+        "supportUserPermissions": true,
+        "supportEnvironments": true,
+        "supportWorkspaces": true,
+        "supportGtagConfigs": false,
+        "supportBuiltInVariables": true,
+        "supportClients": false,
+        "supportFolders": true,
+        "supportTags": true,
+        "supportTemplates": true,
+        "supportTriggers": true,
+        "supportVariables": true,
+        "supportVersions": true,
+        "supportZones": true,
+        "supportTransformations": false
+      },
+      "tagIds": [
+        "GTM-MS2HWSWF"
+      ]
+    },
+    "tag": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9011",
+        "name": "AN - Meta Pixel - base + PageView",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');\nfbq('init', {{AN - Meta Pixel ID}});\nfbq('track', 'PageView');\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "2147479553",
+          "9213"
+        ],
+        "tagFiringOption": "ONCE_PER_LOAD",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9012",
+        "name": "AN - Meta Pixel - PageView (page change)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\nif (window.fbq) { fbq('track', 'PageView'); }\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9201"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9013",
+        "name": "AN - Meta Pixel - ViewContent (product)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.fbq) return;\n  var i = ({{AN - DLV ecommerce.items}} || [])[0] || {};\n  fbq('track', 'ViewContent', { content_ids: [i.item_id], content_name: i.item_name, content_type: 'product', currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9203"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9014",
+        "name": "AN - Meta Pixel - ViewContent (landing page)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.fbq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var ids = items.map(function (i) { return i.item_id; });\n  var contents = items.map(function (i) { return { id: i.item_id, quantity: i.quantity || 1 }; });\n  fbq('track', 'ViewContent', { content_ids: ids, contents: contents.map(function (c, n) { return { id: c.id, quantity: 1, item_price: items[n].price }; }), content_type: 'product', currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: items.length ? Math.min.apply(null, items.map(function (i) { return i.price; })) : 0 });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9301"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9015",
+        "name": "AN - Meta Pixel - AddToCart",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.fbq) return;\n  var i = ({{AN - DLV ecommerce.items}} || [])[0] || {};\n  fbq('track', 'AddToCart', { content_ids: [i.item_id], content_name: i.item_name, content_type: 'product', currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9205"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9016",
+        "name": "AN - Meta Pixel - InitiateCheckout",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.fbq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var ids = items.map(function (i) { return i.item_id; });\n  var contents = items.map(function (i) { return { id: i.item_id, quantity: i.quantity || 1 }; });\n  fbq('track', 'InitiateCheckout', { content_ids: ids, contents: contents, currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}}, num_items: contents.reduce(function (n, c) { return n + c.quantity; }, 0) });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9208"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9017",
+        "name": "AN - Meta Pixel - AddPaymentInfo",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.fbq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var ids = items.map(function (i) { return i.item_id; });\n  var contents = items.map(function (i) { return { id: i.item_id, quantity: i.quantity || 1 }; });\n  fbq('track', 'AddPaymentInfo', { content_ids: ids, contents: contents, currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9210"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "tagId": "9018",
+        "name": "AN - Meta Pixel - Purchase",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function () {\n  if (!window.fbq) return;\n  var items = {{AN - DLV ecommerce.items}} || [];\n  var ids = items.map(function (i) { return i.item_id; });\n  var contents = items.map(function (i) { return { id: i.item_id, quantity: i.quantity || 1 }; });\n  var user = {{AN - DLV meta_user_data}};\n  if (user && typeof user === 'object') { fbq('init', {{AN - Meta Pixel ID}}, user); }\n  fbq('track', 'Purchase', { content_ids: ids, contents: contents, currency: {{AN - DLV ecommerce.currency}} || 'BDT', value: {{AN - DLV ecommerce.value}} }, { eventID: {{AN - DLV event_id}} });\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1761555600000",
+        "firingTriggerId": [
+          "9211"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9201",
+        "name": "AN - CE page_view",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "page_view"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9203",
+        "name": "AN - CE view_item",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "view_item"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9205",
+        "name": "AN - CE add_to_cart",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "add_to_cart"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9208",
+        "name": "AN - CE begin_checkout",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "begin_checkout"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9210",
+        "name": "AN - CE add_payment_info",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "add_payment_info"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9211",
+        "name": "AN - CE purchase",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "purchase"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9213",
+        "name": "AN - CE anaiza_consent_changed",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "anaiza_consent_changed"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "triggerId": "9301",
+        "name": "AN - CE view_item_list (landing page)",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "view_item_list"
+              }
+            ]
+          }
+        ],
+        "filter": [
+          {
+            "type": "STARTS_WITH",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{AN - DLV ecommerce.item_list_name}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "Landing page:"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1761555600000"
+      }
+    ],
+    "variable": [],
+    "builtInVariable": [
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "EVENT",
+        "name": "Event"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_URL",
+        "name": "Page URL"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_HOSTNAME",
+        "name": "Page Hostname"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "PAGE_PATH",
+        "name": "Page Path"
+      },
+      {
+        "accountId": "6356798755",
+        "containerId": "253239767",
+        "type": "REFERRER",
+        "name": "Referrer"
+      }
+    ],
+    "fingerprint": "1793043245080",
+    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6356798755/containers/253239767/versions/0?apiLink=version"
+  }
+}
