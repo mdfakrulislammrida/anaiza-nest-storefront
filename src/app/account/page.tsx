@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -25,6 +25,15 @@ export default function AccountPage() {
   const providers = enabledProviders(siteSettings?.social_login);
   const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const guard = useFormGuard("form");
+
+  // The old site's sign-up and forgot-password addresses are sent here as /account?mode=register and ?mode=forgot. The address is
+  // read after the page loads (the site is static, so there is no query during the build).
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("mode");
+    // One-time sync from the address on mount -- window is unavailable during the static render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (wanted === "register" || wanted === "forgot") setMode(wanted);
+  }, []);
   // The shop's answer to a request for a reset link (the same whoever asks).
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

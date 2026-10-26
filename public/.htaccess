@@ -4,6 +4,20 @@ Options -Indexes
 
 RewriteEngine On
 
+# 00. Paths that belong to the API. On the main domain the `api` folder at the site root is a symlink to the Laravel public folder
+#     (and `storage` and `admin` are the same kind of link, if they exist there). Nothing in this file may rewrite, redirect or
+#     answer them: the Laravel folder has its own .htaccess and handles its own paths. Every rule below is therefore reached
+#     only by a path that is the shop's.
+RewriteRule ^(api|storage|admin)(/|$) - [L]
+
+# 00b. One address for the shop: https, and no www. (A host that ends https in front of the site, and says so in
+#      X-Forwarded-Proto, is not redirected again, so this cannot loop.)
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
 # 0. Special prices moved from /hot-deals to /special-prices: a permanent redirect, any query string kept. It comes first,
 #    before a real-file match could serve hot-deals.html (a small page that sends the visitor on in the browser, for a
 #    host that does not read this file).
@@ -35,6 +49,42 @@ RewriteRule ^(.+)$ $1.html [L]
 # 3. Same, but for a trailing-slash request, e.g. /account/ -> account.html
 RewriteCond %{DOCUMENT_ROOT}/$1.html -f
 RewriteRule ^(.+)/$ /$1.html [L]
+
+# 3b. Addresses from the old site (docs/redirect-map.md has the table and the reasoning). Every one is a 301, and a trailing "?"
+#     on the target drops the old query string (?sold=show and the like). They come after rules 1 to 3, so a page that exists in
+#     this build (for example /category/gifts) is served as it is and only an address with no page of its own is redirected,
+#     and before the client shells of rule 4, which would otherwise answer them with a "not found" page. Apache matches these
+#     against the decoded path, so an old "%7C", "%E2%80%93" or "&" in a product address is matched by the "." in the pattern.
+#
+#     Old products: /product/<slug>-<3-digit id>. The old ids (194 to 207) end the address; a new product's address does not
+#     end in a number like that, and one that does is served by rule 2 as soon as it is in the build. Sent to the same piece when
+#     the new shop has it, else to the category its words name, else to /shop. Never to the home page, never a 404.
+RewriteRule ^product/.*coffee-cup.*-[0-9]{3}/?$ /product/morris-ceramic-coffee-cup-and-saucer-set? [R=301,L]
+RewriteRule ^product/.*coaster.*-[0-9]{3}/?$ /product/tea-coaster-set-of-6-with-holder? [R=301,L]
+RewriteRule ^product/.*tea-jar.*-[0-9]{3}/?$ /category/tea-jars? [R=301,L]
+RewriteRule ^product/.*tea-set.*-[0-9]{3}/?$ /category/tea-sets? [R=301,L]
+RewriteRule ^product/.*(cup|mug).*-[0-9]{3}/?$ /category/cups-and-mugs? [R=301,L]
+RewriteRule ^product/.*gift.*-[0-9]{3}/?$ /category/gifts? [R=301,L]
+RewriteRule ^product/.+-[0-9]{3}/?$ /shop? [R=301,L]
+#     Old categories that the new shop does not have (the ones it has, like gifts, are served by rule 2) and every old sub-category.
+RewriteRule ^category/(car-accessories|music-accessories|mobile-accessories|electronic-gadgets|watches|pc-accessories|laptop-&-computer|baby-items|lifestyle)/?$ /shop? [R=301,L]
+RewriteRule ^subcategory(/.*)?$ /shop? [R=301,L]
+#     Old information pages.
+RewriteRule ^page/order-procedure/?$ /faq? [R=301,L]
+RewriteRule ^page/delivery-rules/?$ /pages/shipping? [R=301,L]
+RewriteRule ^page/return-policy/?$ /pages/returns? [R=301,L]
+RewriteRule ^page/terms-&-conditions/?$ /pages/terms? [R=301,L]
+RewriteRule ^page/privacy-policy/?$ /pages/privacy? [R=301,L]
+RewriteRule ^page/test/?$ / [R=301,L]
+RewriteRule ^page(/.*)?$ /shop? [R=301,L]
+RewriteRule ^site/contact-us/?$ /contact? [R=301,L]
+#     Old customer area. The sign-in, sign-up and forgot-password forms are all on /account (the last two are opened by ?mode=).
+RewriteRule ^customer/login/?$ /account? [R=301,L]
+RewriteRule ^customer/register/?$ /account?mode=register [R=301,L]
+RewriteRule ^customer/forgot-password/?$ /account?mode=forgot [R=301,L]
+RewriteRule ^customer/checkout/?$ /checkout? [R=301,L]
+RewriteRule ^customer/order-track/?$ /track-order? [R=301,L]
+RewriteRule ^customer(/.*)?$ /account? [R=301,L]
 
 # 4. Fallback for a product/page/category/article slug that didn't match a file
 #    in step 2 -- i.e. one added after the last build, so generateStaticParams

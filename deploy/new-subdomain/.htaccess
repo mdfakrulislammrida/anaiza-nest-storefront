@@ -1,0 +1,10 @@
+# new.anaizanest.com after go-live: every address goes, with a permanent redirect, to the same address on the main domain
+# (https://anaizanest.com). Put this one file in the folder that serves new.anaizanest.com, in place of the staging site.
+# The query string travels with it. Only the host's own certificate check (/.well-known/) is left alone, so the
+# certificate for this address keeps renewing for as long as the redirect is needed.
+Options -Indexes
+
+RewriteEngine On
+
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteRule ^(.*)$ https://anaizanest.com/$1 [R=301,L]

@@ -27,6 +27,9 @@ const PRIVATE_PATHS = [
   "/reset-password",
   "/order-confirmation",
   "/auth/",
+  // On the main domain these folders belong to the API (a link to the Laravel folder), not to the shop.
+  "/api/",
+  "/admin/",
 ];
 
 export default function robots(): MetadataRoute.Robots {
