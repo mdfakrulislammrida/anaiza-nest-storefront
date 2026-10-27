@@ -88,7 +88,7 @@ function readJson(storage: StorageLike, key: string): { value: unknown } | null 
 export function cartLine(value: unknown): CartItem | null {
   if (!isRecord(value)) return null;
 
-  const { key, productId, slug, name, price, regularPrice, image, variantId, variantLabel, sku, quantity, stock } = value;
+  const { key, productId, slug, name, price, regularPrice, image, variantId, variantLabel, sku, category, quantity, stock } = value;
 
   if (!isText(key) || !isCount(productId) || !isText(slug) || !isText(name)) return null;
   if (!isAmount(price) || !isCount(quantity) || !isAmount(stock)) return null;
@@ -98,6 +98,7 @@ export function cartLine(value: unknown): CartItem | null {
 
   const line: CartItem = { key, productId, slug, name, price, image, variantId, variantLabel, quantity, stock };
   if (sku !== undefined) line.sku = sku;
+  if (isText(category)) line.category = category;
   // Only a real, higher regular price is kept; anything else is just not a sale line.
   if (isAmount(regularPrice) && regularPrice > price) line.regularPrice = regularPrice;
 

@@ -28,7 +28,7 @@ container (step 6), and **rebuild and upload the website** so it starts using GT
 ## 1. Find or create the IDs
 
 1. **GA4:** analytics.google.com > Admin (gear, bottom left) > Data streams > click your web stream. The **Measurement ID** (starts with `G-`) is at the top right. While you are on this
-   screen: click **Enhanced measurement** (the gear next to it), make sure **Page views** is on, click **Advanced settings** under it and make sure **Page changes based on browser history events**
+   screen: click **Enhanced measurement** (the gear next to it), make sure **Page views** is on, click **Advanced settings** under it and make sure (**version 1 of the container only**; for version 2 it must be OFF, see `docs/server-container-guide.md`) **Page changes based on browser history events**
    is ticked. (The shop does not reload the page when you click a link, so this is how GA4 sees each page.)
 2. **GTM:** tagmanager.google.com > open the container whose ID is `GTM-MS2HWSWF` (the **web** one). Do not use `GTM-MT7HFDG4` here: that is the server container.
 3. **Meta:** business.facebook.com > Events Manager > Data sources > your pixel. Write down:
@@ -213,57 +213,14 @@ the Stape server container, a coupon parameter, `select_item` / `view_promotion`
 
 ---
 
-## Phase 2: Stape server container (documentation only, not built yet)
+## Phase 2: the Stape server container (now built: container version 2)
 
-The server container `GTM-MT7HFDG4` on Stape is **not used** in Phase 1. When you are ready, here is how it fits. Nothing in the website or in the web container has to change except **one value**.
+Phase 2 has moved to **`docs/server-container-guide.md`**, with the importable web container `docs/gtm-container-anaizanest-v2.json`. The short version of what changed:
 
-### The flow
-
-```
-Browser (the shop)
-   |  data layer events
-   v
-Web container GTM-MS2HWSWF  --(GA4 tag, transport_url = your Stape address)-->  Server container GTM-MT7HFDG4 (Stape, first-party domain)
-                                                                                      |  GA4 client receives the request
-                                                                                      +--> GA4 tag: forwards to Google Analytics
-                                                                                      +--> (optional) Meta / TikTok tags for non-purchase events
-Shop's Laravel server ------------------------------------------------------------>  Meta Conversions API, TikTok Events API  (Purchase / CompletePayment, as today)
-```
-
-- To switch the GA4 stream through Stape you fill **one variable**: in the web container set `AN - Server URL` to your Stape address (for example `https://sgtm.anaizanest.com`).
-  The Google tag then adds `server_container_url`; nothing else changes. Set it back to `NONE` to go back.
-- **Which events the server container must receive** (the same GA4 events the web tag sends): `page_view`, `view_item_list`, `view_item`, `search`, `add_to_cart`, `remove_from_cart`, `view_cart`,
-  `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`. In the server container, add a **GA4 client**, and a **GA4 tag** that forwards each to your GA4 property.
-  (`order_pending_payment` and `anaiza_consent_changed` never reach the server container: they are not GA4 events.)
-
-### Who sends the Purchase to Meta and TikTok: pick ONE, never both
-
-If both the shop's Laravel server and the Stape container send a Purchase to Meta (or TikTok) with the same `event_id`, Meta merges them, but with a different id or a missed id you get double sales. So there is exactly one rule:
-
-- **Option A (recommended, and how it works today): Laravel sends the Purchase and CompletePayment.** In the Stape container, do **not** add a Meta Conversions API tag or TikTok Events API tag for
-  purchase events. You may add them for **other** events only (for example `AddToCart`), never for `purchase`. Nothing to switch.
-  This is the right choice because Laravel also covers **bKash / Nagad / Rocket** sales, which the browser never sees (they are sent when you verify the payment). A Stape container cannot see those.
-- **Option B: Stape sends them.** Add the Meta Conversions API and TikTok Events API tags in the Stape container on the `purchase` event, using the event id `order-<transaction_id>` (the same pattern), **and
-  turn Laravel off**: Admin > Marketing Settings > click the **bin icon** next to *Meta Conversions API Access Token* and *TikTok Events API Access Token* (Laravel sends only when a token is saved).
-  Cost: wallet orders are then no longer sent to Meta and TikTok at all. To go back to A: paste the tokens again and remove the purchase tags from Stape.
-  Before B you must also ask for the GA4 events tag to carry the id (`event_id` as an event parameter): it is not sent to GA4 today.
-
-**Switching rule in one line:** only one of {Laravel tokens saved, Stape purchase tags enabled} may be on for a given platform.
-
-### The first-party domain (so the cookies last and ad blockers matter less)
-
-1. Pick an address under your own domain, for example `sgtm.anaizanest.com` (a subdomain of the shop, so the browser treats it as first-party).
-2. Stape: open the container `GTM-MT7HFDG4` in your Stape account > **Settings** > **Custom domains** (Tagging server URL) > add `sgtm.anaizanest.com`.
-3. Stape then shows **the exact DNS records** to create (normally an **A record** and an **AAAA record**, or a **CNAME**, for that subdomain). Copy them **exactly as shown**.
-4. In Hostinger: hPanel > Domains > anaizanest.com > **DNS / Nameservers** > DNS records > add each record Stape gave you, with the name `sgtm`. Do **not** change or delete the records for `@`, `www` or `api`.
-5. Back in Stape press **Verify**. The address is ready when it shows a green tick and an SSL certificate (this can take from minutes to a few hours). If you use Cloudflare, switch the proxy (orange cloud) off for this record unless Stape says otherwise.
-6. In the web container, set the variable `AN - Server URL` to `https://sgtm.anaizanest.com` (no slash at the end), publish.
-7. Content Security Policy: the shop's `.htaccess` has a CSP that only **reports** for now. When you turn it on, add `https://sgtm.anaizanest.com` to `connect-src` (and to `script-src` if the container script is loaded from it).
-
-### What to test in Phase 2
-
-1. Web container Preview and the Stape **server container Preview**, side by side: each GA4 event the browser sends shows up as a request in the server preview, and the GA4 tag there says **Fired**.
-2. GA4 DebugView still shows every event, **once** (not twice: it must not also arrive straight from the browser; with `AN - Server URL` filled in, the Google tag sends through the server only).
-3. The Purchase: GA4 shows one `purchase`; Meta Test events shows one merged Purchase (Browser + Server, "Deduplicated"); TikTok the same. No second server copy.
-4. The first-party cookie: in Chrome DevTools > Application > Cookies, the GA cookie is set by the shop's domain.
-5. Set `AN - Server URL` back to `NONE`, publish, and confirm everything returns to the Phase 1 behaviour.
+- **Every event now has an `event_id`**, and the GA4 tags and the Meta pixel tags send it. The server container forwards it to Meta, so Meta counts a browser event and its server twin once.
+- **The Purchase is sent by both the server container and the shop's own server**, with the same id (`order-<number>`), while you switch over. The value is the items total after discount, **without delivery**
+  (see `docs/tracking-spec.md`, "Value": the shop's own server still sends the total with delivery, which you must decide about).
+- **TikTok is removed** from version 2 (the shop has no TikTok pixel).
+- The server container's address is kept in one place, the GTM constant `AN - Server URL` (`NONE` = send GA4 straight to Google). The shop's Marketing Settings have no field for it.
+- **In the GA4 data stream, turn OFF "Page changes based on browser history events"** (Enhanced measurement > Page views > Advanced settings). Version 2 sends each page view itself, with its event id, so
+  leaving it on would count every page change twice. (This guide's step 1 says to turn it on: that is for version 1 only.)

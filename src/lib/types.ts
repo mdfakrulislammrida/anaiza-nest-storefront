@@ -254,6 +254,8 @@ export interface OrderItem {
   variant_name: string | null;
   variant_value: string | null;
   sku: string | null;
+  // The product's category name, kept in the browser when the order is placed (the API does not send it), for the purchase event's items.
+  category?: string | null;
 }
 
 export interface Order {

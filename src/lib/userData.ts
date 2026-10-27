@@ -131,3 +131,60 @@ export async function buildUserData(buyer: BuyerDetails): Promise<{ google: Goog
 
   return gEmail || gPhone || gFirst ? { google, meta } : null;
 }
+
+// ---- What goes into the data layer for matching (the server container reads it, and the Meta purchase tag in the container)
+
+/** Who is buying, as far as the page knows: what was typed, or the signed-in customer. Never leaves the browser in this form. */
+export interface Buyer {
+  email?: string | null;
+  phone?: string | null;
+  customerId?: number | null;
+}
+
+/** The only personal data the shop pushes to the data layer: SHA-256, lower-case hex. */
+export interface ContactUserData {
+  sha256_email_address?: string;
+  sha256_phone_number?: string;
+  external_id?: string;
+}
+
+/** A Bangladeshi mobile number as 8801XXXXXXXXX: digits only, international form, no plus sign. Null when it cannot be one. */
+export function internationalDigits(phone: string | null | undefined): string | null {
+  const full = e164(phone);
+
+  return full === null ? null : full.slice(1);
+}
+
+/** An email address as the platforms want it before hashing: trimmed and lower case. Null when it is not an address. */
+export function cleanEmail(email: string | null | undefined): string | null {
+  const clean = metaEmail(email);
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean) ? clean : null;
+}
+
+/**
+ * The hashed email, phone and external id, or null when there is nothing usable (or the browser cannot hash).
+ * external_id is the hash of the customer id for a signed-in customer, else of the phone number (a guest).
+ */
+export async function buildContactHashes(buyer: Buyer | null | undefined): Promise<ContactUserData | null> {
+  if (!buyer || typeof crypto === "undefined" || !crypto.subtle) return null;
+
+  const email = cleanEmail(buyer.email);
+  const phone = internationalDigits(buyer.phone);
+  const customerId = Number.isInteger(buyer.customerId) && (buyer.customerId as number) > 0 ? String(buyer.customerId) : null;
+  const externalSource = customerId ?? phone;
+
+  const [hashedEmail, hashedPhone, externalId] = await Promise.all([
+    email ? sha256Hex(email) : undefined,
+    phone ? sha256Hex(phone) : undefined,
+    externalSource ? sha256Hex(externalSource) : undefined,
+  ]);
+
+  const data: ContactUserData = {
+    ...(hashedEmail ? { sha256_email_address: hashedEmail } : {}),
+    ...(hashedPhone ? { sha256_phone_number: hashedPhone } : {}),
+    ...(externalId ? { external_id: externalId } : {}),
+  };
+
+  return Object.keys(data).length > 0 ? data : null;
+}

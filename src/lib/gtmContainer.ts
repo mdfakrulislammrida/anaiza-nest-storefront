@@ -36,18 +36,18 @@ export const SITE_EVENTS = [
 /** The events GA4 receives as they are, with the whole ecommerce object. (page_view is counted by the Google tag itself.) */
 export const GA4_EVENTS = ["view_item_list", "view_item", "search", "add_to_cart", "remove_from_cart", "view_cart", "begin_checkout", "add_shipping_info", "add_payment_info", "purchase"] as const;
 
-const BUILT_IN_ALL_PAGES = "2147479553";
-const BUILT_IN_INITIALIZATION = "2147479573";
+export const BUILT_IN_ALL_PAGES = "2147479553";
+export const BUILT_IN_INITIALIZATION = "2147479573";
 export const BUILT_IN_TRIGGER_IDS = [BUILT_IN_ALL_PAGES, BUILT_IN_INITIALIZATION];
 /** GTM writes a fingerprint as a number of milliseconds, in text. */
-const FINGERPRINT = "1761555600000";
+export const FINGERPRINT = "1761555600000";
 
 export type Param = { type: string; key: string; value?: string; list?: unknown[]; map?: Param[] };
 export type Ids = { accountId: string; containerId: string };
 export type Entry<T> = { note: string; item: T };
 
-const template = (key: string, value: string): Param => ({ type: "TEMPLATE", key, value });
-const ref = (name: string) => `{{${name}}}`;
+export const template = (key: string, value: string): Param => ({ type: "TEMPLATE", key, value });
+export const ref = (name: string) => `{{${name}}}`;
 
 // ---- The header of an export
 
@@ -130,11 +130,11 @@ export const V = {
   metaUserData: "AN - DLV meta_user_data",
 } as const;
 
-function constant(ids: Ids, variableId: string, name: string, value: string, note: string) {
+export function constant(ids: Ids, variableId: string, name: string, value: string, note: string) {
   return { note, item: { ...ids, variableId, name, type: "c", parameter: [template("value", value)], fingerprint: FINGERPRINT, formatValue: {} } };
 }
 
-function dataLayerVariable(ids: Ids, variableId: string, name: string, path: string, note: string) {
+export function dataLayerVariable(ids: Ids, variableId: string, name: string, path: string, note: string) {
   return {
     note,
     item: {
@@ -189,12 +189,12 @@ export function variableEntries(ids: Ids) {
 
 // ---- Triggers
 
-type TriggerDef = { id: string; name: string; event: string; landingOnly?: boolean };
+export type TriggerDef = { id: string; name: string; event: string; landingOnly?: boolean };
 
-const eventTriggers: TriggerDef[] = SITE_EVENTS.map((event, index) => ({ id: String(9201 + index), name: `AN - CE ${event}`, event }));
-const landingTrigger: TriggerDef = { id: "9301", name: "AN - CE view_item_list (landing page)", event: "view_item_list", landingOnly: true };
+export const eventTriggers: TriggerDef[] = SITE_EVENTS.map((event, index) => ({ id: String(9201 + index), name: `AN - CE ${event}`, event }));
+export const landingTrigger: TriggerDef = { id: "9301", name: "AN - CE view_item_list (landing page)", event: "view_item_list", landingOnly: true };
 
-const triggerId = (event: string) => eventTriggers.find((trigger) => trigger.event === event)?.id ?? "";
+export const triggerId = (event: string) => eventTriggers.find((trigger) => trigger.event === event)?.id ?? "";
 
 export function triggerEntries(ids: Ids) {
   return [...eventTriggers, landingTrigger].map((trigger) => ({
@@ -217,10 +217,10 @@ export function triggerEntries(ids: Ids) {
 
 // ---- Tags
 
-const AD_CONSENT = { consentStatus: "NEEDED", consentType: { type: "LIST", list: [{ type: "TEMPLATE", value: "ad_storage" }] } };
-const BUILT_IN_CONSENT = { consentStatus: "NOT_SET" };
+export const AD_CONSENT = { consentStatus: "NEEDED", consentType: { type: "LIST", list: [{ type: "TEMPLATE", value: "ad_storage" }] } };
+export const BUILT_IN_CONSENT = { consentStatus: "NOT_SET" };
 
-function htmlTag(ids: Ids, tagId: string, name: string, html: string, firing: string[], note: string, option = "ONCE_PER_EVENT") {
+export function htmlTag(ids: Ids, tagId: string, name: string, html: string, firing: string[], note: string, option = "ONCE_PER_EVENT") {
   return {
     note,
     item: {
@@ -238,11 +238,11 @@ function htmlTag(ids: Ids, tagId: string, name: string, html: string, firing: st
   };
 }
 
-const first = `(${ref(V.items)} || [])[0] || {}`;
-const currency = `${ref(V.currency)} || 'BDT'`;
+export const first = `(${ref(V.items)} || [])[0] || {}`;
+export const currency = `${ref(V.currency)} || 'BDT'`;
 
 // One line of items as Meta wants them: content_ids, and contents with a quantity.
-const metaItems = `var items = ${ref(V.items)} || [];\n  var ids = items.map(function (i) { return i.item_id; });\n  var contents = items.map(function (i) { return { id: i.item_id, quantity: i.quantity || 1 }; });`;
+export const metaItems = `var items = ${ref(V.items)} || [];\n  var ids = items.map(function (i) { return i.item_id; });\n  var contents = items.map(function (i) { return { id: i.item_id, quantity: i.quantity || 1 }; });`;
 // The same for TikTok: contents with content_id, quantity and price.
 const tiktokItems = `var items = ${ref(V.items)} || [];\n  var contents = items.map(function (i) { return { content_id: i.item_id, quantity: i.quantity || 1, price: i.price }; });`;
 

@@ -28,6 +28,8 @@ export interface CartAddableProduct {
   // The product's SKU, which is its id in the product feeds (the product id stands in when it has none).
   sku?: string | null;
   images?: { url: string }[];
+  // Its category, for the events' item_category (a wishlist snapshot has none).
+  category?: { name: string } | null;
 }
 
 export interface CartItem {
@@ -44,6 +46,8 @@ export interface CartItem {
   // The SKU of this exact piece (the variant's, when it has its own): the id the pixels report. Carts saved before this
   // was kept have none, and report the product id.
   sku?: string | null;
+  // The product's category name when it was added (item_category in the events). Carts saved before this was kept have none.
+  category?: string | null;
   quantity: number;
   stock: number;
 }
@@ -132,6 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             variantId: variant?.id ?? null,
             variantLabel: variant ? `${variant.name}: ${variant.value}` : null,
             sku: feedItemId(product, variant),
+            ...(product.category?.name ? { category: product.category.name } : {}),
             quantity,
             stock: product.stock_quantity,
           },

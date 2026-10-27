@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { describe, it } from "node:test";
-import { buildUserData, e164, googleEmail, lettersOnly, metaEmail, sha256Hex, splitName } from "./userData.ts";
+import { buildContactHashes, buildUserData, cleanEmail, e164, googleEmail, internationalDigits, lettersOnly, metaEmail, sha256Hex, splitName } from "./userData.ts";
 
 const sha = (text: string) => createHash("sha256").update(text).digest("hex");
 
@@ -97,5 +97,42 @@ describe("buildUserData", () => {
     for (const raw of ["Nusrat", "nusrat", "Jahan", "gmail", "01712345678", "8801712345678"]) {
       assert.ok(!everything.includes(raw), `${raw} must not appear`);
     }
+  });
+});
+
+describe("the hashed contact details pushed to the data layer", () => {
+  it("writes the phone as 8801XXXXXXXXX: digits only, international form, no plus sign, however it was typed", () => {
+    for (const typed of ["01712345678", "+8801712345678", "8801712345678", "01712-345 678", " +880 1712 345678 "]) {
+      assert.equal(internationalDigits(typed), "8801712345678", typed);
+    }
+    for (const bad of ["", null, undefined, "12345", "02-9876543", "01212345678", "abc"]) assert.equal(internationalDigits(bad), null, String(bad));
+  });
+
+  it("trims and lower-cases an email, and refuses text that is not one", () => {
+    assert.equal(cleanEmail("  Nusrat.Jahan@Gmail.COM "), "nusrat.jahan@gmail.com");
+    for (const bad of ["", null, undefined, "nusrat", "a b@c.d", "@x.com", "a@b"]) assert.equal(cleanEmail(bad), null, String(bad));
+  });
+
+  it("hashes with SHA-256 into lower-case hex, and the external id is the customer id when there is one, else the phone", async () => {
+    const guest = await buildContactHashes({ email: "Nusrat@Example.test ", phone: "+88 01712345678" });
+    assert.deepEqual(guest, { sha256_email_address: sha("nusrat@example.test"), sha256_phone_number: sha("8801712345678"), external_id: sha("8801712345678") });
+    for (const value of Object.values(guest ?? {})) assert.match(value, /^[0-9a-f]{64}$/);
+
+    const signedIn = await buildContactHashes({ email: "n@example.test", phone: "01712345678", customerId: 31 });
+    assert.equal(signedIn?.external_id, sha("31"));
+  });
+
+  it("returns only what it can hash, and null for nothing", async () => {
+    assert.deepEqual(await buildContactHashes({ phone: "01712345678" }), { sha256_phone_number: sha("8801712345678"), external_id: sha("8801712345678") });
+    assert.deepEqual(await buildContactHashes({ email: "a@example.test" }), { sha256_email_address: sha("a@example.test") });
+    assert.equal(await buildContactHashes({ email: "nope", phone: "123" }), null);
+    assert.equal(await buildContactHashes({ customerId: 0 }), null);
+    assert.equal(await buildContactHashes(null), null);
+  });
+
+  it("never contains a raw value", async () => {
+    const text = JSON.stringify(await buildContactHashes({ email: "Nusrat@Example.test", phone: "01712345678", customerId: 5 }));
+
+    for (const raw of ["Nusrat", "nusrat", "example", "01712345678", "8801712345678"]) assert.ok(!text.includes(raw), raw);
   });
 });

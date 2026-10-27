@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { ApiError, createOrder, getPaymentSettings, validateCoupon } from "@/lib/api";
 import { currentSessionToken, endSession, noteContact, noteStage } from "@/lib/checkoutSession";
@@ -85,6 +86,7 @@ export default function CheckoutForm({
 }) {
   const router = useRouter();
   const { items, itemCount, subtotal, ready, clearCart, updateQuantity, removeItem } = useCart();
+  const { customer: signedIn } = useAuth();
   // The order summary shows a live estimate from the editable delivery settings;
   // the server always recomputes and charges the authoritative fee itself.
   const { siteSettings } = useSiteSettings();
@@ -201,7 +203,7 @@ export default function CheckoutForm({
   function noteFlowStarted() {
     if (flowStarted.current) return;
     flowStarted.current = true;
-    if (items.length > 0) trackBeginCheckout(items, subtotal);
+    if (items.length > 0) trackBeginCheckout(items, subtotal, buyerNow());
     noteStage("checkout_started");
   }
 
@@ -253,6 +255,14 @@ export default function CheckoutForm({
     if (coupon) void applyCoupon(coupon.code, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- follows the cart's value only
   }, [subtotal]);
+
+  // Who is buying, for the hashed details in the data layer (only ever pushed when the visitor allowed marketing): the signed-in customer, or what is
+  // typed in the form so far. Never sent anywhere raw.
+  function buyerNow() {
+    const typed = contactFromForm();
+
+    return { email: signedIn?.email || typed.email, phone: signedIn?.phone || typed.phone, customerId: signedIn?.id ?? null };
+  }
 
   function contactFromForm() {
     const form = document.getElementById("checkout-form") as HTMLFormElement | null;
@@ -420,7 +430,7 @@ export default function CheckoutForm({
     // The payment method was never touched (the first one on offer was already chosen for the visitor): report it now.
     if (!paymentTracked.current) {
       paymentTracked.current = true;
-      trackAddPaymentInfo(items, subtotal, paymentMethod);
+      trackAddPaymentInfo(items, subtotal, paymentMethod, buyerNow());
     }
 
     // Waits out the bot trap's minimum time (invisibly, with the button already busy), then carries its two fields.
@@ -466,7 +476,10 @@ export default function CheckoutForm({
 
     try {
       const order = await createOrder(payload);
-      window.sessionStorage.setItem("anaiza-last-order", JSON.stringify(order));
+      // The API does not send a product's category; the cart lines do, so each order line keeps it for the purchase event's item_category.
+      const categoryOf = new Map(items.map((line) => [line.productId, line.category] as const));
+      const placed = { ...order, items: order.items.map((line) => (categoryOf.get(line.product_id) ? { ...line, category: categoryOf.get(line.product_id) } : line)) };
+      window.sessionStorage.setItem("anaiza-last-order", JSON.stringify(placed));
       setOrderPlaced(true);
       endSession();
       clearCouponCode();
@@ -858,7 +871,7 @@ export default function CheckoutForm({
                 onChange={() => {
                   setChosenMethod(method.value);
                   paymentTracked.current = true;
-                  trackAddPaymentInfo(items, subtotal, method.value);
+                  trackAddPaymentInfo(items, subtotal, method.value, buyerNow());
                 }}
                 className="sr-only"
               />

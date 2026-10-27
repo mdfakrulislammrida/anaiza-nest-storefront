@@ -1,13 +1,18 @@
 import type { CartAddableProduct } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import type { Order, PaymentMethod, Product } from "./types";
-import { buildUserData, type MetaUserData } from "./userData.ts";
+import { loadAuth } from "./storedState.ts";
+import { buildContactHashes, buildUserData, type Buyer, type ContactUserData, type MetaUserData } from "./userData.ts";
 
 // All three platforms' scripts are injected conditionally (only when an
 // admin has actually set that ID -- see layout.tsx), so every function here
 // has to be a safe no-op when the underlying script never loaded. That's
 // the whole point: this module can be called unconditionally from anywhere
 // in the app without knowing whether tracking is configured.
+//
+// Every event pushed to the data layer carries an `event_id` (docs/tracking-spec.md): the browser tags send it with their event, and the
+// server container forwards it to Meta's Conversions API, which counts the browser event and the server event once when the name and the
+// id are the same. Purchase uses `order-<order number>`, which the shop's own server computes too.
 
 declare global {
   interface Window {
@@ -30,13 +35,34 @@ export function gtmOwnsBrowserTags(): boolean {
   return typeof window !== "undefined" && Boolean(window.anaizaConsent?.config?.gtm);
 }
 
-function pushDataLayer(event: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
+/** 16 random characters (lower-case hex) for an event id. */
+function randomPart(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+
+  let text = "";
+  while (text.length < 16) text += Math.floor(Math.random() * 16).toString(16);
+
+  return text;
+}
+
+/** `<event>.<16 random characters>`, made when the event is pushed. */
+export function newEventId(event: string): string {
+  return `${event}.${randomPart()}`;
+}
+
+/** Pushes one event and returns its event_id (the one given, else a new one). The previous ecommerce object and hashed contact are cleared first. */
+function pushDataLayer(event: { event: string; event_id?: string } & Record<string, unknown>): string {
+  const { event: name, event_id: given, ...rest } = event;
+  const eventId = given ?? newEventId(name);
+
+  if (typeof window === "undefined") return eventId;
   window.dataLayer = window.dataLayer || [];
-  // Clear the previous ecommerce object first -- Google's own recommended
-  // pattern, so object fields don't merge across events.
-  window.dataLayer.push({ ecommerce: null });
-  window.dataLayer.push(event);
+  // Clear the previous ecommerce object first -- Google's own recommended pattern, so object fields don't merge across events -- and the
+  // hashed contact details (user_data), which the data layer would otherwise keep for every later event of the visit.
+  window.dataLayer.push({ ecommerce: null, user_data: null });
+  window.dataLayer.push({ event: name, event_id: eventId, ...rest });
+
+  return eventId;
 }
 
 // eventId, when passed, lets Meta/TikTok deduplicate this client-side pixel
@@ -57,23 +83,26 @@ function ttqTrack(event: string, params?: Record<string, unknown>, eventId?: str
   window.ttq.track(event, params, eventId ? { event_id: eventId } : undefined);
 }
 
-/** A client-side route change (the first page of a visit is counted by the tags themselves when they load).
- * Direct mode: fbq PageView / ttq.page() (the base install snippets only fire these once, on initial script load).
- * GTM mode: a `page_view` event in the data layer, which the container's Meta and TikTok page-view tags listen for. */
-export function trackPageView() {
-  if (gtmOwnsBrowserTags()) {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-      event: "page_view",
-      page_location: window.location?.href ?? "",
-      page_path: window.location?.pathname ?? "",
-      page_title: typeof document === "undefined" ? "" : document.title,
-    });
-    return;
-  }
+/**
+ * A page of the visit. Pushed to the data layer for every page, the first one included (once each): with a GTM container the Meta tag and the
+ * GA4 page_view tag fire on it, with this event's id, so the server container can deduplicate the page view too.
+ * Direct mode also calls fbq PageView / ttq.page() for a page change (the base install snippets already fired for the first page).
+ */
+export function trackPageView(referrer = "", first = false) {
+  if (typeof window === "undefined") return;
 
-  fbqTrack("PageView");
-  if (typeof window !== "undefined" && typeof window.ttq !== "undefined") {
+  const eventId = pushDataLayer({
+    event: "page_view",
+    page_location: window.location?.href ?? "",
+    page_path: window.location?.pathname ?? "",
+    page_title: typeof document === "undefined" ? "" : document.title,
+    page_referrer: referrer,
+  });
+
+  if (gtmOwnsBrowserTags() || first) return;
+
+  fbqTrack("PageView", undefined, eventId);
+  if (typeof window.ttq !== "undefined") {
     window.ttq.page();
   }
 }
@@ -95,7 +124,12 @@ function lineItemId(line: { sku?: string | null }, productId: number): string {
   return line.sku?.trim() || String(productId);
 }
 
-type TrackedProduct = { sku?: string | null; id: number; name: string; effective_price?: number; price?: number; category?: { name: string }; variants?: { sku?: string | null }[] };
+/** One item as GA4 and the server container read it: item_id (the SKU), item_name, price, quantity, and item_category when known. */
+function lineItem(id: string, name: string, price: number, quantity: number, category?: string | null) {
+  return { item_id: id, item_name: name, price, quantity, ...(category ? { item_category: category } : {}) };
+}
+
+type TrackedProduct = { sku?: string | null; id: number; name: string; effective_price?: number; price?: number; category?: { name: string } | null; variants?: { sku?: string | null }[] };
 
 // What the product page has selected when it opens: the first variant, as the page itself does.
 function pageVariant(product: TrackedProduct) {
@@ -103,17 +137,13 @@ function pageVariant(product: TrackedProduct) {
 }
 
 function ga4Item(product: TrackedProduct, quantity = 1, variant: { sku?: string | null } | null = pageVariant(product)) {
-  return {
-    item_id: feedItemId(product, variant),
-    item_name: product.name,
-    price: product.effective_price ?? product.price ?? 0,
-    ...(product.category ? { item_category: product.category.name } : {}),
-    quantity,
-  };
+  return lineItem(feedItemId(product, variant), product.name, product.effective_price ?? product.price ?? 0, quantity, product.category?.name);
 }
 
+const cartLineItem = (item: CartItem) => lineItem(lineItemId(item, item.productId), item.name, item.price, item.quantity, item.category);
+
 export function trackViewItem(product: Product) {
-  pushDataLayer({
+  const eventId = pushDataLayer({
     event: "view_item",
     ecommerce: {
       currency: CURRENCY,
@@ -121,20 +151,28 @@ export function trackViewItem(product: Product) {
       items: [ga4Item(product)],
     },
   });
-  fbqTrack("ViewContent", {
-    content_ids: [feedItemId(product, pageVariant(product))],
-    content_name: product.name,
-    content_type: "product",
-    currency: CURRENCY,
-    value: product.effective_price,
-  });
-  ttqTrack("ViewContent", {
-    content_id: feedItemId(product, pageVariant(product)),
-    content_name: product.name,
-    content_type: "product",
-    currency: CURRENCY,
-    value: product.effective_price,
-  });
+  fbqTrack(
+    "ViewContent",
+    {
+      content_ids: [feedItemId(product, pageVariant(product))],
+      content_name: product.name,
+      content_type: "product",
+      currency: CURRENCY,
+      value: product.effective_price,
+    },
+    eventId,
+  );
+  ttqTrack(
+    "ViewContent",
+    {
+      content_id: feedItemId(product, pageVariant(product)),
+      content_name: product.name,
+      content_type: "product",
+      currency: CURRENCY,
+      value: product.effective_price,
+    },
+    eventId,
+  );
 }
 
 // The products a landing page puts in front of the visitor, as the ids the feeds use (a variant with its own SKU is its
@@ -161,7 +199,7 @@ export function trackViewContentList(products: Product[], listName: string) {
 
   const payload = viewContentListPayload(products);
 
-  pushDataLayer({
+  const eventId = pushDataLayer({
     event: "view_item_list",
     ecommerce: {
       item_list_name: listName,
@@ -169,13 +207,17 @@ export function trackViewContentList(products: Product[], listName: string) {
       items: products.map((p) => ga4Item(p)),
     },
   });
-  fbqTrack("ViewContent", payload);
-  ttqTrack("ViewContent", {
-    contents: payload.contents.map((item) => ({ content_id: item.id, quantity: item.quantity, price: item.item_price })),
-    content_type: "product",
-    currency: CURRENCY,
-    value: payload.value,
-  });
+  fbqTrack("ViewContent", payload, eventId);
+  ttqTrack(
+    "ViewContent",
+    {
+      contents: payload.contents.map((item) => ({ content_id: item.id, quantity: item.quantity, price: item.item_price })),
+      content_type: "product",
+      currency: CURRENCY,
+      value: payload.value,
+    },
+    eventId,
+  );
 }
 
 export function trackViewItemList(products: Product[], listName: string) {
@@ -197,12 +239,7 @@ export function trackViewCart(items: CartItem[], value: number) {
     ecommerce: {
       currency: CURRENCY,
       value,
-      items: items.map((item) => ({
-        item_id: lineItemId(item, item.productId),
-        item_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
+      items: items.map(cartLineItem),
     },
   });
 }
@@ -217,7 +254,7 @@ export function trackSearch(term: string) {
 export function trackAddToCart(product: CartAddableProduct, quantity: number, variant: { sku?: string | null } | null = null) {
   const value = product.effective_price * quantity;
   const id = feedItemId(product, variant);
-  pushDataLayer({
+  const eventId = pushDataLayer({
     event: "add_to_cart",
     ecommerce: {
       currency: CURRENCY,
@@ -225,20 +262,28 @@ export function trackAddToCart(product: CartAddableProduct, quantity: number, va
       items: [{ ...ga4Item(product, quantity, variant), item_id: id }],
     },
   });
-  fbqTrack("AddToCart", {
-    content_ids: [id],
-    content_name: product.name,
-    content_type: "product",
-    currency: CURRENCY,
-    value,
-  });
-  ttqTrack("AddToCart", {
-    content_id: id,
-    content_name: product.name,
-    content_type: "product",
-    currency: CURRENCY,
-    value,
-  });
+  fbqTrack(
+    "AddToCart",
+    {
+      content_ids: [id],
+      content_name: product.name,
+      content_type: "product",
+      currency: CURRENCY,
+      value,
+    },
+    eventId,
+  );
+  ttqTrack(
+    "AddToCart",
+    {
+      content_id: id,
+      content_name: product.name,
+      content_type: "product",
+      currency: CURRENCY,
+      value,
+    },
+    eventId,
+  );
 }
 
 export function trackRemoveFromCart(item: CartItem) {
@@ -247,42 +292,73 @@ export function trackRemoveFromCart(item: CartItem) {
     ecommerce: {
       currency: CURRENCY,
       value: item.price * item.quantity,
-      items: [
-        {
-          item_id: lineItemId(item, item.productId),
-          item_name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        },
-      ],
+      items: [cartLineItem(item)],
     },
   });
 }
 
-export function trackBeginCheckout(items: CartItem[], value: number) {
-  if (items.length === 0) return;
-  const ga4Items = items.map((item) => ({
-    item_id: lineItemId(item, item.productId),
-    item_name: item.name,
-    price: item.price,
-    quantity: item.quantity,
-  }));
+// Whether marketing cookies and pixels may be used right now: the visitor's saved choice, or the default for the cookie
+// mode (everything in notice mode, nothing in opt-in mode until they choose). Mirrors marketingAllowed() in consent.ts.
+function marketingAllowedNow(): boolean {
+  return typeof window === "undefined" ? false : window.anaizaConsent ? window.anaizaConsent.effective().m : true;
+}
 
-  pushDataLayer({
-    event: "begin_checkout",
-    ecommerce: { currency: CURRENCY, value, items: ga4Items },
-  });
-  fbqTrack("InitiateCheckout", {
-    content_ids: ga4Items.map((item) => item.item_id),
-    contents: ga4Items.map((item) => ({ id: item.item_id, quantity: item.quantity })),
-    currency: CURRENCY,
-    value,
-    num_items: items.reduce((sum, item) => sum + item.quantity, 0),
-  });
-  ttqTrack("InitiateCheckout", {
-    contents: ga4Items.map((item) => ({ content_id: item.item_id, quantity: item.quantity, price: item.price })),
-    currency: CURRENCY,
-    value,
+/** The id of the customer who is signed in on this browser, or null (a guest). */
+export function signedInCustomerId(): number | null {
+  try {
+    return loadAuth(window.localStorage)?.customer.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The hashed email, phone and external id of the buyer for the data layer, or null: when marketing is not allowed (nothing is hashed or pushed at
+ * all), when the page knows nothing about the buyer yet, or when the browser cannot hash. Never a raw value.
+ */
+async function contactForDataLayer(buyer: Buyer | null | undefined): Promise<ContactUserData | null> {
+  if (!buyer || !marketingAllowedNow()) return null;
+
+  return buildContactHashes(buyer).catch(() => null);
+}
+
+/** Runs `push` now when there is nothing to hash, else once the hashes are ready (a few milliseconds later). */
+function withContact(buyer: Buyer | null | undefined, push: (userData: ContactUserData | null) => void) {
+  if (!buyer || !marketingAllowedNow()) return push(null);
+
+  void contactForDataLayer(buyer).then(push);
+}
+
+export function trackBeginCheckout(items: CartItem[], value: number, buyer?: Buyer | null) {
+  if (items.length === 0) return;
+  const ga4Items = items.map(cartLineItem);
+
+  withContact(buyer, (userData) => {
+    const eventId = pushDataLayer({
+      event: "begin_checkout",
+      ecommerce: { currency: CURRENCY, value, items: ga4Items },
+      ...(userData ? { user_data: userData } : {}),
+    });
+    fbqTrack(
+      "InitiateCheckout",
+      {
+        content_ids: ga4Items.map((item) => item.item_id),
+        contents: ga4Items.map((item) => ({ id: item.item_id, quantity: item.quantity })),
+        currency: CURRENCY,
+        value,
+        num_items: items.reduce((sum, item) => sum + item.quantity, 0),
+      },
+      eventId,
+    );
+    ttqTrack(
+      "InitiateCheckout",
+      {
+        contents: ga4Items.map((item) => ({ content_id: item.item_id, quantity: item.quantity, price: item.price })),
+        currency: CURRENCY,
+        value,
+      },
+      eventId,
+    );
   });
 }
 
@@ -293,30 +369,23 @@ export function trackAddShippingInfo(items: CartItem[], value: number, shippingT
       currency: CURRENCY,
       value,
       shipping_tier: shippingTier,
-      items: items.map((item) => ({
-        item_id: lineItemId(item, item.productId),
-        item_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
+      items: items.map(cartLineItem),
     },
   });
 }
 
-export function trackAddPaymentInfo(items: CartItem[], value: number, paymentMethod: PaymentMethod) {
-  pushDataLayer({
-    event: "add_payment_info",
-    ecommerce: {
-      currency: CURRENCY,
-      value,
-      payment_type: paymentMethod,
-      items: items.map((item) => ({
-        item_id: lineItemId(item, item.productId),
-        item_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-    },
+export function trackAddPaymentInfo(items: CartItem[], value: number, paymentMethod: PaymentMethod, buyer?: Buyer | null) {
+  withContact(buyer, (userData) => {
+    pushDataLayer({
+      event: "add_payment_info",
+      ecommerce: {
+        currency: CURRENCY,
+        value,
+        payment_type: paymentMethod,
+        items: items.map(cartLineItem),
+      },
+      ...(userData ? { user_data: userData } : {}),
+    });
   });
 }
 
@@ -326,23 +395,25 @@ function isWalletOrder(order: Order): boolean {
   return order.payment_method === "bkash" || order.payment_method === "nagad" || order.payment_method === "rocket";
 }
 
-// Cash on delivery counts as a sale when it is placed. A wallet order does not: a payment that cannot be matched
-// must never show up as revenue. So for a wallet order this reports only that an order is waiting for its payment
-// (no value, no items, nothing a platform could read as a purchase), and the shop's server sends the Purchase to Meta
-// and TikTok itself once the payment has been verified.
-// Whether marketing cookies and pixels may be used right now: the visitor's saved choice, or the default for the cookie
-// mode (everything in notice mode, nothing in opt-in mode until they choose). Mirrors marketingAllowed() in consent.ts.
-function marketingAllowedNow(): boolean {
-  return typeof window === "undefined" ? false : window.anaizaConsent ? window.anaizaConsent.effective().m : true;
-}
-
-// Meta advanced matching: the same hashed fields as the server's Purchase event, handed to the pixel just before it.
+// Meta advanced matching: the same hashed fields as the server's Purchase event, handed to the pixel just before it (direct mode only).
 function fbqAdvancedMatching(userData: MetaUserData) {
   const pixelId = typeof window === "undefined" ? null : (window.anaizaConsent?.config?.meta ?? null);
   if (!pixelId || typeof window.fbq !== "function" || gtmOwnsBrowserTags()) return;
   window.fbq("init", pixelId, userData);
 }
 
+/**
+ * What a purchase is worth to GA4, Meta and TikTok: the items total after any discount, WITHOUT the delivery fee (that goes in `shipping`).
+ * The order's total is items + delivery - discount, so the items total after discount is total - delivery.
+ */
+export function purchaseValue(order: Pick<Order, "total" | "delivery_fee">): number {
+  return Math.max(0, order.total - order.delivery_fee);
+}
+
+// Cash on delivery counts as a sale when it is placed. A wallet order does not: a payment that cannot be matched
+// must never show up as revenue. So for a wallet order this reports only that an order is waiting for its payment
+// (no value, no items, nothing a platform could read as a purchase), and the shop's server sends the Purchase to Meta
+// and TikTok itself once the payment has been verified.
 export async function trackPurchase(order: Order): Promise<void> {
   if (isWalletOrder(order)) {
     pushDataLayer({
@@ -353,16 +424,15 @@ export async function trackPurchase(order: Order): Promise<void> {
     return;
   }
 
-  // Enhanced conversions and advanced matching, only when the visitor's cookie choice allows marketing. Hashed in the
-  // browser, so no raw email, phone number or name is ever pushed.
-  const userData = marketingAllowedNow() ? await buildUserData(order.customer).catch(() => null) : null;
+  const buyer: Buyer = { email: order.customer.email, phone: order.customer.phone, customerId: signedInCustomerId() };
 
-  const ga4Items = order.items.map((item) => ({
-    item_id: lineItemId(item, item.product_id),
-    item_name: item.product_name,
-    price: item.price,
-    quantity: item.quantity,
-  }));
+  // Hashed (SHA-256) in the browser, only when the visitor's cookie choice allows marketing: never a raw email or phone number.
+  const userData = await contactForDataLayer(buyer);
+  // Direct mode only: Meta's fuller advanced matching for the pixel itself (name, city, region too), never put in the data layer.
+  const pixelMatching = marketingAllowedNow() && !gtmOwnsBrowserTags() ? await buildUserData(order.customer).catch(() => null) : null;
+
+  const ga4Items = order.items.map((item) => lineItem(lineItemId(item, item.product_id), item.product_name, item.price, item.quantity, item.category));
+  const value = purchaseValue(order);
 
   // Must match the event_id the backend sends for this order's server-side
   // Meta Conversions API / TikTok Events API call (see
@@ -377,22 +447,22 @@ export async function trackPurchase(order: Order): Promise<void> {
     event_id: eventId,
     ecommerce: {
       transaction_id: String(order.id),
-      value: order.total,
+      value,
       currency: CURRENCY,
       shipping: order.delivery_fee,
       items: ga4Items,
     },
-    // Hashed (SHA-256) in the browser, only when the visitor's cookie choice allows marketing: never a raw email, phone or name.
-    ...(userData ? { user_data: userData.google, meta_user_data: userData.meta } : {}),
+    ...(userData ? { user_data: userData } : {}),
   });
-  if (userData) fbqAdvancedMatching(userData.meta);
+  if (pixelMatching) fbqAdvancedMatching(pixelMatching.meta);
   fbqTrack(
     "Purchase",
     {
       content_ids: ga4Items.map((item) => item.item_id),
+      content_type: "product",
       contents: ga4Items.map((item) => ({ id: item.item_id, quantity: item.quantity })),
       currency: CURRENCY,
-      value: order.total,
+      value,
     },
     eventId,
   );
@@ -404,7 +474,7 @@ export async function trackPurchase(order: Order): Promise<void> {
       content_type: "product",
       contents: ga4Items.map((item) => ({ content_id: item.item_id, quantity: item.quantity, price: item.price })),
       currency: CURRENCY,
-      value: order.total,
+      value,
     },
     eventId,
   );
