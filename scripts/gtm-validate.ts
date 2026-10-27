@@ -45,6 +45,7 @@ if (reference) {
 
 report("docs/gtm-container-anaizanest.json", validateExport(full, { reference }));
 report("docs/gtm-container-anaizanest-v2.json", validateExport(read(`${docs}gtm-container-anaizanest-v2.json`), { reference }));
+report("docs/gtm-container-anaizanest-v3.json", validateExport(read(`${docs}gtm-container-anaizanest-v3.json`), { reference }));
 
 const partsDir = `${docs}gtm/`;
 if (existsSync(partsDir)) {

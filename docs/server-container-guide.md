@@ -19,6 +19,8 @@ Server container GTM-MT7HFDG4 (Stape, your own address)
 The shop's own server (Laravel) --- Purchase, same event_id (order-<number>) -------------------------> Meta   (stays on while you switch over)
 ```
 
+> **Status (28 Oct 2026).** The server container `GTM-MT7HFDG4` is built and tested, at `https://metrics.anaizanest.com`. **What was actually built is in section 11**, the Meta Test events check is in section 12, the page_view check in section 13 and the web container **version 3** in section 14. Sections 3 to 6 are the longer, fully manual way of building the same thing, kept for reference. **If page views look doubled, go straight to section 13.**
+
 **What you need before you start:** access to Stape (the container `GTM-MT7HFDG4`), to the web container `GTM-MS2HWSWF`, to Hostinger (the DNS of `anaizanest.com`), to Meta Events Manager, and to GA4. Plan about two hours. Do the steps **in order**.
 
 ---
@@ -38,7 +40,7 @@ A server container works on Stape's own address (today `https://ywzcczvd.usv.sta
 4. **Back in Stape**, press **Verify** (or wait; it checks by itself). The domain is ready when it shows **Connected** (a green tick) and an SSL certificate is issued. This can take a few minutes to a few hours. If it stays red after an hour, check each value for typos, and that you did not put the full domain in the Name box (the Name is just `metrics`).
 5. Check it in a browser: open `https://metrics.anaizanest.com/healthy` (Stape's health address; if that gives "not found", ask Stape support what the check address is). A short "OK" or similar means it is alive.
 
-**Where the address is kept.** The shop's **Marketing Settings do not have a field for the server container's address**, so there is nothing to change in the admin and **no storefront rebuild or upload is needed**. The address lives in **one place only**: the constant `AN - Server URL` in the web container (step 3). Changing it needs only a GTM publish. (The shop's pages are not involved at all: the browser tags in GTM read it.)
+**Where the address is kept.** The browser tags read it from **one place only**: the constant `AN - Server URL` in the web container (step 3), so changing it needs only a GTM publish and **no storefront rebuild or upload**. (Marketing Settings also has a "Server container address (Stape)" field now. It is for your own record and for the shop's API; the browser tags do not read it. It must be `https://...` with no slash at the end.) Changing it needs only a GTM publish. (The shop's pages are not involved at all: the browser tags in GTM read it.)
 
 *Later, before you turn on the shop's strict security policy:* the shop's `.htaccess` has a Content-Security-Policy that only **reports** for now. When it is switched to enforcing, add your server address (`https://metrics.anaizanest.com`) to its `connect-src` list.
 
@@ -201,7 +203,7 @@ Click a row to check: the **Event ID** must be the same in the Browser and the S
 2. **Web container** > workspace `Server v2` > **Submit** > Version name `v2 with server container` > **Publish**. (If you want to be careful, publish it first with `AN - Server URL` still `NONE` and look at the Meta rows, then set the address and publish again.)
 3. **Remove the test codes:** in the server container's Meta tag, empty the *Test event code* and publish the server container again; in the shop admin, **Marketing Settings > Meta test event code**, empty it and Save. While a test code is set, real sales are marked as tests.
 4. Look at GA4 Realtime and Meta Events Manager for a day: the numbers should match what the shop's admin shows.
-5. **Later, in a separate step (not part of this guide):** the shop's own server also sends the Purchase to Meta while this container does. They merge by the same id. Decide which one stays, and read **"Value"** in `docs/tracking-spec.md`: the shop's own server sends the total **with delivery**, this container the items total **without** delivery. A switch to turn the shop's sending off will be built separately.
+5. **The shop's own server (Laravel) also sends the Purchase to Meta.** Keep it ON (Marketing Settings > "Send Purchase to Meta from Laravel (CAPI)"): bKash, Nagad and Rocket orders only get a Purchase from there (when you verify the payment), because the browser never sends one for them. For the other orders Meta merges the two by the same id, `order-<number>`. Both send the items total **without** delivery (`total - delivery fee`).
 
 ## 10. Troubleshooting
 
@@ -211,12 +213,83 @@ Click a row to check: the **Event ID** must be the same in the Browser and the S
 | Events arrive, but Meta shows no Server rows | The Meta tag did not fire (no trigger for that event, consent not granted), or Meta refused it (token, pixel id, test code) | Server preview > click the request > the tag's status. Wrong token: generate a new one in Events Manager and paste it into the tag |
 | Server rows but not "Deduplicated" | The event ids differ (the browser's `eventID` is not the event's `event_id`), or the event names differ (`ViewContent` vs `view_content`) | Compare the Event ID of the Browser and Server rows. In the web container the Meta tag must have `eventID: {{AN - DLV event_id}}`; in the server tag, Event ID must be `{{AN - ED event_id}}`. Names must be Meta's exact names (table in 6b) |
 | Duplicated Purchase in Meta (two Purchases, not merged) | The shop's own server and this container use different ids or the other server sender is still on with a different id | Both must be `order-<number>`. In Test events, open each and compare |
-| Wrong value | The shop's own server sends the total **with delivery**, this container without | See "Value" in `docs/tracking-spec.md`. Compare the Browser, Server and shop-server rows |
+| Wrong value | The browser, this container and the shop's own server should all send the items total **without** delivery | See "Value" in `docs/tracking-spec.md`. Compare the Browser, Server and shop-server rows |
 | Duplicated GA4 hits (every event twice) | The browser also sends GA4 directly, or "Page changes based on browser history events" is on, or a leftover version-1 / Stape tag is still active | Step 0, point 2. In the web container, only `AN - Google tag (GA4)` and the three `AN - GA4 - ...` tags may exist for GA4: pause any other GA4 tag. `AN - Server URL` must be the only route |
-| `page_view` counted twice | Enhanced measurement "history events" is still on | Step 0, point 2 |
+| `page_view` counted twice or three times, or one without an `event_id` | Enhanced measurement "history events" is still on in the GA4 data stream | Section 13 |
+| A Browser `PageView` in Meta Test events with an id starting `ob3_plugin-set_` | Meta's pixel sent a PageView of its own on a page change (web container version 2) | Import version 3 (section 14) |
 | Nothing for a visitor who refused cookies | Consent is blocking (correct) | Press Accept and repeat. GA4 sends only cookieless pings without analytics consent; Meta sends nothing without `ad_storage` |
 | The hashed email in Meta looks different from the shop's | The template hashed an already-hashed value | In the server preview compare the incoming `sha256_email_address` with what the Meta tag sent. If they differ, switch the template's hashing option off for those fields |
 | Meta test events show up as real sales later | A test event code is still saved | Step 9, point 3 |
+
+## 11. The server container as built (28 Oct 2026)
+
+This is what exists in `GTM-MT7HFDG4`. Use it as the checklist if you ever have to rebuild it.
+
+| Part | Setting |
+| --- | --- |
+| Container URL (the custom domain) | `https://metrics.anaizanest.com`, connected in Stape. **The server container's own Admin > Container settings > "Server container URL" must be this same address**, or the preview cannot connect |
+| Client | **Google Analytics: GA4 (Web)**, with **Server Managed cookies** and the option **"Migrate from JavaScript Managed Client ID"** switched on (a visitor who already had a Google cookie keeps the same client id) |
+| Tag 1: `GA4 - all events` | Passes every GA4 event on to Google Analytics. Trigger: **Client Name equals `GA4`** |
+| Tag 2: `Meta CAPI - 6 events` | The Stape **Facebook Conversion API** template. Pixel `956723840598016`, your access token (typed in Stape only). **Event data: "Inherit from client"**, with **"Automap user data"** and **"Automap custom data"** on. Consent setting **"Send data always"** (your decision: the server sends to Meta whether or not the visitor accepted marketing cookies; the browser's tags still wait for `ad_storage`) |
+| Trigger `Meta - 6 events` | Event Name **matches RegEx** `^(page_view|view_item|add_to_cart|begin_checkout|add_payment_info|purchase)$`. Nothing else reaches Meta, so `view_item_list` (a campaign landing page's ViewContent), `view_cart`, `search`, `remove_from_cart` and `add_shipping_info` are browser-only in Meta |
+
+**Test ID workflow.** In Meta Events Manager > Test events, copy the code (like `TEST12345`). Paste it into the Meta tag's **Test ID** field, test, and **clear the field before you publish the server container**. While a test ID is set, real sales are filed as tests. Do the same for the shop's own server (Marketing Settings > Meta test event code) if you test purchases.
+
+**Preview.** The server container's preview works only if Admin > Container settings > "Server container URL" holds the address the browser really calls (`https://metrics.anaizanest.com`). Open the web preview (Tag Assistant) and the server preview side by side.
+
+**Never screenshot or paste a request URL from the server preview.** The URL of the request to Meta can contain the access token (`access_token=...`). Photograph only the tag status and the Event Data. If one is ever shared by mistake, generate a new token in Events Manager and paste it into the tag.
+
+**"Send data always" and consent.** With this setting a visitor who refused marketing cookies still gets a server-only PageView, ViewContent and so on in Meta, built from the request (IP address, browser, and hashed contact details only if the shop pushed them, which it does only when marketing is allowed). That is your decision to make, and yours to check against the cookie policy on the shop.
+
+## 12. How to check deduplication in Meta Test events
+
+1. Events Manager > your dataset > **Test events**. Choose **Test browser events**, enter the shop's address, and open it. Paste the test code into the server tag (section 11).
+2. Do one action at a time (open a page, open a product, add to cart, open the checkout, choose a payment method, place a COD order). After each, a **Browser** row and a **Server** row appear.
+3. Click a row: **Event ID** must be the same in both (`page_view.<16 characters>`, `view_item.<...>`, `add_to_cart.<...>`, `begin_checkout.<...>`, `add_payment_info.<...>`, and `order-<number>` for a purchase). The pair should show **Deduplicated**.
+4. What each wrong picture means:
+   - A **Server** PageView with an **empty** Event ID: a `page_view` reached the server without an `event_id`. That is GA4's Enhanced measurement (section 13), not the shop.
+   - Two **Server** PageView rows with the **same** id, a second apart: the same cause (the Google tag sent the shop's last page_view again when the page changed).
+   - A **Browser** PageView with an id beginning `ob3_plugin-set_`: Meta's pixel sent its own PageView when the page changed. Web container version 3 stops it (section 14).
+   - ViewContent for a campaign landing page has a **Browser** row only. Correct: the server regex does not include `view_item_list`.
+   - A visitor who has not accepted marketing cookies: **Server** rows only (see "Send data always").
+
+## 13. page_view: exactly one per page, always with an event_id
+
+**What was found** (headless Chrome, the built shop, the published container; every hit was answered locally and nothing was sent). The shop itself pushes **one** `page_view` per page, each with its own id (`npm run tracking:check`: three pages, three ids, all different). The extra hits come from **GA4's Enhanced measurement**: the Google tag listens to the browser history, and on every client-side page change it sends a `page_view` of its own (no `event_id`), and a further request repeats the shop's `page_view` id a moment later (most likely the container's `page_view` tag firing again on the event Enhanced measurement raises). So a client-side page change produced **three `page_view` requests** (one with the id, one without, one with the same id again) and a full page load produced one. With the history listener taken off, the same visit produced exactly one per page. On the home page the product cards are plain links, so those are full loads; the menu, the cart drawer and the other Next links are client-side changes.
+
+**The fix is one setting in GA4 (it cannot be in a container file):**
+
+1. analytics.google.com > Admin > Data streams > your web stream > **Enhanced measurement** (the gear) > **Page views** > **Show advanced settings** > **untick "Page changes based on browser history events"** > **Save**.
+2. Wait a few minutes, then hard-refresh the shop (Ctrl+F5).
+
+(The Google tag already has `send_page_view` off in versions 2 and 3, and no `gtag('config')` call is made by the shop when a GTM container is set, so nothing else sends a page_view.)
+
+**Check it in the server container's Tag Assistant, in three steps:**
+
+1. Start the server preview and the web preview (section 11). On the shop, visit three pages **using the menu links** (home, a category, the cart).
+2. In the server preview, click each `page_view` request. In Event Data find `event_id` (it looks like `page_view.1a2b3c4d5e6f7a8b`) and `page_location`.
+3. Count the `page_view` requests per page. **Right: one per page, each with an `event_id`, all different.** Wrong: a request with no `event_id`, or two with the same one. The GA4 setting is still on (step 1 above).
+
+**A safety net in the server container (optional, recommended).** Add a trigger `Blank page_view`: Event Name **equals** `page_view` AND Event Data `event_id` **does not match RegEx** `.+`. Add it as an **exception (blocking) trigger** to both tags, `GA4 - all events` and `Meta CAPI - 6 events`. A page_view without an id can then never reach Google or Meta, even if the setting is turned back on. (It does not remove the repeat with the *same* id: only the GA4 setting does that.)
+
+## 14. Web container, version 3
+
+File: `docs/gtm-container-anaizanest-v3.json`. It is version 2 plus one fix and nothing else: in the two tags that install the Meta pixel (`AN - Meta Pixel - init + PageView` and `AN - Meta Pixel - init after consent`) the line `fbq.disablePushState = true;` is added, between the pixel install and `fbq('init', ...)`.
+
+**Why.** Meta's pixel script listens to the browser history and, unless told not to, sends its own PageView, without an `eventID`, on every page change. Meta files it under a made-up id (`ob3_plugin-set_...`), which is what the Test events rows were. (Checked with `node scripts/meta-pixel-history-check.cjs`: with the version 2 tag a page change sent a second PageView with no id; with the version 3 tag it sends none.)
+
+**What did not change:** every other tag, trigger and variable is identical to version 2, including `AN - Server URL` (a constant, `NONE` in the file) and the Google tag's `send_page_view` = false. The tag `AN - Meta Pixel - init after consent` still sends **no PageView**: the page you are on when you accept was already counted by the server, and every later page is counted by `init + PageView` with its own id. So when marketing is allowed Meta gets one Browser and one Server PageView per page with the same id (Deduplicated), and when it is not allowed, a Server-only PageView.
+
+**Import (about 10 minutes):**
+
+1. Web container > Admin > **Export Container** > the Live version. Keep the file (your way back).
+2. **Workspaces** > **+** > a new workspace `v3`.
+3. Admin > **Import Container** > choose `gtm-container-anaizanest-v3.json` > workspace *Existing* > `v3` > **Merge** > **Overwrite conflicting tags, triggers, and variables** > Confirm.
+4. Open the variable `AN - Server URL`. If it says `NONE`, **set it to `https://metrics.anaizanest.com`** again (the import overwrites it with the file's value).
+5. Check the **Tags** list: exactly twelve tags, all starting `AN - `. Pause or delete any other tag that sends GA4 or Meta events (an import cannot delete; the old names are listed in section 2, step 5).
+6. Preview both containers (section 13, then section 12), then **Submit** and **Publish**.
+
+**No shop upload is needed for version 3:** no page of the shop changed.
 
 ## What is not included
 
