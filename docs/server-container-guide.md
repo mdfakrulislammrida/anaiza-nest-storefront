@@ -19,7 +19,7 @@ Server container GTM-MT7HFDG4 (Stape, your own address)
 The shop's own server (Laravel) --- Purchase, same event_id (order-<number>) -------------------------> Meta   (stays on while you switch over)
 ```
 
-> **Status (28 Oct 2026).** The server container `GTM-MT7HFDG4` is built and tested, at `https://metrics.anaizanest.com`. **What was actually built is in section 11**, the Meta Test events check is in section 12, the page_view check in section 13 and the web container **version 3** in section 14. Sections 3 to 6 are the longer, fully manual way of building the same thing, kept for reference. **If page views look doubled, go straight to section 13.**
+> **Status (28 Oct 2026).** The server container `GTM-MT7HFDG4` is built and tested, at `https://metrics.anaizanest.com`. **What was actually built is in section 11**, the Meta Test events check is in section 12, the page_view check in section 13, the web container **version 3** in section 14 and **version 4** (the visitor's id on every event, and Search, Lead, AddToWishlist, CompleteRegistration) in section 15, with catalogue readiness in section 16. Sections 3 to 6 are the longer, fully manual way of building the same thing, kept for reference. **If page views look doubled, go straight to section 13.**
 
 **What you need before you start:** access to Stape (the container `GTM-MT7HFDG4`), to the web container `GTM-MS2HWSWF`, to Hostinger (the DNS of `anaizanest.com`), to Meta Events Manager, and to GA4. Plan about two hours. Do the steps **in order**.
 
@@ -231,7 +231,7 @@ This is what exists in `GTM-MT7HFDG4`. Use it as the checklist if you ever have 
 | Client | **Google Analytics: GA4 (Web)**, with **Server Managed cookies** and the option **"Migrate from JavaScript Managed Client ID"** switched on (a visitor who already had a Google cookie keeps the same client id) |
 | Tag 1: `GA4 - all events` | Passes every GA4 event on to Google Analytics. Trigger: **Client Name equals `GA4`** |
 | Tag 2: `Meta CAPI - 6 events` | The Stape **Facebook Conversion API** template. Pixel `956723840598016`, your access token (typed in Stape only). **Event data: "Inherit from client"**, with **"Automap user data"** and **"Automap custom data"** on. Consent setting **"Send data always"** (your decision: the server sends to Meta whether or not the visitor accepted marketing cookies; the browser's tags still wait for `ad_storage`) |
-| Trigger `Meta - 6 events` | Event Name **matches RegEx** `^(page_view|view_item|add_to_cart|begin_checkout|add_payment_info|purchase)$`. Nothing else reaches Meta, so `view_item_list` (a campaign landing page's ViewContent), `view_cart`, `search`, `remove_from_cart` and `add_shipping_info` are browser-only in Meta |
+| Trigger `Meta - 6 events` | Event Name **matches RegEx** `^(page_view|view_item|add_to_cart|begin_checkout|add_payment_info|purchase)$` (version 3 and before; **version 4 widens it to ten events, see section 15**). Nothing else reaches Meta, so `view_item_list` (a campaign landing page's ViewContent), `view_cart`, `search`, `remove_from_cart` and `add_shipping_info` are browser-only in Meta |
 
 **Test ID workflow.** In Meta Events Manager > Test events, copy the code (like `TEST12345`). Paste it into the Meta tag's **Test ID** field, test, and **clear the field before you publish the server container**. While a test ID is set, real sales are filed as tests. Do the same for the shop's own server (Marketing Settings > Meta test event code) if you test purchases.
 
@@ -291,6 +291,91 @@ File: `docs/gtm-container-anaizanest-v3.json`. It is version 2 plus one fix and 
 
 **No shop upload is needed for version 3:** no page of the shop changed.
 
+## 15. Web container, version 4 (28 Oct 2026)
+
+File: `docs/gtm-container-anaizanest-v4.json`. It is version 3 plus the visitor's id on every event and four more events for Meta. Nothing else changed (a test checks it): the Google tag, `AN - Server URL`, and the other tags, triggers and variables are version 3 byte for byte.
+Seventeen tags instead of twelve.
+
+### What changed
+
+| Part | Change |
+| --- | --- |
+| `AN - GA4 - page_view`, `AN - GA4 - search` | now also send the event parameter `external_id` (the ecommerce tag already did) |
+| `AN - GA4 - ecommerce events` | also fires on the new trigger `AN - CE add_to_wishlist` |
+| **new** `AN - GA4 - lead and sign_up` | `generate_lead` and `sign_up`, with `method`, `event_id`, `external_id` |
+| `AN - Meta Pixel - init + PageView`, `AN - Meta Pixel - init after consent` | the pixel is started with `{ external_id }` as advanced matching when the page has it. If the pixel is already running without an id it is started again with it; if it already has an id it keeps it (Meta ignores a second one) |
+| `AN - Meta Pixel - init after consent` | also runs on the new trigger `AN - CE anaiza_identity_changed` (the visitor signed in or out, or got an id after allowing marketing). Still sends no PageView |
+| **new** Meta tags | `AN - Meta Pixel - Search`, `AN - Meta Pixel - Lead (WhatsApp or phone)`, `AN - Meta Pixel - AddToWishlist`, `AN - Meta Pixel - CompleteRegistration`, each with `eventID` = the event's `event_id`, each needing `ad_storage` |
+| **new** triggers | `AN - CE generate_lead`, `AN - CE add_to_wishlist`, `AN - CE sign_up`, `AN - CE anaiza_identity_changed` |
+| **new** variable | `AN - DLV method` (`AN - DLV user_data.external_id` already exists in version 2 and 3) |
+
+The shop (a new storefront upload) pushes the new events and puts `user_data.external_id` on all of them. **Upload the shop and import version 4 in either order**: until both are done, the new events simply do nothing and the old ones work as before.
+
+### The one step in the server container (by hand)
+
+The Meta trigger only lets six events through. Widen it, **then publish the server container first** (a wider pattern is harmless while the web container is still version 3):
+
+1. Server container `GTM-MT7HFDG4` > **Triggers** > `Meta - 6 events` (rename it to `Meta - 10 events` if you like).
+2. Event Name **matches RegEx**: `^(page_view|view_item|add_to_cart|begin_checkout|add_payment_info|purchase|search|generate_lead|add_to_wishlist|sign_up)$` (the same text as in `gtmContainerV4.test.ts`, which keeps it equal to the container).
+3. **Preview** and **Submit/Publish** the server container.
+
+### Does the Stape template map these events by itself? Yes (read from its source)
+
+The mapping below is read from the template's own code (`stape-io/facebook-tag`, `template.tpl`, function `getEventName`, 28 Oct 2026), not guessed. With **Event Name Setup Method = "Inherit from client"**:
+
+| GA4 event (from the web container) | Meta event the tag sends | Needs a manual mapping? |
+| --- | --- | --- |
+| `search` | `Search` | No. The GA4 parameter `search_term` is also mapped to Meta's `search_string` by "Automap custom data" |
+| `generate_lead` | `Lead` | No |
+| `add_to_wishlist` | `AddToWishlist` | No (the `items` are mapped like `add_to_cart`'s) |
+| `sign_up` | `CompleteRegistration` | No |
+
+The same table also covers `page_view` (PageView), `view_item` (ViewContent), `add_to_cart`, `begin_checkout` (InitiateCheckout), `add_payment_info` and `purchase`. If you ever see a Server row named differently from its Browser row in Test events, the tag's Event Name Setup Method is not "Inherit from client": set it back, or choose **Standard** and pick the Meta event by hand.
+
+Three facts from the same source that matter for matching:
+
+- **`external_id`** is read from the event data key `external_id` (the GA4 parameter the web container sends), and a value that is already 64 hexadecimal characters is **not hashed again**. Good: the browser, the server container and the shop's own server all send the same hash.
+- **`content_ids`**: the tag's "Map item data to" defaults to **Contents** only. For a Meta catalogue and dynamic ads set it to **Both Contents and Content IDs**, so the server events carry `content_ids` as the browser's do. The item id is read from `item_id`, which is the SKU.
+- **Email and phone**: the template reads the hashed email from `user_data.sha256_email_address` and the phone from `user_data.phone_number` (or the event keys `email` and `phone`). The web container sends them as the flat GA4 parameters `sha256_email_address` and `sha256_phone_number`, which the template does **not** read by those names. **Check it:** in Meta Events Manager > Test events, open the Server row of a Purchase: under "Customer information parameters" you should see Email and Phone. If they are missing, in the Meta tag's **User Data** section set Email to an Event Data variable with key `sha256_email_address` and Phone to one with key `sha256_phone_number`. Do not skip this check: it decides how many sales Meta can match.
+
+### How to import version 4 (about 10 minutes)
+
+1. Web container > Admin > **Export Container** > the **Live** version. Keep the file (your way back).
+2. **Workspaces** > **+** > a new workspace `v4`.
+3. Admin > **Import Container** > `gtm-container-anaizanest-v4.json` > workspace *Existing* > `v4` > **Merge** > **Overwrite conflicting tags, triggers, and variables** > Confirm.
+4. Variables > `AN - Server URL`: if it says `NONE`, set it back to `https://metrics.anaizanest.com` (the import resets it to the file's value).
+5. Tags: you should now have **seventeen** tags, all starting `AN - ` (twelve before).
+6. **Preview** the web container with the server preview open, and try: a search (`/shop?search=tea`), a tap on the WhatsApp or phone link, the heart on a product, a new account. In the server preview each arrives as `search`, `generate_lead`, `add_to_wishlist`, `sign_up`, with an `event_id` and an `external_id`, and the Meta tag fires. In Meta Test events each has a Browser row and a Server row, **Deduplicated**.
+7. **Publish the server container only if you changed it** (the regex above; that is the "first" in the order). Then **Submit** and **Publish** the web container.
+
+### Check the pairs in Meta Test events
+
+| You do | Meta event | Rows |
+| --- | --- | --- |
+| Search in the shop | Search | Browser + Server, Deduplicated |
+| Tap the WhatsApp or phone link | Lead | Browser + Server, Deduplicated |
+| Switch on a heart | AddToWishlist | Browser + Server, Deduplicated |
+| Make a new account (email) | CompleteRegistration | Browser + Server, Deduplicated |
+
+A visitor who has not accepted marketing cookies gets **Server rows only** (no id is made, and the browser pixel waits for consent).
+
+### Keep the hashes out of GA4 (optional)
+
+`external_id`, `sha256_email_address` and `sha256_phone_number` travel as GA4 event parameters so the server container can hand them to Meta. They are random or hashed, but there is no reason for GA4 to store them. If the tag `GA4 - all events` has a way to remove event parameters (an "Event Parameters" or "Parameters to remove" section), remove these three there.
+
+## 16. Catalogue readiness (Meta catalogue and dynamic ads)
+
+A dynamic ad shows a catalogue item when an event's **`content_ids` equals the catalogue item's `id`**. In this shop they are the same text everywhere:
+
+| Where | Value |
+| --- | --- |
+| The shop's Meta feed (`/feeds/meta.csv`, Settings > Product feeds) | `id` = the SKU (a variant with its own SKU is its own item); a product with no SKU, its product id |
+| Browser events (ViewContent, AddToCart, AddToWishlist, InitiateCheckout, AddPaymentInfo, Purchase) | `content_ids` = the same ids, `content_type: product` |
+| Server container (Stape tag) | the items' `item_id` = the same ids; **set "Map item data to" = Both** so `content_ids` is sent, not only `contents` (section 15) |
+| The shop's own server Purchase (Meta Conversions API) | `content_ids` and `contents[].id` = the SKU, else the product id; `content_type: product` |
+
+When you make or edit a Meta catalogue: use `/feeds/meta.csv` as the data source, and its `id` column is already the value the events send. Do not build another feed with different ids.
+
 ## What is not included
 
-Google Ads conversions and Enhanced Conversions (the hashed details are in the data layer and the server container, but no tag sends them to Google), TikTok, server-side Purchase for **wallet** orders (bKash, Nagad, Rocket: the browser never sees them as sales, so only the shop's own server sends those, when you verify the payment), turning off the shop's own Purchase sender (a separate, later step), and an importable **server container** file: its structure cannot be checked here without a real export of a server container, so this guide is the way to build it. If you export the empty server container (Admin > Export Container in the server workspace) and add it to the repo, a file can be generated from it.
+`sign_up` / CompleteRegistration for a **Google** sign-in (the API's sign-in answer does not yet say whether the account is new; the shop is ready for an `is_new` flag and sends the event as soon as it is there), Meta events for `view_cart`, `remove_from_cart` and `add_shipping_info`, a TikTok pixel, Google Ads conversions and Enhanced Conversions (the hashed details are in the data layer and the server container, but no tag sends them to Google), TikTok, server-side Purchase for **wallet** orders (bKash, Nagad, Rocket: the browser never sees them as sales, so only the shop's own server sends those, when you verify the payment), turning off the shop's own Purchase sender (a separate, later step), and an importable **server container** file: its structure cannot be checked here without a real export of a server container, so this guide is the way to build it. If you export the empty server container (Admin > Export Container in the server workspace) and add it to the repo, a file can be generated from it.

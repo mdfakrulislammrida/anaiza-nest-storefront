@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { loadWishlist, WISHLIST_KEY } from "@/lib/storedState";
+import { trackAddToWishlist } from "@/lib/tracking";
 import type { Product } from "@/lib/types";
 
 export interface WishlistItem {
@@ -57,24 +58,30 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     [items],
   );
 
-  const toggle = useCallback((product: Product) => {
-    setItems((prev) => {
-      if (prev.some((item) => item.productId === product.id)) {
-        return prev.filter((item) => item.productId !== product.id);
-      }
-      return [
-        ...prev,
-        {
-          productId: product.id,
-          slug: product.slug,
-          name: product.name,
-          image: product.images?.[0]?.url ?? null,
-          price: product.effective_price,
-          sku: product.sku,
-        },
-      ];
-    });
-  }, []);
+  const toggle = useCallback(
+    (product: Product) => {
+      // Reported when the heart is switched on, once per tap (outside the state update, which React may run twice).
+      if (!items.some((item) => item.productId === product.id)) trackAddToWishlist(product);
+
+      setItems((prev) => {
+        if (prev.some((item) => item.productId === product.id)) {
+          return prev.filter((item) => item.productId !== product.id);
+        }
+        return [
+          ...prev,
+          {
+            productId: product.id,
+            slug: product.slug,
+            name: product.name,
+            image: product.images?.[0]?.url ?? null,
+            price: product.effective_price,
+            sku: product.sku,
+          },
+        ];
+      });
+    },
+    [items],
+  );
 
   const removeItem = useCallback((productId: number) => {
     setItems((prev) => prev.filter((item) => item.productId !== productId));

@@ -204,6 +204,10 @@ export interface CreateOrderPayload {
   fbclid?: string;
   gclid?: string;
   ttclid?: string;
+  // Meta's browser cookies and the visitor's hashed id, so the shop's own Purchase is matched to the same person as the browser's. Only with marketing consent.
+  fbp?: string;
+  fbc?: string;
+  external_id?: string;
   customer_name: string;
   customer_email?: string | null;
   customer_phone: string;

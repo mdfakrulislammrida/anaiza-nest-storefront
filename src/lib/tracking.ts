@@ -1,8 +1,10 @@
 import type { CartAddableProduct } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import type { Order, PaymentMethod, Product } from "./types";
-import { loadAuth } from "./storedState.ts";
+import { externalIdHash, externalIdSource, hashOf, knownHash, signedInCustomerId } from "./identity.ts";
 import { buildContactHashes, buildUserData, type Buyer, type ContactUserData, type MetaUserData } from "./userData.ts";
+
+export { signedInCustomerId };
 
 // All three platforms' scripts are injected conditionally (only when an
 // admin has actually set that ID -- see layout.tsx), so every function here
@@ -50,19 +52,65 @@ export function newEventId(event: string): string {
   return `${event}.${randomPart()}`;
 }
 
-/** Pushes one event and returns its event_id (the one given, else a new one). The previous ecommerce object and hashed contact are cleared first. */
-function pushDataLayer(event: { event: string; event_id?: string } & Record<string, unknown>): string {
-  const { event: name, event_id: given, ...rest } = event;
+// Pushes that are waiting for the visitor's id to be hashed (a few milliseconds, once per visit), so that later pushes do not overtake them.
+let waiting = 0;
+let tail: Promise<void> = Promise.resolve();
+
+/**
+ * Pushes one event and returns its event_id (the one given, else a new one). The previous ecommerce object and hashed contact are cleared first.
+ *
+ * Every event carries `user_data.external_id`: the SHA-256 of the visitor's id (identity.ts), only while marketing is allowed. The event may also bring
+ * hashed contact details of its own (`user_data`, the three checkout events); the id is added to them. The push is made at once when the hash is known and
+ * a moment later when it still has to be worked out; either way the order of pushes is kept.
+ */
+function pushDataLayer(event: { event: string; event_id?: string; user_data?: ContactUserData } & Record<string, unknown>): string {
+  const { event: name, event_id: given, user_data: contact, ...rest } = event;
   const eventId = given ?? newEventId(name);
 
   if (typeof window === "undefined") return eventId;
-  window.dataLayer = window.dataLayer || [];
-  // Clear the previous ecommerce object first -- Google's own recommended pattern, so object fields don't merge across events -- and the
-  // hashed contact details (user_data), which the data layer would otherwise keep for every later event of the visit.
-  window.dataLayer.push({ ecommerce: null, user_data: null });
-  window.dataLayer.push({ event: name, event_id: eventId, ...rest });
+
+  const write = (externalId: string | null) => {
+    const userData = { ...(contact ?? {}), ...(externalId ? { external_id: externalId } : {}) };
+
+    window.dataLayer = window.dataLayer || [];
+    // Clear the previous ecommerce object first -- Google's own recommended pattern, so object fields don't merge across events -- and the
+    // hashed contact details (user_data), which the data layer would otherwise keep for every later event of the visit.
+    window.dataLayer.push({ ecommerce: null, user_data: null });
+    window.dataLayer.push({ event: name, event_id: eventId, ...rest, ...(Object.keys(userData).length > 0 ? { user_data: userData } : {}) });
+  };
+
+  const source = externalIdSource();
+  const known = source === null ? null : (knownHash(source) ?? null);
+
+  if (waiting === 0 && (source === null || known !== null)) {
+    write(known);
+
+    return eventId;
+  }
+
+  waiting++;
+  tail = tail
+    .then(async () => write(source === null ? null : await hashOf(source)))
+    .catch(() => undefined)
+    .finally(() => {
+      waiting--;
+    });
 
   return eventId;
+}
+
+/** Resolves when every push that was waiting for the visitor's id to be hashed has been made (for code and tests that must look at the data layer next). */
+export function pushesSettled(): Promise<void> {
+  return tail;
+}
+
+/**
+ * Tells the container that who the visitor is has changed (they signed in or out, or allowed marketing and got an id): the Meta pixel tag then starts
+ * with the new external_id. Nothing is sent anywhere by the push itself.
+ */
+export function announceIdentity() {
+  if (typeof window === "undefined") return;
+  pushDataLayer({ event: "anaiza_identity_changed" });
 }
 
 // eventId, when passed, lets Meta/TikTok deduplicate this client-side pixel
@@ -244,11 +292,38 @@ export function trackViewCart(items: CartItem[], value: number) {
   });
 }
 
-// A search on the shop page (the term as typed, trimmed). GA4's own `search` event; the pixels have no equivalent we use.
+// A search on the shop page (the term as typed, trimmed). GA4's `search` and Meta's `Search`, with one event_id.
 export function trackSearch(term: string) {
   const clean = term.trim();
   if (clean === "") return;
-  pushDataLayer({ event: "search", search_term: clean });
+  const eventId = pushDataLayer({ event: "search", search_term: clean });
+  fbqTrack("Search", { search_string: clean, content_type: "product" }, eventId);
+}
+
+// A tap on the WhatsApp or phone link: a lead. GA4's `generate_lead` and Meta's `Lead`, once per tap. method is whatsapp or phone.
+export function trackLead(method: "whatsapp" | "phone") {
+  const eventId = pushDataLayer({ event: "generate_lead", method });
+  fbqTrack("Lead", { content_name: method, content_category: "contact" }, eventId);
+}
+
+// The heart on a product, when it is switched on. GA4's `add_to_wishlist` (the product as in add_to_cart) and Meta's `AddToWishlist`.
+export function trackAddToWishlist(product: TrackedProduct & { effective_price: number }, variant: { sku?: string | null } | null = pageVariant(product)) {
+  const id = feedItemId(product, variant);
+  const eventId = pushDataLayer({
+    event: "add_to_wishlist",
+    ecommerce: {
+      currency: CURRENCY,
+      value: product.effective_price,
+      items: [{ ...ga4Item(product, 1, variant), item_id: id }],
+    },
+  });
+  fbqTrack("AddToWishlist", { content_ids: [id], content_name: product.name, content_type: "product", currency: CURRENCY, value: product.effective_price }, eventId);
+}
+
+// A new account was made. GA4's `sign_up` and Meta's `CompleteRegistration`. method is email or google.
+export function trackSignUp(method: "email" | "google") {
+  const eventId = pushDataLayer({ event: "sign_up", method });
+  fbqTrack("CompleteRegistration", { content_name: method, status: true }, eventId);
 }
 
 export function trackAddToCart(product: CartAddableProduct, quantity: number, variant: { sku?: string | null } | null = null) {
@@ -301,15 +376,6 @@ export function trackRemoveFromCart(item: CartItem) {
 // mode (everything in notice mode, nothing in opt-in mode until they choose). Mirrors marketingAllowed() in consent.ts.
 function marketingAllowedNow(): boolean {
   return typeof window === "undefined" ? false : window.anaizaConsent ? window.anaizaConsent.effective().m : true;
-}
-
-/** The id of the customer who is signed in on this browser, or null (a guest). */
-export function signedInCustomerId(): number | null {
-  try {
-    return loadAuth(window.localStorage)?.customer.id ?? null;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -424,10 +490,12 @@ export async function trackPurchase(order: Order): Promise<void> {
     return;
   }
 
-  const buyer: Buyer = { email: order.customer.email, phone: order.customer.phone, customerId: signedInCustomerId() };
+  const buyer: Buyer = { email: order.customer.email, phone: order.customer.phone };
 
   // Hashed (SHA-256) in the browser, only when the visitor's cookie choice allows marketing: never a raw email or phone number.
   const userData = await contactForDataLayer(buyer);
+  // The visitor's own id is hashed before the push, so the purchase is in the data layer by the time this returns.
+  await externalIdHash();
   // Direct mode only: Meta's fuller advanced matching for the pixel itself (name, city, region too), never put in the data layer.
   const pixelMatching = marketingAllowedNow() && !gtmOwnsBrowserTags() ? await buildUserData(order.customer).catch(() => null) : null;
 
@@ -454,7 +522,10 @@ export async function trackPurchase(order: Order): Promise<void> {
     },
     ...(userData ? { user_data: userData } : {}),
   });
-  if (pixelMatching) fbqAdvancedMatching(pixelMatching.meta);
+  if (pixelMatching) {
+    const externalId = await externalIdHash();
+    fbqAdvancedMatching({ ...pixelMatching.meta, ...(externalId ? { external_id: externalId } : {}) });
+  }
   fbqTrack(
     "Purchase",
     {

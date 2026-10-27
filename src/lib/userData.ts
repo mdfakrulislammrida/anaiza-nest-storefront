@@ -29,7 +29,7 @@ export interface GoogleUserData {
 }
 
 /** Meta's advanced matching keys, all hashed. */
-export type MetaUserData = Partial<Record<"em" | "ph" | "fn" | "ln" | "ct" | "st" | "zp" | "country", string>>;
+export type MetaUserData = Partial<Record<"em" | "ph" | "fn" | "ln" | "ct" | "st" | "zp" | "country" | "external_id", string>>;
 
 /** Lower case, letters only: no spaces, punctuation or digits. Bangla letters are kept. */
 export function lettersOnly(value: string | null | undefined): string {
@@ -134,14 +134,16 @@ export async function buildUserData(buyer: BuyerDetails): Promise<{ google: Goog
 
 // ---- What goes into the data layer for matching (the server container reads it, and the Meta purchase tag in the container)
 
-/** Who is buying, as far as the page knows: what was typed, or the signed-in customer. Never leaves the browser in this form. */
+/** Who is buying, as far as the page knows: what was typed. Never leaves the browser in this form. */
 export interface Buyer {
   email?: string | null;
   phone?: string | null;
-  customerId?: number | null;
 }
 
-/** The only personal data the shop pushes to the data layer: SHA-256, lower-case hex. */
+/**
+ * The only personal data the shop pushes to the data layer: SHA-256, lower-case hex. The external_id is not made here: it comes from the visitor's identity
+ * (identity.ts: the customer id, else a random cookie id) and is added to every event by the data layer push, never from a phone number or an email.
+ */
 export interface ContactUserData {
   sha256_email_address?: string;
   sha256_phone_number?: string;
@@ -162,28 +164,18 @@ export function cleanEmail(email: string | null | undefined): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean) ? clean : null;
 }
 
-/**
- * The hashed email, phone and external id, or null when there is nothing usable (or the browser cannot hash).
- * external_id is the hash of the customer id for a signed-in customer, else of the phone number (a guest).
- */
+/** The hashed email and phone, or null when there is nothing usable (or the browser cannot hash). */
 export async function buildContactHashes(buyer: Buyer | null | undefined): Promise<ContactUserData | null> {
   if (!buyer || typeof crypto === "undefined" || !crypto.subtle) return null;
 
   const email = cleanEmail(buyer.email);
   const phone = internationalDigits(buyer.phone);
-  const customerId = Number.isInteger(buyer.customerId) && (buyer.customerId as number) > 0 ? String(buyer.customerId) : null;
-  const externalSource = customerId ?? phone;
 
-  const [hashedEmail, hashedPhone, externalId] = await Promise.all([
-    email ? sha256Hex(email) : undefined,
-    phone ? sha256Hex(phone) : undefined,
-    externalSource ? sha256Hex(externalSource) : undefined,
-  ]);
+  const [hashedEmail, hashedPhone] = await Promise.all([email ? sha256Hex(email) : undefined, phone ? sha256Hex(phone) : undefined]);
 
   const data: ContactUserData = {
     ...(hashedEmail ? { sha256_email_address: hashedEmail } : {}),
     ...(hashedPhone ? { sha256_phone_number: hashedPhone } : {}),
-    ...(externalId ? { external_id: externalId } : {}),
   };
 
   return Object.keys(data).length > 0 ? data : null;

@@ -45,7 +45,7 @@ export default function AuthCallbackClient() {
     window.history.replaceState(null, "", window.location.pathname);
 
     const signIn = code
-      ? exchangeSocialCode(code).then(({ token }) => loginWithToken(token))
+      ? exchangeSocialCode(code).then(({ token, is_new }) => loginWithToken(token, is_new === true))
       : loginWithToken(legacyToken as string);
 
     signIn

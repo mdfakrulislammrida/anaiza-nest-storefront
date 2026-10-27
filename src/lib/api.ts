@@ -476,8 +476,9 @@ export async function resetPassword(payload: { token: string; password: string; 
 }
 
 // Trades the one-time code a social sign-in returns with for the sign-in token. The code works once, for five minutes.
-export async function exchangeSocialCode(code: string): Promise<{ token: string; customer: AuthCustomer }> {
-  return apiFetch<{ token: string; customer: AuthCustomer }>("/auth/social/exchange", {
+// is_new is sent by an API that says whether this sign-in made the account; older ones leave it out.
+export async function exchangeSocialCode(code: string): Promise<{ token: string; customer: AuthCustomer; is_new?: boolean }> {
+  return apiFetch<{ token: string; customer: AuthCustomer; is_new?: boolean }>("/auth/social/exchange", {
     method: "POST",
     body: JSON.stringify({ code }),
   });

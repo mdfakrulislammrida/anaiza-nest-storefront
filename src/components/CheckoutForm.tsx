@@ -12,6 +12,7 @@ import { mayStoreIdentified, validEmail, validPhone } from "@/lib/recovery";
 import { parseRecoveredContact } from "@/lib/storedState";
 import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import { getStoredClickIds, getStoredUtmParams } from "@/lib/attribution";
+import { orderMatchData } from "@/lib/identity";
 import { calmMessage, mobileProblem } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
@@ -460,6 +461,7 @@ export default function CheckoutForm({
       })),
       ...getStoredUtmParams(),
       ...getStoredClickIds(),
+      ...(await orderMatchData()),
       ...(landing ? { landing_page: landing.slug } : {}),
       ...(coupon ? { coupon_code: coupon.code } : {}),
       ...(currentSessionToken() ? { checkout_session: currentSessionToken() as string } : {}),

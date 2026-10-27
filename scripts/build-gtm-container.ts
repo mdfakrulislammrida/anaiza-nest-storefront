@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { buildContainer, buildParts, manualBuildMarkdown, type ExportFile } from "../src/lib/gtmContainer.ts";
 import { buildContainerV2 } from "../src/lib/gtmContainerV2.ts";
 import { buildContainerV3 } from "../src/lib/gtmContainerV3.ts";
+import { buildContainerV4 } from "../src/lib/gtmContainerV4.ts";
 
 const docs = fileURLToPath(new URL("../docs/", import.meta.url));
 const referencePath = `${docs}gtm-export-empty.json`;
@@ -24,10 +25,12 @@ writeFileSync(`${docs}gtm-manual-build.md`, `${manualBuildMarkdown()}\n`);
 write(`${docs}gtm-container-anaizanest-v2.json`, buildContainerV2(reference));
 // Version 3: version 2 plus the one fix from testing the server container (the Meta pixel's own PageView on each page change). Import this one.
 write(`${docs}gtm-container-anaizanest-v3.json`, buildContainerV3(reference));
+// Version 4: version 3 plus the visitor's id on every event and Meta's Search, Lead, AddToWishlist and CompleteRegistration. Import this one.
+write(`${docs}gtm-container-anaizanest-v4.json`, buildContainerV4(reference));
 
 console.log(
   reference
     ? "Header taken from docs/gtm-export-empty.json (the real export of the empty container)."
     : "WARNING: docs/gtm-export-empty.json is not there, so the account and container ids are the placeholder 0 and the container block is a best-known default. Put the real export there and run this again.",
 );
-console.log("Written: docs/gtm-container-anaizanest.json (version 1), docs/gtm-container-anaizanest-v2.json, docs/gtm-container-anaizanest-v3.json, docs/gtm/01..05, docs/gtm-manual-build.md");
+console.log("Written: docs/gtm-container-anaizanest.json (version 1), docs/gtm-container-anaizanest-v2.json, docs/gtm-container-anaizanest-v3.json, docs/gtm-container-anaizanest-v4.json, docs/gtm/01..05, docs/gtm-manual-build.md");

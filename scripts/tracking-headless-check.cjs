@@ -253,6 +253,12 @@ async function main() {
     check(pageViews.every((push) => /^page_view\.[0-9a-f]{16}$/.test(push.event_id || "")), "every page_view has an event_id (page_view.<16 characters>)");
     check(new Set(pageViews.map((push) => push.event_id)).size === pageViews.length, "all event_ids are different");
     check(pageViews.map((push) => push.page_path).join(" ") === ["/", product.replace(/\/$/, ""), "/cart"].map((p) => p.replace(/\/$/, "") || "/").join(" ") || pageViews.map((push) => push.page_path.replace(/\/$/, "") || "/").join(" ") === ["/", product, "/cart"].map((p) => p.replace(/\/$/, "") || "/").join(" "), "one page_view per page, in the order visited");
+    // The visitor's id (identity.ts): made once marketing is allowed (the shop's default cookie mode allows it), hashed on every event, the same on every page.
+    const eid = await run("(document.cookie.match(/(?:^|; )an_eid=([^;]*)/) || [])[1] || null");
+    const hashes = pageViews.map((push) => push.user_data && push.user_data.external_id);
+    check(Boolean(eid) && /^[0-9a-f-]{36}$/.test(eid), "the visitor's id cookie an_eid exists (a UUID)");
+    check(hashes.every((hash) => typeof hash === "string" && /^[0-9a-f]{64}$/.test(hash)) && new Set(hashes).size === 1, "every page_view carries user_data.external_id (64 hex), the same on every page");
+    check(!JSON.stringify(pushes).includes(eid || "no-id"), "the raw id is never in the data layer");
 
     if (REAL && args.includes("--probe")) {
       console.log("\nOutside hosts contacted (count):", JSON.stringify(seenHosts));

@@ -113,25 +113,23 @@ describe("the hashed contact details pushed to the data layer", () => {
     for (const bad of ["", null, undefined, "nusrat", "a b@c.d", "@x.com", "a@b"]) assert.equal(cleanEmail(bad), null, String(bad));
   });
 
-  it("hashes with SHA-256 into lower-case hex, and the external id is the customer id when there is one, else the phone", async () => {
-    const guest = await buildContactHashes({ email: "Nusrat@Example.test ", phone: "+88 01712345678" });
-    assert.deepEqual(guest, { sha256_email_address: sha("nusrat@example.test"), sha256_phone_number: sha("8801712345678"), external_id: sha("8801712345678") });
-    for (const value of Object.values(guest ?? {})) assert.match(value, /^[0-9a-f]{64}$/);
-
-    const signedIn = await buildContactHashes({ email: "n@example.test", phone: "01712345678", customerId: 31 });
-    assert.equal(signedIn?.external_id, sha("31"));
+  it("hashes the email and the phone with SHA-256 into lower-case hex, and makes no external_id from either (that is the visitor's own id, see identity.ts)", async () => {
+    const contact = await buildContactHashes({ email: "Nusrat@Example.test ", phone: "+88 01712345678" });
+    assert.deepEqual(contact, { sha256_email_address: sha("nusrat@example.test"), sha256_phone_number: sha("8801712345678") });
+    for (const value of Object.values(contact ?? {})) assert.match(value, /^[0-9a-f]{64}$/);
+    assert.equal("external_id" in (contact ?? {}), false);
   });
 
   it("returns only what it can hash, and null for nothing", async () => {
-    assert.deepEqual(await buildContactHashes({ phone: "01712345678" }), { sha256_phone_number: sha("8801712345678"), external_id: sha("8801712345678") });
+    assert.deepEqual(await buildContactHashes({ phone: "01712345678" }), { sha256_phone_number: sha("8801712345678") });
     assert.deepEqual(await buildContactHashes({ email: "a@example.test" }), { sha256_email_address: sha("a@example.test") });
     assert.equal(await buildContactHashes({ email: "nope", phone: "123" }), null);
-    assert.equal(await buildContactHashes({ customerId: 0 }), null);
+    assert.equal(await buildContactHashes({}), null);
     assert.equal(await buildContactHashes(null), null);
   });
 
   it("never contains a raw value", async () => {
-    const text = JSON.stringify(await buildContactHashes({ email: "Nusrat@Example.test", phone: "01712345678", customerId: 5 }));
+    const text = JSON.stringify(await buildContactHashes({ email: "Nusrat@Example.test", phone: "01712345678" }));
 
     for (const raw of ["Nusrat", "nusrat", "example", "01712345678", "8801712345678"]) assert.ok(!text.includes(raw), raw);
   });

@@ -82,7 +82,7 @@ the next event), then the event. A tag listens for the **event** entry. Event na
 | `page_view` | Each page of a visit | yes | `PageView` | no |
 | `view_item_list` | The shop, category, special prices and search pages when results load; a landing page once | yes | landing pages only: `ViewContent` | no |
 | `view_item` | A product page opens | yes | `ViewContent` | no |
-| `search` | The shop page opens with `?search=` | yes | no | no |
+| `search` | The shop page opens with `?search=` | yes | `Search` | no |
 | `add_to_cart` | Add to cart | yes | `AddToCart` | no |
 | `remove_from_cart` | A line is removed from the cart | yes | no | no |
 | `view_cart` | The cart page, with something in it | yes | no | no |
@@ -91,7 +91,14 @@ the next event), then the event. A tag listens for the **event** entry. Event na
 | `add_payment_info` | A payment method is chosen (or, if never touched, when the order is sent) | yes | `AddPaymentInfo` | when known |
 | `purchase` | The order confirmation page, for a cash-on-delivery order | yes | `Purchase` | yes |
 | `order_pending_payment` | The order confirmation page, for a bKash / Nagad / Rocket order | no | no | no |
+| `generate_lead` | A tap on a WhatsApp or phone link (once per tap; `method`: `whatsapp` or `phone`) | yes | `Lead` | no |
+| `add_to_wishlist` | The heart on a product is switched on (not when it is switched off) | yes | `AddToWishlist` | no |
+| `sign_up` | A new account was made (`method`: `email`, or `google` when the API says the Google sign-in made the account) | yes | `CompleteRegistration` | no |
 | `anaiza_consent_changed` | GTM mode only: the visitor saved a cookie choice (no `event_id`: it is not a business event) | no | starts the pixel | no |
+| `anaiza_identity_changed` | GTM mode only: the visitor signed in or out, or got an id after allowing marketing (no `event_id`) | no | starts the pixel with the new `external_id` | no |
+
+**`user_data` on every event (version 4).** When the visitor allows marketing, every event above carries `user_data.external_id` (see "The visitor's id" below). The three checkout events
+(`begin_checkout`, `add_payment_info`, `purchase`) also carry the hashed email and phone when known. The last column of the table says only whether an event carries the hashed contact details.
 
 Direct mode also calls the TikTok pixel for the same events as Meta (and `CompletePayment` for the purchase). The shop has no TikTok pixel, so container version 2 has no TikTok tags.
 
@@ -132,6 +139,36 @@ the price actually charged), `quantity`, `item_category` (the category name; lef
 ```json
 { "event": "search", "event_id": "search.0a77c3e19d5b4268", "search_term": "tea set" }
 ```
+
+### `generate_lead`
+
+| | |
+| --- | --- |
+| Trigger condition | A tap on a link that starts a WhatsApp chat (`wa.me`, `api.whatsapp.com`, `whatsapp:`) or a call (`tel:`), anywhere on the shop. One event per tap; a link opened with the middle button or the keyboard shortcut for a new tab is not counted |
+| Parameters | `method`: `whatsapp` or `phone` |
+
+```json
+{ "event": "generate_lead", "event_id": "generate_lead.aa8948d3aec14771", "method": "whatsapp", "user_data": { "external_id": "<64 hex>" } }
+```
+
+### `add_to_wishlist`
+
+| | |
+| --- | --- |
+| Trigger condition | The heart on a product is switched on. Switching it off sends nothing |
+| Parameters | `currency`, `value` (the price) and `items[]` with the one product, as in `add_to_cart` (quantity 1) |
+
+### `sign_up`
+
+| | |
+| --- | --- |
+| Trigger condition | A registration with email and password succeeds (`method: email`). A Google sign-in is reported (`method: google`) only when the API's answer says it made the account (`is_new`); the API does not say so yet, so nothing is sent for Google today |
+| Parameters | `method` |
+
+### `anaiza_identity_changed` (GTM mode only)
+
+`{ "event": "anaiza_identity_changed", "user_data": { "external_id": "<64 hex>" } }`, pushed after a sign-in, a sign-out, a registration, or when marketing is allowed. Nothing in GA4 listens to it; the container uses it to start
+the Meta pixel with the new `external_id`.
 
 ### `add_to_cart`
 
@@ -253,7 +290,7 @@ The container uses it to start the Meta pixel when marketing is allowed after th
 
 ### Not sent, and not included
 
-`select_item`, `select_promotion`, `view_promotion`, `add_to_wishlist`, `refund`, `login`, `sign_up`, `generate_lead`, a coupon (`coupon` is never pushed).
+`select_item`, `select_promotion`, `view_promotion`, `refund`, `login`, a coupon (`coupon` is never pushed), and `sign_up` for a Google sign-in until the API says whether the account is new.
 **Not included at all:** a Google Ads conversion tag, Enhanced Conversions (the hashed details are there, but no tag sends them to Google), TikTok (the shop has no pixel; direct mode still
 supports one if an ID is saved), server-side GA4 for wallet orders (they have no browser purchase), and any change to the shop's own server sending (see "Value" below).
 
@@ -287,16 +324,15 @@ supports one if an ID is saved), server-side GA4 for wallet orders (they have no
 | --- | --- | --- | --- | --- |
 | Email | `sha256_email_address` (trimmed, lower case) | `em` | `em` | `email` |
 | Phone | `sha256_phone_number` (`8801XXXXXXXXX`: digits only, no plus) | `ph` | `ph` | `phone` |
-| External id | `external_id` = hash of the customer id for a signed-in customer, else of the phone number | `external_id` | no | no |
+| External id | `external_id` = hash of the visitor's id (the customer id when signed in, else the random cookie id `an_eid`; never the phone or the email), on **every** event, and with the order | `external_id` | `external_id`, as it arrived (never hashed again) | `external_id` |
 | First / last name, city, region, country | not sent | not available | `fn`, `ln`, `ct`, `st`, `country` | no |
-| Click ids | the Meta pixel reads its own cookies; the server container reads `_fbp` and `_fbc` | `fbp`, `fbc` | `fbc` (from the Facebook click id kept with the order) | `ttclid` |
+| Click ids | the Meta pixel reads its own cookies; the server container reads `_fbp` and `_fbc` | `fbp`, `fbc` | `fbp`, and `fbc` (the cookie value passed with the order, else built from the Facebook click id kept with the order) | `ttclid` (TikTok has no fbp or fbc) |
 | IP address, browser | the request itself | `client_ip_address`, `client_user_agent` | plain (as the platforms require) | plain |
 
 `user_data` is on `begin_checkout`, `add_payment_info` and `purchase` only, and only when the page knows something to hash: a signed-in customer, or the email and phone already typed in the
 form. Each field is left out when it is not usable (an invalid email, a number that is not a Bangladeshi mobile). If nothing is usable, there is no `user_data`.
 
-Normalisation (browser and server agree): the email is trimmed and lower-cased; the phone is the 11-digit mobile number with the country code 880 (no zero, no plus); the external id is the customer
-id as text, or that phone number.
+Normalisation (browser and server agree): the email is trimmed and lower-cased; the phone is the 11-digit mobile number with the country code 880 (no zero, no plus); the external id is the SHA-256 of the visitor's id text (see below).
 
 ## 5. Consent
 
@@ -317,10 +353,29 @@ id as text, or that phone number.
 - **Server events and consent:** the checkout sends the shop's server `marketing_consent` (what the banner says at that moment). In opt-in mode a visitor who did not allow marketing is never sent
   by the shop's server. **In notice mode the shop's server sends the Purchase even if the visitor rejected cookies** (the mode's rule: notice, not consent). That is a policy choice, not a bug: ask a lawyer if unsure.
 
+### The visitor's id (`external_id`) and the cookies the shop sets for it
+
+Meta matches people better when the same `external_id` is on all of their events. The rule (`src/lib/identity.ts`):
+
+- A **signed-in customer**: the customer id (as text).
+- **Everybody else**: a random id, a UUID, kept in the first-party cookie **`an_eid`**.
+- The value on the wire is always the **SHA-256 (lower-case hex) of that text**. Never the phone number, never the email address, never the raw id.
+- Nothing is made, read or sent unless the visitor allows marketing. If they refuse later, `an_eid` is removed.
+- A guest who signs in keeps `an_eid` (it is only set aside while the customer id is used), and buys with the same id as on every earlier event of the visit.
+
+| Cookie | What it holds | Set when | Lasts | Flags |
+| --- | --- | --- | --- | --- |
+| `an_eid` | the random id (a UUID) | the first event after the visitor allows marketing (never before) | 400 days | `Path=/; SameSite=Lax`, `Secure` on https |
+| `an_fbc` | the ad click in Meta's format, `fb.1.<ms>.<fbclid>` | the visitor lands from a Facebook ad (`?fbclid=`) while marketing is allowed, and Meta's own `_fbc` cookie is not there | 90 days | the same |
+| `_fbp`, `_fbc` | Meta's own cookies, set by its pixel | by Meta | by Meta | not ours: the shop only reads them |
+
+With the order (`POST /api/orders`) the checkout sends `fbp` (`_fbp`), `fbc` (`_fbc`, else `an_fbc`) and `external_id` (the same hash as on the events), **only when marketing is allowed**, and each only when it exists. The shop's server checks their
+shape, drops a wrong one, and never refuses an order because of them; it uses them in the Purchase it sends to Meta.
+
 ## 6. Customer-data rules
 
 1. No raw email, phone number, name or address is pushed to the data layer or passed to a pixel, ever.
-2. Hashed values (SHA-256, hex, normalised as above) are pushed only on `begin_checkout`, `add_payment_info` and `purchase`, and only when the visitor's choice allows marketing.
+2. Hashed values (SHA-256, hex, normalised as above) are pushed only when the visitor's choice allows marketing: the email and phone on `begin_checkout`, `add_payment_info` and `purchase`, the `external_id` on every event.
 3. The hashed values are computed in the visitor's browser (`crypto.subtle`); a browser that cannot hash sends none.
 4. Order numbers (`transaction_id`, `event_id`) and the random event ids are not personal data.
 5. In the container, the hashes travel as the GA4 event parameters `sha256_email_address`, `sha256_phone_number` and `external_id`, so the server container can hand them to Meta. They should not be
@@ -330,7 +385,9 @@ id as text, or that phone number.
 
 - `src/lib/tracking.test.ts`: every event has its own `event_id`; the purchase uses `order-<id>` on every platform; the value rule; the item shape; the hashed details on the three events (normalisation, signed-in vs guest,
   nothing when marketing is not allowed, never a raw value); both modes (no `fbq` / `ttq` call in GTM mode); wallet orders are not revenue; page_view.
-- `src/lib/userData.test.ts`: the normalisation and hashing of the email, the phone (`8801...`) and the external id.
+- `src/lib/userData.test.ts`: the normalisation and hashing of the email and the phone (`8801...`); no external id is made from either.
+- `src/lib/identity.test.ts`: the `an_eid` cookie (only after consent, 400 days, Lax, Secure, stable, the customer id when signed in, removed on refusal), the hash format, `fbp`/`fbc`/`an_fbc`, what an order carries with and without consent, WhatsApp and phone link detection.
+- `src/lib/gtmContainerV4.test.ts`: version 4 differs from version 3 only as listed in the guide, every GA4 event tag sends `external_id`, the four new Meta tags, the server trigger pattern, and the SKU as `content_ids`.
 - `src/lib/consent.test.ts`: GTM mode loads only GTM; direct mode still loads GA4, Meta and TikTok; Consent Mode defaults, updates and the late loading.
 - `src/lib/gtmContainerV3.test.ts`: version 3 differs from version 2 in the two pixel-installing tags only, every Meta browser tag has `eventID` = the event's `event_id`, only one tag counts a PageView, and the server container's Meta pattern is written in the guide.
 - `npm run tracking:check` (needs `npm run build` first and Chrome): a three-page visit in headless Chrome, one `page_view` push per page, all ids different. With `-- --real --as-live-host` it also loads the real published container and lists every GA4 and Meta hit that would leave the browser (all answered locally, none sent); that run fails while GA4's "page changes based on browser history events" is on. `node scripts/meta-pixel-history-check.cjs` shows Meta's own PageView on a page change with the version 2 tag and none with version 3.

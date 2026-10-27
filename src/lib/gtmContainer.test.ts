@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, it } from "node:test";
 import { buildContainer, buildParts, GA4_EVENTS, GA4_MEASUREMENT_ID, manualBuildMarkdown, META_PIXEL_ID, NO_SERVER, SITE_EVENTS, TIKTOK_PLACEHOLDER, WEB_CONTAINER_ID, type ExportFile } from "./gtmContainer.ts";
+import { V4_EVENTS } from "./gtmContainerV4.ts";
 import { validateExport } from "./gtmValidate.ts";
 
 // The real export of the container (Tajin's), when it is in the repo: the header of every file is copied from it.
@@ -97,7 +98,8 @@ describe("the events", () => {
   })();
 
   it("has a trigger for every event the site pushes, and the site pushes nothing the container does not know", () => {
-    assert.deepEqual([...SITE_EVENTS].sort(), pushedBySite);
+    // Version 1 to 3 know SITE_EVENTS; the events added for version 4 (gtmContainerV4.ts) are pushed by the site as well.
+    assert.deepEqual([...SITE_EVENTS, ...V4_EVENTS].sort(), pushedBySite);
 
     const triggerEvents = container.trigger.map((trigger) => trigger.customEventFilter[0].parameter[1].value);
     for (const event of SITE_EVENTS) assert.ok(triggerEvents.includes(event), event);

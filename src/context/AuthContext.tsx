@@ -11,13 +11,14 @@ import {
 } from "react";
 import { getCustomer, loginCustomer, logoutCustomer, registerCustomer } from "@/lib/api";
 import { AUTH_KEY, loadAuth, readAuthToken } from "@/lib/storedState";
+import { announceIdentity, trackSignUp } from "@/lib/tracking";
 import type { AuthCustomer, LoginPayload, RegisterPayload } from "@/lib/types";
 
 interface AuthContextValue {
   customer: AuthCustomer | null;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
-  loginWithToken: (token: string) => Promise<void>;
+  loginWithToken: (token: string, isNew?: boolean) => Promise<void>;
   logout: () => void;
 }
 
@@ -37,20 +38,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await loginCustomer(payload);
     window.localStorage.setItem(AUTH_KEY, JSON.stringify(res));
     setCustomer(res.customer);
+    // From now on the customer id is the visitor's id (identity.ts).
+    announceIdentity();
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
     const res = await registerCustomer(payload);
     window.localStorage.setItem(AUTH_KEY, JSON.stringify(res));
     setCustomer(res.customer);
+    trackSignUp("email");
+    announceIdentity();
   }, []);
 
   // Social login: the OAuth callback redirect only hands back a bearer
   // token, so the customer profile has to be fetched separately here.
-  const loginWithToken = useCallback(async (token: string) => {
+  // isNew is the API saying this sign-in just made the account (a registration with Google). An API that does not say leaves it false, and nothing is reported.
+  const loginWithToken = useCallback(async (token: string, isNew = false) => {
     const customer = await getCustomer(token);
     window.localStorage.setItem(AUTH_KEY, JSON.stringify({ customer, token }));
     setCustomer(customer);
+    if (isNew) trackSignUp("google");
+    announceIdentity();
   }, []);
 
   const logout = useCallback(() => {
@@ -60,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCustomer(null);
 
     if (token) void logoutCustomer(token);
+    announceIdentity();
   }, []);
 
   const value = useMemo(

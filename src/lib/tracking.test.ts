@@ -1,8 +1,8 @@
 // Run with `npm test` (Node's built-in test runner; no extra dependency).
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { beforeEach, describe, it } from "node:test";
-import { feedItemId, newEventId, purchaseValue, trackAddPaymentInfo, trackAddShippingInfo, trackAddToCart, trackBeginCheckout, trackPageView, trackPurchase, trackRemoveFromCart, trackSearch, trackViewCart, trackViewContentList, trackViewItem, trackViewItemList } from "./tracking.ts";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { feedItemId, newEventId, purchaseValue, trackAddPaymentInfo, trackAddShippingInfo, trackAddToCart, trackAddToWishlist, trackLead, trackSignUp, pushesSettled, trackBeginCheckout, trackPageView, trackPurchase, trackRemoveFromCart, trackSearch, trackViewCart, trackViewContentList, trackViewItem, trackViewItemList } from "./tracking.ts";
 import type { Order } from "./types.ts";
 
 type Call = unknown[];
@@ -11,7 +11,12 @@ const sha = (text: string) => createHash("sha256").update(text).digest("hex");
 const fbqCalls: Call[] = [];
 const ttqCalls: Call[] = [];
 const win = globalThis as unknown as { window?: Record<string, unknown> };
-const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 20));
+const settle = async () => {
+  // Every push that waited for the visitor's id to be hashed, then a moment for the contact hashes (a separate wait) to arrive and be pushed.
+  await pushesSettled();
+  await new Promise<void>((resolve) => setTimeout(resolve, 30));
+  await pushesSettled();
+};
 
 function order(paymentMethod: string): Order {
   return {
@@ -55,6 +60,28 @@ function setUpPage(consent?: { marketing: boolean }) {
 }
 
 beforeEach(() => setUpPage());
+afterEach(() => {
+  delete (globalThis as unknown as { document?: unknown }).document;
+});
+
+/** A browser document with a working cookie jar, so the visitor's id (identity.ts) can be made and read back. */
+function installDocument(title = ""): Map<string, string> {
+  const jar = new Map<string, string>();
+  (globalThis as unknown as { document?: unknown }).document = {
+    title,
+    get cookie() {
+      return [...jar].map(([key, value]) => `${key}=${value}`).join("; ");
+    },
+    set cookie(line: string) {
+      const [pair] = line.split(";");
+      const [key, ...value] = pair.split("=");
+      if (/Max-Age=0/i.test(line)) jar.delete(key.trim());
+      else jar.set(key.trim(), value.join("="));
+    },
+  };
+
+  return jar;
+}
 
 describe("trackPurchase: cash on delivery", () => {
   it("counts the order as a sale in GA4, Meta and TikTok at placement", async () => {
@@ -67,24 +94,39 @@ describe("trackPurchase: cash on delivery", () => {
     assert.equal(ttqCalls[0][0], "CompletePayment");
   });
 
-  it("adds the hashed email, phone and external id to the purchase: SHA-256, the phone as 8801XXXXXXXXX, nothing else", async () => {
+  it("adds the hashed email and phone to the purchase: SHA-256, the phone as 8801XXXXXXXXX, nothing else (no id of the visitor yet)", async () => {
     await trackPurchase(order("cod"));
 
     const purchase = layer()[0] as { user_data?: unknown };
     assert.deepEqual(purchase.user_data, {
       sha256_email_address: sha("nusrat.jahan@gmail.com"),
       sha256_phone_number: sha("8801712345678"),
-      external_id: sha("8801712345678"),
     });
   });
 
-  it("uses the signed-in customer's id for external_id, and the phone for a guest", async () => {
+  it("uses the signed-in customer's id for external_id, never the phone", async () => {
     (win.window as Record<string, unknown>).localStorage = {
       getItem: () => JSON.stringify({ customer: { id: 9, name: "N", email: "n@example.test", phone: "01712345678" }, token: "t" }),
     };
     await trackPurchase(order("cod"));
 
-    assert.equal(((layer()[0] as { user_data: { external_id: string } }).user_data).external_id, sha("9"));
+    const userData = (layer()[0] as { user_data: { external_id: string } }).user_data;
+    assert.equal(userData.external_id, sha("9"));
+    assert.notEqual(userData.external_id, sha("8801712345678"));
+  });
+
+  it("a guest buys with the id kept in their cookie (the same one as on every other event of the visit), never with their phone", async () => {
+    const jar = installDocument();
+    trackViewItem(product);
+    await settle();
+    await trackPurchase(order("cod"));
+
+    const id = jar.get("an_eid") as string;
+    assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    const [view, purchase] = layer() as { user_data: { external_id: string } }[];
+    assert.equal(view.user_data.external_id, sha(id));
+    assert.equal(purchase.user_data.external_id, sha(id));
+    assert.notEqual(purchase.user_data.external_id, sha("8801712345678"));
   });
 
   it("never pushes a raw email, phone number, name or address", async () => {
@@ -354,19 +396,20 @@ describe("the item shape: item_id (SKU), item_name, price, quantity, item_catego
 // ---- Page views
 
 describe("page_view", () => {
-  it("is pushed for the first page too, with the address, title and referrer, and an event_id", () => {
+  it("is pushed for the first page too, with the address, title and referrer, and an event_id", async () => {
     (win.window as Record<string, unknown>).location = { href: "https://anaizanest.com/shop", pathname: "/shop" };
-    (globalThis as unknown as { document?: unknown }).document = { title: "Shop | Anaiza Nest" };
+    const jar = installDocument("Shop | Anaiza Nest");
 
     trackPageView("https://www.google.com/", true);
+    await settle();
 
     const [pageView] = layer() as Record<string, string>[];
+    assert.deepEqual(pageView.user_data, { external_id: sha(jar.get("an_eid") as string) });
     assert.deepEqual(
-      { ...pageView, event_id: "x" },
-      { event: "page_view", event_id: "x", page_location: "https://anaizanest.com/shop", page_path: "/shop", page_title: "Shop | Anaiza Nest", page_referrer: "https://www.google.com/" },
+      { ...pageView, event_id: "x", user_data: undefined },
+      { event: "page_view", event_id: "x", page_location: "https://anaizanest.com/shop", page_path: "/shop", page_title: "Shop | Anaiza Nest", page_referrer: "https://www.google.com/", user_data: undefined },
     );
     assert.match(pageView.event_id, /^page_view\.[0-9a-f]{16}$/);
-    delete (globalThis as unknown as { document?: unknown }).document;
   });
 
   it("direct mode: the first page calls no pixel (the base snippets did), a page change calls fbq PageView and ttq.page with the event id", () => {
@@ -385,20 +428,23 @@ describe("page_view", () => {
 // ---- The hashed details on begin_checkout and add_payment_info
 
 describe("user_data on begin_checkout and add_payment_info", () => {
-  const buyer = { email: " Nusrat.Jahan@Gmail.com ", phone: "+880 1712-345678", customerId: null };
+  const buyer = { email: " Nusrat.Jahan@Gmail.com ", phone: "+880 1712-345678" };
 
-  it("carries the SHA-256 of the email (trimmed, lower case), the phone as 8801XXXXXXXXX, and the phone's hash as the guest's external_id", async () => {
+  it("carries the SHA-256 of the email (trimmed, lower case) and of the phone as 8801XXXXXXXXX, and no external_id made from the phone", async () => {
     trackBeginCheckout([cartLine], 1200, buyer);
     trackAddPaymentInfo([cartLine], 1200, "cod", buyer);
     await settle();
 
-    const expected = { sha256_email_address: sha("nusrat.jahan@gmail.com"), sha256_phone_number: sha("8801712345678"), external_id: sha("8801712345678") };
+    const expected = { sha256_email_address: sha("nusrat.jahan@gmail.com"), sha256_phone_number: sha("8801712345678") };
     assert.deepEqual(layer().map((entry) => entry.event), ["begin_checkout", "add_payment_info"]);
     for (const entry of layer()) assert.deepEqual(entry.user_data, expected);
   });
 
   it("uses the customer id as external_id for a signed-in customer", async () => {
-    trackBeginCheckout([cartLine], 1200, { ...buyer, customerId: 31 });
+    (win.window as Record<string, unknown>).localStorage = {
+      getItem: () => JSON.stringify({ customer: { id: 31, name: "N", email: "n@example.test", phone: "01712345678" }, token: "t" }),
+    };
+    trackBeginCheckout([cartLine], 1200, buyer);
     await settle();
 
     assert.equal(((layer()[0] as { user_data: { external_id: string } }).user_data).external_id, sha("31"));
@@ -413,7 +459,7 @@ describe("user_data on begin_checkout and add_payment_info", () => {
 
     // The two with something to hash arrive a moment later than the two without, so the order is not the order they were asked in.
     const shapes = layer().map((entry) => Object.keys((entry.user_data as object | undefined) ?? {}).sort().join(","));
-    assert.deepEqual(shapes.sort(), ["", "", "external_id,sha256_phone_number", "sha256_email_address"]);
+    assert.deepEqual(shapes.sort(), ["", "", "sha256_email_address", "sha256_phone_number"]);
   });
 
   it("pushes no user_data, and does not even hash, when marketing is not allowed", async () => {
@@ -494,7 +540,7 @@ describe("GTM mode: the site never calls a pixel itself", () => {
     const purchase = layer()[0] as { event_id: string; ecommerce: { transaction_id: string; value: number; currency: string; shipping: number }; user_data: Record<string, string> };
     assert.equal(purchase.event_id, "order-42");
     assert.deepEqual([purchase.ecommerce.transaction_id, purchase.ecommerce.value, purchase.ecommerce.currency, purchase.ecommerce.shipping], ["42", 600, "BDT", 80]);
-    assert.deepEqual(Object.keys(purchase.user_data).sort(), ["external_id", "sha256_email_address", "sha256_phone_number"]);
+    assert.deepEqual(Object.keys(purchase.user_data).sort(), ["sha256_email_address", "sha256_phone_number"]);
     assert.equal("meta_user_data" in purchase, false, "one set of hashed details, not two");
 
     const pushed = JSON.stringify(layer());
@@ -552,5 +598,90 @@ describe("the cart and search events", () => {
 
     trackSearch("  tea set ");
     assert.deepEqual(layer().map((entry) => ({ ...entry, event_id: "x" })), [{ event: "search", event_id: "x", search_term: "tea set" }]);
+  });
+});
+
+// ---- The events added for Meta: Search, Lead, AddToWishlist, CompleteRegistration (GA4: search, generate_lead, add_to_wishlist, sign_up)
+
+describe("search, generate_lead, add_to_wishlist and sign_up", () => {
+  const wished = { id: 7, sku: "MUG-RED", slug: "mug", name: "Red mug", effective_price: 600, category: { name: "Mugs" }, variants: [] } as unknown as Parameters<typeof trackAddToWishlist>[0];
+
+  it("each has its own event_id, and Meta's pixel (direct mode) gets the same one as its eventID", () => {
+    trackSearch("tea set");
+    trackLead("whatsapp");
+    trackAddToWishlist(wished);
+    trackSignUp("email");
+
+    const events = layer() as { event: string; event_id: string }[];
+    assert.deepEqual(events.map((entry) => entry.event), ["search", "generate_lead", "add_to_wishlist", "sign_up"]);
+    assert.equal(new Set(events.map((entry) => entry.event_id)).size, 4);
+    for (const entry of events) assert.match(entry.event_id, new RegExp(`^${entry.event}\.[0-9a-f]{16}$`));
+
+    const sent = Object.fromEntries(fbqCalls.map((call) => [call[1] as string, call]));
+    assert.deepEqual(Object.keys(sent).sort(), ["AddToWishlist", "CompleteRegistration", "Lead", "Search"]);
+    assert.deepEqual(sent.Search[2], { search_string: "tea set", content_type: "product" });
+    assert.deepEqual(sent.Search[3], { eventID: events[0].event_id });
+    assert.deepEqual(sent.Lead[3], { eventID: events[1].event_id });
+    assert.deepEqual(sent.AddToWishlist[3], { eventID: events[2].event_id });
+    assert.deepEqual(sent.CompleteRegistration[3], { eventID: events[3].event_id });
+  });
+
+  it("the lead and the sign-up say how: whatsapp or phone, email or google", () => {
+    trackLead("whatsapp");
+    trackLead("phone");
+    trackSignUp("email");
+    trackSignUp("google");
+
+    assert.deepEqual((layer() as { method: string }[]).map((entry) => entry.method), ["whatsapp", "phone", "email", "google"]);
+  });
+
+  it("add_to_wishlist lists the product as add_to_cart does: the SKU as item_id, the name, the price, quantity 1, the category", () => {
+    trackAddToWishlist(wished);
+
+    const [push] = layer() as { ecommerce: { currency: string; value: number; items: unknown[] } }[];
+    assert.equal(push.ecommerce.currency, "BDT");
+    assert.equal(push.ecommerce.value, 600);
+    assert.deepEqual(push.ecommerce.items, [{ item_id: "MUG-RED", item_name: "Red mug", price: 600, quantity: 1, item_category: "Mugs" }]);
+    assert.deepEqual(fbqCalls.find((call) => call[1] === "AddToWishlist")?.[2], { content_ids: ["MUG-RED"], content_name: "Red mug", content_type: "product", currency: "BDT", value: 600 });
+  });
+
+  it("with a GTM container the site only fills the data layer: no pixel is called for any of them", () => {
+    (win.window as Record<string, unknown>).anaizaConsent = { config: { meta: null, gtm: "GTM-TESTCONT" }, effective: () => ({ a: true, m: true }) };
+
+    trackSearch("tea set");
+    trackLead("phone");
+    trackAddToWishlist(wished);
+    trackSignUp("google");
+
+    assert.equal(layer().length, 4);
+    assert.deepEqual(fbqCalls, []);
+  });
+
+  it("carry the hashed external_id, and none without marketing consent", async () => {
+    const jar = new Map<string, string>();
+    (globalThis as unknown as { document?: unknown }).document = {
+      get cookie() {
+        return [...jar].map(([key, value]) => `${key}=${value}`).join("; ");
+      },
+      set cookie(line: string) {
+        const [key, ...value] = line.split(";")[0].split("=");
+        jar.set(key.trim(), value.join("="));
+      },
+    };
+
+    trackSearch("tea");
+    trackLead("phone");
+    trackAddToWishlist(wished);
+    trackSignUp("email");
+    await settle();
+
+    const id = jar.get("an_eid") as string;
+    for (const entry of layer() as { user_data?: { external_id?: string } }[]) assert.equal(entry.user_data?.external_id, sha(id));
+
+    setUpPage({ marketing: false });
+    trackSearch("tea");
+    trackLead("phone");
+    await settle();
+    for (const entry of layer()) assert.equal("user_data" in entry, false);
   });
 });

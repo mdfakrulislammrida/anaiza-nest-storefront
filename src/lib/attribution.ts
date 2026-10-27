@@ -1,4 +1,5 @@
 import { marketingAllowed } from "./consent.ts";
+import { keepFbcFromClick } from "./identity.ts";
 
 const STORAGE_KEY = "anaiza-utm-attribution";
 const EXPIRY_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -120,6 +121,8 @@ function captureClickIds(search: string): void {
 
   try {
     window.localStorage.setItem(CLICK_STORAGE_KEY, JSON.stringify({ ...found, capturedAt: Date.now() }));
+    // The order may be placed long after the visitor landed: keep the click in Meta's cookie format too (identity.ts), unless Meta's own cookie is there.
+    if (found.fbclid) keepFbcFromClick(found.fbclid);
   } catch {
     // Storage unavailable: attribution is a nice-to-have.
   }

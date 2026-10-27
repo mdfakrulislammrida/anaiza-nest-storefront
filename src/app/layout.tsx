@@ -19,6 +19,7 @@ import { siteJsonLd } from "@/lib/jsonld";
 import { siteRobots } from "@/lib/seo";
 import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
 import RouteChangeTracker from "@/components/RouteChangeTracker";
+import TrackingEvents from "@/components/TrackingEvents";
 import UtmCapture from "@/components/UtmCapture";
 import CartBoundary from "@/components/CartBoundary";
 import CookieConsent from "@/components/CookieConsent";
@@ -156,6 +157,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <MarketingBodyNoscript marketing={marketing} consent={cookieConsent} />
         <RouteChangeTracker />
         <UtmCapture />
+        <TrackingEvents />
         <SiteSettingsProvider initialSettings={siteSettings}>
           <AuthProvider>
             <CartProvider>
