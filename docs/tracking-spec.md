@@ -72,6 +72,14 @@ after the path changes so the page's title is the new one, and never pushes the 
 
 `page_referrer` is the page the visitor came from: the referring site on the first page, the previous page of the shop after that.
 
+### The order of events on a page
+
+**A page's own events always come after its `page_view`.** On a page load or a navigation the shop pushes, in this order: `page_view`, then `view_item` / `view_item_list` / `view_cart` / `begin_checkout` and the rest.
+
+Why this matters: in the container the Meta pixel is created by the tag that fires on `page_view` (`AN - Meta Pixel - init + PageView`). Every other Meta tag starts with `if (!window.fbq) return;`. An event that reached the data layer *before* the `page_view` found no pixel and was dropped. That is what happened to ViewContent on a page opened directly (an ad click lands on the product page), because the product page pushed `view_item` the moment it appeared while `page_view` waits a moment for the page's title (`RouteChangeTracker`).
+
+How it is guaranteed (`src/lib/tracking.ts`): when a navigation starts, `RouteChangeTracker` calls `expectPageView()`, which holds every other event; the `page_view` push releases them in the order they were asked for. If no `page_view` comes, the events are released after 1.5 seconds and not lost. Still exactly one `page_view` per navigation, with its own `event_id`. Checked by `src/lib/tracking.test.ts` and, on the built site, by `npm run tracking:check` (a direct landing on a product, shop, category, special prices, cart and checkout page).
+
 ## 3. Events
 
 Every event is pushed as **two** data layer entries: `{ "ecommerce": null, "user_data": null }` first (so the previous event's ecommerce object and hashed details never carry over to
@@ -371,6 +379,13 @@ Meta matches people better when the same `external_id` is on all of their events
 
 With the order (`POST /api/orders`) the checkout sends `fbp` (`_fbp`), `fbc` (`_fbc`, else `an_fbc`) and `external_id` (the same hash as on the events), **only when marketing is allowed**, and each only when it exists. The shop's server checks their
 shape, drops a wrong one, and never refuses an order because of them; it uses them in the Purchase it sends to Meta.
+
+### UTM values are stored as one text
+
+The five UTM parameters are decoded once (a `+` is a space, `%XX` is its character, a stray `%` stays) and trimmed, so `AN+%7C+SALES`, `AN%20%7C%20SALES` and `AN | SALES` are the same campaign, `AN | SALES`.
+A link that an ad platform encoded twice (`AN%2B%7C%2BSALES`, which one decode turns into `AN+|+SALES`) is read as the same campaign: a value with no space in it but plus signs between its words
+(two or more, or a plus around a separator such as `|`) gets those plus signs as spaces. `Buy1+Get1`, `C++` and values that already contain spaces are left alone. The click ids (`fbclid`, `gclid`,
+`ttclid`) are never changed. Rule and tests: `cleanUtmValue` in `src/lib/attribution.ts`, `src/lib/utm.test.ts`. Orders already stored with the plus signs are not rewritten; only new ones are clean.
 
 ## 6. Customer-data rules
 

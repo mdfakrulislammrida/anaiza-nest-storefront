@@ -49,7 +49,7 @@ export default function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="relative space-y-4">
+    <form onSubmit={handleSubmit} className="relative space-y-4" data-clarity-mask="true">
       {guard.trap}
       <div>
         <label className={labelClass}>Name</label>

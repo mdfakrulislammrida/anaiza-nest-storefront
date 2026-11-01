@@ -1,8 +1,8 @@
 // Run with `npm test` (Node's built-in test runner; no extra dependency).
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { feedItemId, newEventId, purchaseValue, trackAddPaymentInfo, trackAddShippingInfo, trackAddToCart, trackAddToWishlist, trackLead, trackSignUp, pushesSettled, trackBeginCheckout, trackPageView, trackPurchase, trackRemoveFromCart, trackSearch, trackViewCart, trackViewContentList, trackViewItem, trackViewItemList } from "./tracking.ts";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
+import { feedItemId, newEventId, purchaseValue, trackAddPaymentInfo, trackAddShippingInfo, trackAddToCart, trackAddToWishlist, trackLead, trackSignUp, pushesSettled, expectPageView, trackBeginCheckout, trackPageView, trackPurchase, trackRemoveFromCart, trackSearch, trackViewCart, trackViewContentList, trackViewItem, trackViewItemList } from "./tracking.ts";
 import type { Order } from "./types.ts";
 
 type Call = unknown[];
@@ -683,5 +683,72 @@ describe("search, generate_lead, add_to_wishlist and sign_up", () => {
     trackLead("phone");
     await settle();
     for (const entry of layer()) assert.equal("user_data" in entry, false);
+  });
+});
+
+// ---- A page's own events come after its page_view (a product page's view_item used to reach the data layer first, and the Meta ViewContent tag was dropped)
+
+describe("page_view comes before the page's own events", () => {
+  const events = () => layer().map((entry) => entry.event);
+
+  it("a view_item, view_item_list, view_cart and begin_checkout asked for during the navigation wait for the page_view, and follow it in the order asked", async () => {
+    expectPageView();
+    trackViewItem(product as never);
+    trackViewItemList([product as never], "Shop");
+    trackViewCart([cartLine as never], 1200);
+    trackBeginCheckout([cartLine as never], 1200);
+    await settle();
+    assert.deepEqual(events(), [], "nothing is pushed before the page is counted");
+
+    trackPageView("", true);
+    await settle();
+
+    assert.deepEqual(events(), ["page_view", "view_item", "view_item_list", "view_cart", "begin_checkout"]);
+  });
+
+  it("every navigation is the same: page_view first, then the page's events, one page_view each, all ids different", async () => {
+    for (const path of ["/product/a", "/shop", "/cart"]) {
+      (win.window as Record<string, unknown>).location = { href: `https://anaizanest.com${path}`, pathname: path };
+      expectPageView();
+      if (path === "/cart") trackViewCart([cartLine as never], 1200);
+      else trackViewItem(product as never);
+      trackPageView("", false);
+    }
+    await settle();
+
+    assert.deepEqual(events(), ["page_view", "view_item", "page_view", "view_item", "page_view", "view_cart"]);
+    const ids = (layer() as { event_id: string }[]).map((entry) => entry.event_id);
+    assert.equal(new Set(ids).size, ids.length);
+  });
+
+  it("the event_id given back when the push is held is the one that is pushed", async () => {
+    expectPageView();
+    trackSearch("tea");
+    trackPageView("", true);
+    await settle();
+
+    const search = layer().find((entry) => entry.event === "search") as { event_id: string };
+    assert.match(search.event_id, /^search\.[0-9a-f]{16}$/);
+    assert.deepEqual(fbqCalls.find((call) => call[1] === "Search")?.[3], { eventID: search.event_id });
+  });
+
+  it("if no page_view ever comes, the events are released after a moment and are not lost", async () => {
+    mock.timers.enable({ apis: ["setTimeout"] });
+    try {
+      expectPageView();
+      trackViewItem(product as never);
+      assert.deepEqual(events(), []);
+
+      mock.timers.tick(1500);
+      assert.deepEqual(events(), ["view_item"]);
+    } finally {
+      mock.timers.reset();
+    }
+  });
+
+  it("with no navigation going on, events are pushed at once as before", () => {
+    trackViewItem(product as never);
+
+    assert.deepEqual(events(), ["view_item"]);
   });
 });

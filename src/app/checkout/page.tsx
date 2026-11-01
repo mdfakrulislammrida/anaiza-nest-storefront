@@ -5,6 +5,8 @@ import CheckoutForm from "@/components/CheckoutForm";
 import type { PaymentSetting } from "@/lib/types";
 
 export const metadata: Metadata = {
+  // Shown as "Checkout | Anaiza Nest" (the title template in the root layout).
+  title: "Checkout",
   robots: privatePageRobots(),
 };
 

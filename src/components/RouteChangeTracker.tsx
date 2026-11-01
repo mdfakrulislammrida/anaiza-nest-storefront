@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { trackPageView } from "@/lib/tracking";
+import { expectPageView, trackPageView } from "@/lib/tracking";
 
 // One `page_view` in the data layer for each page of a visit, the first one included, and one fbq PageView / ttq.page() for a page change
 // in direct mode (the base snippets fire the first). Most navigation in this app is client-side (next/link), so without this only the
@@ -28,6 +28,10 @@ export default function RouteChangeTracker() {
     const first = isFirst.current;
     isFirst.current = false;
     lastPath.current = pathname;
+
+    // From this moment the page's own events (view_item and the rest) wait for this page's page_view: see expectPageView() in tracking.ts. This effect runs
+    // before the page's, because this component comes first in the layout.
+    expectPageView();
 
     // A navigation that comes before the last one has been reported replaces it. (No cleanup: a development double run must not drop the first page.)
     window.clearTimeout(timer.current);

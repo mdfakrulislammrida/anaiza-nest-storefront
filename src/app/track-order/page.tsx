@@ -67,7 +67,7 @@ export default function TrackOrderPage() {
         Enter your order number and phone number to see where your order is.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-4" data-clarity-mask="true">
         <div>
           <label className={labelClass}>Order number</label>
           <input name="order_id" required className={inputClass} />
@@ -87,7 +87,7 @@ export default function TrackOrderPage() {
       </form>
 
       {order && (
-        <div className="mt-10 rounded-btn border border-linen p-6">
+        <div className="mt-10 rounded-btn border border-linen p-6" data-clarity-mask="true">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-charcoal text-h2">Order #{order.id}</h2>
             <span className="rounded-btn bg-linen px-4 py-1 text-caption font-medium text-navy">

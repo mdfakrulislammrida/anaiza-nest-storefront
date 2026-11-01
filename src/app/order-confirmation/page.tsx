@@ -77,7 +77,8 @@ export default function OrderConfirmationPage() {
   const waitingOnPayment = order.payment_status === "awaiting_verification" || order.payment_status === "failed";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+    // Microsoft Clarity records what is on screen: this page shows the customer's name, address, email and phone, so it is masked (docs/tracking-setup-guide.md).
+    <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6" data-clarity-mask="true">
       <p className="text-caption font-medium text-navy">{waitingOnPayment ? "Order received" : "Order confirmed"}</p>
       {/* The page's one italic line (Fraunces italic 300), said as the host. A wallet order whose payment is still being
           checked is not being packed yet, so it says what is true. */}

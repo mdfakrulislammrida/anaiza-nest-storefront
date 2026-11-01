@@ -56,6 +56,30 @@ export function newEventId(event: string): string {
 let waiting = 0;
 let tail: Promise<void> = Promise.resolve();
 
+// A page's own events (view_item, view_item_list, view_cart, begin_checkout ...) must come AFTER its page_view. The page_view is pushed a moment after the route
+// changes (RouteChangeTracker waits for the page's title), while the page's components push their events the moment they appear, so without this the product page's
+// view_item reached the data layer first. In the container the Meta pixel is created by the tag that fires on page_view; a ViewContent that arrives before it finds no
+// pixel and is dropped. So: when a navigation starts, expectPageView() holds every other event, and the page_view releases them, in the order they were asked for.
+let awaitingPageView = false;
+let held: (() => void)[] = [];
+let releaseTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** A navigation has started: hold the page's events until its page_view has been pushed (or, if that never comes, for at most 1.5 seconds). */
+export function expectPageView() {
+  if (typeof window === "undefined") return;
+  awaitingPageView = true;
+  clearTimeout(releaseTimer);
+  releaseTimer = setTimeout(releasePageEvents, 1500);
+}
+
+function releasePageEvents() {
+  clearTimeout(releaseTimer);
+  awaitingPageView = false;
+  const waitingEvents = held;
+  held = [];
+  for (const push of waitingEvents) push();
+}
+
 /**
  * Pushes one event and returns its event_id (the one given, else a new one). The previous ecommerce object and hashed contact are cleared first.
  *
@@ -69,6 +93,12 @@ function pushDataLayer(event: { event: string; event_id?: string; user_data?: Co
 
   if (typeof window === "undefined") return eventId;
 
+  if (awaitingPageView && name !== "page_view") {
+    held.push(() => void pushDataLayer({ ...event, event_id: eventId }));
+
+    return eventId;
+  }
+
   const write = (externalId: string | null) => {
     const userData = { ...(contact ?? {}), ...(externalId ? { external_id: externalId } : {}) };
 
@@ -77,6 +107,8 @@ function pushDataLayer(event: { event: string; event_id?: string; user_data?: Co
     // hashed contact details (user_data), which the data layer would otherwise keep for every later event of the visit.
     window.dataLayer.push({ ecommerce: null, user_data: null });
     window.dataLayer.push({ event: name, event_id: eventId, ...rest, ...(Object.keys(userData).length > 0 ? { user_data: userData } : {}) });
+    // The page has been counted: the events that were waiting for it follow, in the order they were asked for.
+    if (name === "page_view") releasePageEvents();
   };
 
   const source = externalIdSource();

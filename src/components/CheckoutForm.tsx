@@ -611,6 +611,7 @@ export default function CheckoutForm({
   const checkoutForm = (
     <form
       id="checkout-form"
+      data-clarity-mask="true"
       onSubmit={handleSubmit}
       onBlur={handleContactBlur}
       onFocusCapture={embedded ? noteFlowStarted : undefined}
@@ -1103,7 +1104,7 @@ export default function CheckoutForm({
 
           <div className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">{checkoutForm}</div>
 
-          <section className="hidden rounded-btn border border-linen p-6 sm:block lg:col-start-2 lg:row-start-1 lg:rounded-b-none lg:border-b-0 lg:pb-0">
+          <section data-clarity-mask="true" className="hidden rounded-btn border border-linen p-6 sm:block lg:col-start-2 lg:row-start-1 lg:rounded-b-none lg:border-b-0 lg:pb-0">
             <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
             <div className="mt-4">{summaryBody}</div>
           </section>
@@ -1157,7 +1158,7 @@ export default function CheckoutForm({
       <div className="mt-6 flex flex-col gap-8">
         {checkoutForm}
 
-        <aside className="w-full">
+        <aside className="w-full" data-clarity-mask="true">
           <div className="rounded-btn border border-linen p-6">
             <h2 className="font-serif text-charcoal text-h2">Order summary</h2>
             <div className="mt-4">{summaryBody}</div>

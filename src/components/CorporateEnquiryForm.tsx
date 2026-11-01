@@ -70,7 +70,7 @@ export default function CorporateEnquiryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" data-clarity-mask="true">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor={`${uid}-name`} className={labelClass}>

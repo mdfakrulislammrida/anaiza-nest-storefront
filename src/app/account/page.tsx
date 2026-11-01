@@ -110,7 +110,7 @@ export default function AccountPage() {
 
   if (customer) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-md px-4 py-16 sm:px-6" data-clarity-mask="true">
         <nav className="mb-6 text-caption text-stone">
           <Link href="/" className="hover:text-navy">
             Home
@@ -132,7 +132,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
+    <div className="mx-auto max-w-md px-4 py-16 sm:px-6" data-clarity-mask="true">
       <nav className="mb-6 text-caption text-stone">
         <Link href="/" className="hover:text-navy">
           Home

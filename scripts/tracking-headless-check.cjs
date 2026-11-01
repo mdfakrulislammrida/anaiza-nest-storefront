@@ -36,6 +36,49 @@ const CHROME = [
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".woff2": "font/woff2", ".ico": "image/x-icon", ".xml": "application/xml" };
 const PIXEL_GIF = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+// A very small GTM, made from the real container file (docs/gtm-container-anaizanest-v4.json): it reads the data layer in order, as GTM does when its
+// script arrives late (the queue is replayed from the start), keeps the data layer model, and for each event runs the custom HTML tags whose trigger is that
+// event, with the container's variables. Enough to see whether a tag that needs the pixel (ViewContent) finds it. It does not model consent, GA4 or the network.
+function miniGtmSource() {
+  const container = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "docs", "gtm-container-anaizanest-v4.json"), "utf8")).containerVersion;
+  const param = (item, key) => (item.parameter.find((p) => p.key === key) || {}).value;
+  const constants = {};
+  const layerVariables = {};
+  for (const variable of container.variable) {
+    if (variable.type === "c") constants[variable.name] = param(variable, "value");
+    if (variable.type === "v") layerVariables[variable.name] = param(variable, "name");
+  }
+  const eventOf = {};
+  for (const trigger of container.trigger) eventOf[trigger.triggerId] = trigger.customEventFilter[0].parameter[1].value;
+  const tags = container.tag
+    .filter((tag) => tag.type === "html")
+    .map((tag) => ({
+      name: tag.name,
+      events: tag.firingTriggerId.map((id) => eventOf[id]).filter(Boolean),
+      code: param(tag, "html").replace(/^<script>\n?/, "").replace(/\n?<\/script>$/, "").replace(/\{\{([^}]+)\}\}/g, (_, name) => `__mg(${JSON.stringify(name)})`),
+    }));
+
+  return `(function () {
+  var TAGS = ${JSON.stringify(tags)}, CONSTANTS = ${JSON.stringify(constants)}, VARIABLES = ${JSON.stringify(layerVariables)};
+  var model = {}; window.__mgErrors = []; window.__mgFired = [];
+  function get(p) { var o = model, a = p.split("."); for (var i = 0; i < a.length; i++) { if (o == null) return undefined; o = o[a[i]]; } return o; }
+  window.__mg = function (name) { if (name in CONSTANTS) return CONSTANTS[name]; if (name in VARIABLES) return get(VARIABLES[name]); return undefined; };
+  function handle(o) {
+    if (!o || typeof o !== "object" || Array.isArray(o) || Object.prototype.toString.call(o) === "[object Arguments]") return;
+    for (var k in o) { if (o[k] === null) delete model[k]; else model[k] = o[k]; }
+    if (!o.event) return;
+    TAGS.forEach(function (tag) {
+      if (tag.events.indexOf(o.event) === -1) return;
+      window.__mgFired.push(tag.name + " <- " + o.event);
+      try { (0, eval)(tag.code); } catch (e) { window.__mgErrors.push(tag.name + ": " + e.message); }
+    });
+  }
+  var layer = window.dataLayer, queued = layer.slice(), push = layer.push;
+  layer.push = function () { for (var i = 0; i < arguments.length; i++) { push.call(layer, arguments[i]); handle(arguments[i]); } return layer.length; };
+  queued.forEach(handle);
+})();`;
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ---- the built shop, served the way the host serves it (/cart is cart.html)
@@ -144,6 +187,18 @@ async function main() {
   if (!fs.existsSync(path.join(OUT, "index.html"))) throw new Error("out/ is missing: run npm run build first");
   if (!CHROME) throw new Error("Chrome or Edge not found (set CHROME_PATH)");
 
+  // A copy of the shop's product list, for the list pages (see below). Without internet those pages are simply not checked.
+  let productsFixture = null;
+  if (!REAL) {
+    try {
+      const response = await fetch("https://api.anaizanest.com/api/products?per_page=24", { headers: { Accept: "application/json" } });
+      if (response.ok) productsFixture = await response.text();
+    } catch {
+      // offline
+    }
+    if (!productsFixture) console.log("NOTE: the shop's API could not be reached, so the list pages (shop, category, special prices) are not checked.");
+  }
+
   const server = await serve();
   const base = LIVE_HOST ? `http://${LIVE_HOST}:${server.address().port}` : `http://127.0.0.1:${server.address().port}`;
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "an-track-"));
@@ -174,7 +229,15 @@ async function main() {
         hits.push({ kind: "blocked POST", event: new URL(request.url).hostname, event_id: "", page: "" });
         cdp.send("Fetch.failRequest", { requestId, errorReason: "BlockedByClient" }).catch(() => {});
       } else if (!REAL && /googletagmanager\.com\/gtm\.js/.test(request.url)) {
-        cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [{ name: "content-type", value: "text/javascript" }], body: Buffer.from("/* stub GTM */").toString("base64") }).catch(() => {});
+        cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [{ name: "content-type", value: "text/javascript" }], body: Buffer.from(miniGtmSource()).toString("base64") }).catch(() => {});
+      } else if (!REAL && productsFixture && /api\.anaizanest\.com\/api\/products\?/.test(request.url)) {
+        // The list pages ask the shop's API for their products. A page served from this computer is not on the API's list of allowed sites, so the answer is
+        // a copy of the real one (read once at the start), with the permission added. Everything else about the page is the real build.
+        const cors = [{ name: "access-control-allow-origin", value: "*" }, { name: "access-control-allow-headers", value: "*" }, { name: "access-control-allow-methods", value: "GET, OPTIONS" }];
+        if (request.method === "OPTIONS") cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 204, responseHeaders: cors }).catch(() => {});
+        else cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [{ name: "content-type", value: "application/json" }, ...cors], body: Buffer.from(productsFixture).toString("base64") }).catch(() => {});
+      } else if (!REAL && /connect\.facebook\.net/.test(request.url)) {
+        cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [{ name: "content-type", value: "text/javascript" }], body: Buffer.from("/* stub fbevents */").toString("base64") }).catch(() => {});
       } else {
         cdp.send("Fetch.continueRequest", { requestId }).catch(() => {});
       }
@@ -249,6 +312,144 @@ async function main() {
       console.log(`${ok ? "PASS" : "FAIL"}  ${text}`);
       failed = failed || !ok;
     };
+
+    // ---- Landing straight on a page (an ad click): the page's own event must come AFTER its page_view. GTM is the small stand-in above (stub mode only), so
+    // ---- this also shows whether the Meta ViewContent tag finds the pixel that the page_view tag creates. Not modelled: consent, GA4, the real GTM script.
+    const cartLine = { key: "7:base", productId: 7, slug: "mug", name: "Mug", price: 600, image: null, variantId: null, variantLabel: null, sku: "MUG-RED", category: "Mugs", quantity: 2, stock: 5 };
+    const PAGE_EVENTS = ["page_view", "view_item", "view_item_list", "view_cart", "begin_checkout"];
+
+    async function landOn(label, urlPath, expected, withCart) {
+      await run(withCart ? `localStorage.setItem("anaiza-cart", JSON.stringify([${JSON.stringify(cartLine)}]))` : 'localStorage.removeItem("anaiza-cart")');
+      pushes.length = 0;
+      await cdp.send("Page.navigate", { url: `${base}${urlPath}` });
+      await sleep(2500);
+      await touch();
+      await sleep(2000);
+      const names = pushes.map((push) => push.event).filter((name) => PAGE_EVENTS.includes(name));
+      const fired = await run("window.__mgFired || []");
+      const queue = await run("window.fbq && window.fbq.queue ? Array.prototype.map.call(window.fbq.queue, function (a) { return Array.prototype.slice.call(a); }) : null");
+      console.log(`\nLanding on ${urlPath} (${label}):`);
+      console.log("  data layer:", names.join(" -> "));
+      console.log("  tags fired:", fired.join(" | ") || "(none)");
+      check(names[0] === "page_view", `${label}: page_view is the first page event (${names[0]})`);
+      check(names.filter((name) => name === "page_view").length === 1, `${label}: exactly one page_view`);
+      check(names.indexOf(expected) > names.indexOf("page_view") && names.includes(expected), `${label}: ${expected} comes after page_view`);
+
+      return { queue, pushes: pushes.slice() };
+    }
+
+    async function landings() {
+    const landing = await landOn("a product", product, "view_item", false);
+    const viewItem = landing.pushes.find((push) => push.event === "view_item");
+    const calls = (landing.queue || []).map((call) => call.slice(0, 2).join(" "));
+    const initAt = calls.findIndex((call) => call.startsWith("init "));
+    const viewContentAt = (landing.queue || []).findIndex((call) => call[0] === "track" && call[1] === "ViewContent");
+    check(initAt !== -1 && viewContentAt > initAt, `a product: the Meta pixel is started, then ViewContent is called (fbq calls: ${calls.join(", ") || "none"})`);
+    check(viewContentAt !== -1 && Boolean(viewItem) && JSON.stringify(landing.queue[viewContentAt][3]) === JSON.stringify({ eventID: viewItem.event_id }), "a product: ViewContent's eventID is the view_item event_id");
+
+    if (productsFixture) {
+      await landOn("the shop", "/shop", "view_item_list", false);
+      await landOn("a category", "/category/gifts", "view_item_list", false);
+      await landOn("special prices", "/special-prices", "view_item_list", false);
+    }
+    await landOn("the cart", "/cart", "view_cart", true);
+    await landOn("the checkout", "/checkout", "begin_checkout", true);
+    await run('localStorage.removeItem("anaiza-cart")');
+
+    // ---- Microsoft Clarity records what is on screen. Every place that shows or takes a customer's name, phone, address or email must sit inside an element with
+    // ---- data-clarity-mask="true". Each needle is a piece of text (or an input) of that kind; its nearest masked ancestor must exist.
+    const order = {
+      id: 1004, status: "pending", payment_method: "cod", payment_status: "cod", subtotal: 1850, delivery_fee: 80, total: 1930, gift_note: null, created_at: "2026-10-06T00:00:00Z",
+      customer: { id: 1, name: "Maskcheck Person", email: "maskcheck.person@example.test", phone: "01711223344", address: "House 9, Road 9", division: "Dhaka", district: "Dhaka", thana: "Banani" },
+      items: [{ id: 1, product_id: 7, product_name: "Mug", quantity: 1, price: 1850, variant_name: null, variant_value: null, sku: "M-1", category: "Mugs" }],
+    };
+
+    async function maskCheck(label, urlPath, { texts = [], inputs = [], setup, title }) {
+      if (setup) await run(setup);
+      await cdp.send("Page.navigate", { url: `${base}${urlPath}` });
+      await sleep(3000);
+      const result = await run(`(function () {
+        var out = { texts: {}, inputs: {} };
+        var texts = ${JSON.stringify(texts)}, inputs = ${JSON.stringify(inputs)};
+        texts.forEach(function (needle) {
+          var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), node, found = 0, masked = 0;
+          while ((node = walker.nextNode())) {
+            if (node.nodeValue.indexOf(needle) === -1) continue;
+            found++;
+            if (node.parentElement && node.parentElement.closest('[data-clarity-mask="true"]')) masked++;
+          }
+          out.texts[needle] = found === 0 ? "not on the page" : masked === found ? "masked" : "NOT MASKED (" + masked + " of " + found + ")";
+        });
+        inputs.forEach(function (name) {
+          var el = document.querySelector('[name="' + name + '"]');
+          out.inputs[name] = !el ? "not on the page" : el.closest('[data-clarity-mask="true"]') ? "masked" : "NOT MASKED";
+        });
+        return out;
+      })()`);
+      if (title) {
+        const page = await run("({ title: document.title, robots: (document.querySelector('meta[name=robots]') || {}).content || '' })");
+        check(page.title === title, `${label}: the title is "${page.title}" (wanted "${title}")`);
+        check(/noindex/.test(page.robots), `${label}: still noindex (${page.robots})`);
+      }
+      for (const [needle, state] of Object.entries(result.texts)) check(state === "masked", `${label}: the text "${needle.slice(0, 24)}" is ${state}`);
+      for (const [name, state] of Object.entries(result.inputs)) check(state === "masked", `${label}: the field ${name} is ${state}`);
+    }
+
+    await maskCheck("order confirmation", "/order-confirmation", {
+      setup: `sessionStorage.setItem("anaiza-last-order", JSON.stringify(${JSON.stringify(order)}))`,
+      texts: ["Maskcheck Person", "House 9, Road 9", "maskcheck.person@example.test", "01711223344"],
+      title: "Order confirmation | Anaiza Nest",
+    });
+    await run('sessionStorage.removeItem("anaiza-last-order"); sessionStorage.removeItem("anaiza-tracked-orders")');
+    await maskCheck("track order", "/track-order", { inputs: ["order_id", "phone"], title: "Track your order | Anaiza Nest" });
+    await maskCheck("account (signed out)", "/account", { inputs: ["email", "password"], title: "Account | Anaiza Nest" });
+    await maskCheck("checkout", "/checkout", {
+      setup: `localStorage.setItem("anaiza-cart", JSON.stringify([${JSON.stringify(cartLine)}]))`,
+      inputs: ["customer_name", "customer_phone", "customer_email"],
+      title: "Checkout | Anaiza Nest",
+    });
+    await maskCheck("cart", "/cart", { title: "Your cart | Anaiza Nest" });
+
+    // ---- How often begin_checkout is pushed (an investigation, S5 of the audit): the checkout page, a reload, leaving and coming back inside the app, and back/forward.
+    // ---- Reported as numbers; the one thing asserted is that a single visit never pushes it twice.
+    async function checkoutVisits() {
+      await run(`localStorage.setItem("anaiza-cart", JSON.stringify([${JSON.stringify(cartLine)}]))`);
+      const count = () => pushes.filter((push) => push.event === "begin_checkout").length;
+      const steps = [];
+      const step = async (label, action, wait = 2500) => {
+        const before = count();
+        await action();
+        await sleep(wait);
+        steps.push({ step: label, "begin_checkout pushed by this step": count() - before, "total so far": count() });
+      };
+
+      pushes.length = 0;
+      await step("open /checkout (full page load)", () => cdp.send("Page.navigate", { url: `${base}/checkout` }), 3500);
+      await step("stay on the page 3 s, scroll, click inside the form", () => run("window.scrollTo(0, 400); document.querySelector('input[name=customer_name]').focus(); document.querySelector('input[name=customer_name]').blur(); true"), 3000);
+      await step("reload the page", () => cdp.send("Page.reload"), 3500);
+      await step("go to /cart inside the app, then back to /checkout inside the app", async () => {
+        await run("window.next.router.push('/cart')");
+        await sleep(1800);
+        await run("window.next.router.push('/checkout')");
+      }, 2500);
+      await step("browser Back (to /cart) and Forward (to /checkout)", async () => {
+        await run("history.back()");
+        await sleep(1800);
+        await run("history.forward()");
+      }, 2500);
+      await step("open /checkout from the cart page with a link click", async () => {
+        await run("window.next.router.push('/cart')");
+        await sleep(1500);
+        await run("(document.querySelector('a[href=\"/checkout\"]') || {click(){}}).click()");
+      }, 2500);
+      console.log("\nbegin_checkout pushes (an investigation, no behaviour changed):");
+      console.table(steps);
+      check(steps[0]["begin_checkout pushed by this step"] === 1 && steps[1]["begin_checkout pushed by this step"] === 0, "one visit to the checkout pushes begin_checkout once, and staying on it pushes nothing more");
+      await run('localStorage.removeItem("anaiza-cart")');
+    }
+    await checkoutVisits();
+    await run('localStorage.removeItem("anaiza-cart")');
+    }
     check(pageViews.length === 3, `exactly 3 page_view pushes for 3 pages (found ${pageViews.length})`);
     check(pageViews.every((push) => /^page_view\.[0-9a-f]{16}$/.test(push.event_id || "")), "every page_view has an event_id (page_view.<16 characters>)");
     check(new Set(pageViews.map((push) => push.event_id)).size === pageViews.length, "all event_ids are different");
@@ -267,6 +468,9 @@ async function main() {
       console.log("Meta pixel object:", JSON.stringify(await run("window.fbq ? { loaded: !!fbq.loaded, version: fbq.version, queued: (fbq.queue || []).length, ownInit: window._anMetaInit === true, pixelIds: fbq.getState ? fbq.getState().pixels.map(function (p) { return p.id; }) : null } : 'no fbq'")));
       console.log("Consent now:", JSON.stringify(await run("window.anaizaConsent && { cfg: { mode: anaizaConsent.config.mode, enabled: anaizaConsent.config.enabled, defer: anaizaConsent.config.defer }, effective: anaizaConsent.effective(), saved: anaizaConsent.get() }")));
     }
+    if (REAL) console.log("\nLandings are checked in stub mode only (they need the stand-in for GTM).");
+    else await landings();
+
     if (REAL) {
       const useful = hits.filter((hit) => hit.kind !== "other");
       console.log("\nWhat would have left the browser (recorded, then refused):");

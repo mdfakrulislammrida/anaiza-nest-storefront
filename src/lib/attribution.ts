@@ -12,6 +12,23 @@ interface StoredAttribution extends UtmValues {
   capturedAt: number;
 }
 
+/**
+ * A UTM value as one name. The address is decoded once, by URLSearchParams: "+" is a space and %XX is its character, so `AN+%7C+SALES`, `AN%20%7C%20SALES` and
+ * `AN | SALES` are all "AN | SALES", and a stray "%" is left as it is. This cleans what is left after that, and never decodes again:
+ *   - A campaign link that was encoded twice (an ad platform's own encoding on top of the address's) arrives as `AN%2B%7C%2BSALES`, which one decode turns into
+ *     `AN+|+SALES`: the plus signs are the spaces. A value with no space in it but plus signs between its words (two or more, or a plus wrapped around a separator
+ *     such as |) is read that way. One plus (`Buy1+Get1`), a plus at the end (`C++`) and a value that has spaces are left alone.
+ *   - Spaces are trimmed and doubled spaces made single, so the same campaign is always the same text.
+ */
+export function cleanUtmValue(value: string | null | undefined): string {
+  let text = (value ?? "").trim();
+
+  const between = text.match(/(?<=\S)\+(?=\S)/g) ?? [];
+  if (!/\s/.test(text) && (between.length >= 2 || /\+[|:/\u2013-]\+/.test(text))) text = text.replace(/\+/g, " ");
+
+  return text.replace(/\s+/g, " ").trim();
+}
+
 // Last-touch, not first-touch: whichever campaign a customer clicked most
 // recently before buying is what should get credit for that sale, so a new
 // UTM-tagged visit always overwrites whatever was stored from an earlier
@@ -29,7 +46,7 @@ export function captureUtmParams(search: string): void {
   const values: UtmValues = {};
 
   for (const key of UTM_KEYS) {
-    const value = params.get(key);
+    const value = cleanUtmValue(params.get(key));
     if (value) values[key] = value;
   }
 
@@ -59,7 +76,9 @@ export function utmFromRecord(record: unknown, now: number): UtmValues {
   const values: UtmValues = {};
   for (const key of UTM_KEYS) {
     const value = record[key];
-    if (typeof value === "string" && value.trim() !== "" && value.length <= 255) values[key] = value;
+    // Cleaned again on the way out: a value kept from before this rule (30 days) is the same campaign as one kept today.
+    const clean = typeof value === "string" ? cleanUtmValue(value) : "";
+    if (clean !== "" && clean.length <= 255) values[key] = clean;
   }
   return values;
 }

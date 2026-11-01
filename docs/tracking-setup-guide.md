@@ -213,6 +213,23 @@ the Stape server container, a coupon parameter, `select_item` / `view_promotion`
 
 ---
 
+## Microsoft Clarity: mask personal data (a manual step for the owner, and a second layer in the code)
+
+Clarity records what is on a visitor's screen. The order confirmation shows the customer's name, address, email and phone, and the checkout, account, track-order and contact forms take them. Two layers keep that out of the recordings:
+
+1. **Strict masking in Clarity (you do this once, in the Clarity project).** Clarity > the project > **Settings** > **Masking** > choose **Strict**. Strict hides all text and input on every page, not just the fields Clarity guesses are sensitive. Do not leave it on Balanced or Relaxed. (This cannot be done from the shop's code.)
+2. **`data-clarity-mask="true"` in the shop's pages (done).** The shop marks every container that shows or takes customer data, so those pages stay masked even if the project setting is ever loosened:
+
+| Page | Masked container | What it holds |
+| --- | --- | --- |
+| Order confirmation | the page's outer `div` | name, address, email, phone, gift note |
+| Track order | the `form`, and the result `div` | the phone number typed, the order shown |
+| Account | the outer `div` (signed in and signed out) | name, email, the sign-in and registration forms |
+| Checkout | `form#checkout-form`, the two order-summary containers (`section`, `aside`) | name, phone, email, address, the wallet sender number |
+| Contact, Corporate gifting | the `form` | name, email, phone |
+
+`npm run tracking:check` loads the built pages and checks that the real text and fields sit inside a masked element; `src/lib/pageMeta.test.ts` lists the same containers.
+
 ## Phase 2: the Stape server container (now built: container version 2)
 
 Phase 2 has moved to **`docs/server-container-guide.md`**, with the importable web container `docs/gtm-container-anaizanest-v2.json`. The short version of what changed:
