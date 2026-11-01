@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllArticles, getAllProducts, getCategories, getPages, getSitemapLandingPages } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
+import { pathOf } from "@/lib/slugs";
 
 // Required for output: "export" -- there's no server to compute this
 // per-request, so it's generated once at build time like every other route.
@@ -33,13 +34,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
-    url: new URL(`/category/${category.slug}`, SITE_URL).toString(),
+    url: new URL(pathOf("category", category), SITE_URL).toString(),
     changeFrequency: "weekly",
     priority: 0.7,
   }));
 
   const pageEntries: MetadataRoute.Sitemap = pages.map((page) => ({
-    url: new URL(`/pages/${page.slug}`, SITE_URL).toString(),
+    url: new URL(pathOf("page", page), SITE_URL).toString(),
     changeFrequency: "monthly",
     priority: 0.4,
   }));

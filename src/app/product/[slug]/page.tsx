@@ -4,7 +4,11 @@ import { ApiError, getAllProducts, getProduct, getProductReviews, getProducts, g
 import { breadcrumbJsonLd, faqPageJsonLd, productJsonLd } from "@/lib/jsonld";
 import { metaDescription } from "@/lib/productDisplay";
 import ProductDetailClient from "@/components/ProductDetailClient";
+import { siteDefaultShareImage } from "@/lib/defaultShare";
+import { SITE_URL } from "@/lib/config";
+import { pickShareImage, shareMetadata } from "@/lib/shareImage";
 import NotFound from "@/app/not-found";
+import { pathOf } from "@/lib/slugs";
 import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
 
 // Static export needs every product slug enumerated at build time. A slug
@@ -28,20 +32,14 @@ export async function generateMetadata({
   const title = product.seo?.meta_title || product.name;
   // The SEO field, else the short description, the summary or the first words of the description: never a page with none.
   const description = metaDescription(product);
-  const image = product.seo?.og_image || product.images?.[0]?.url;
+  // The API's own choice (the product's share image, then its main picture, then its category's), the older keys, the pictures shown, then the default.
+  const image = pickShareImage([product.seo?.image, product.seo?.og_image, product.images?.[0]?.url], await siteDefaultShareImage(), SITE_URL);
 
   return {
     title,
     description,
     alternates: { canonical: `/product/${product.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      url: `/product/${product.slug}`,
-      ...(image ? { images: [{ url: image }] } : {}),
-    },
-    ...(image ? { twitter: { card: "summary_large_image", title, description, images: [image] } } : {}),
+    ...shareMetadata({ title, description, url: `/product/${product.slug}`, image }),
   };
 }
 
@@ -73,7 +71,7 @@ export default async function ProductPage({
 
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", path: "/" },
-    { name: product.category.name, path: `/category/${product.category.slug}` },
+    { name: product.category.name, path: pathOf("category", product.category) },
     { name: product.name, path: `/product/${product.slug}` },
   ]);
 

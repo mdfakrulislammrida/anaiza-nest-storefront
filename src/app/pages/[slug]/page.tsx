@@ -1,17 +1,22 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ApiError, getPage, getPages } from "@/lib/api";
+import { ApiError, getPage, getPages, getSlugRedirects } from "@/lib/api";
 import { breadcrumbJsonLd, pageMetaFromCms } from "@/lib/jsonld";
 import CmsPageClient from "@/components/CmsPageClient";
 import NotFound from "@/app/not-found";
-import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
+import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsWithOld } from "@/lib/placeholder";
+import MovedNotice from "@/components/MovedNotice";
+import { siteDefaultShareImage } from "@/lib/defaultShare";
+import { SITE_URL } from "@/lib/config";
+import { pickShareImage, shareMetadata } from "@/lib/shareImage";
+import { movedTo, oldSlugs, pathOf } from "@/lib/slugs";
 
 // Static export needs every CMS page slug enumerated at build time. A slug
 // that doesn't appear here (added after this build) isn't 404 though --
 // public/.htaccess falls back to the client-only shell at /pages for any
 // /pages/<slug> request that doesn't match a file this generated.
 export async function generateStaticParams() {
-  return staticParamsOrPlaceholder(await getPages());
+  return staticParamsWithOld(await getPages(), oldSlugs("page", await getSlugRedirects()));
 }
 
 export async function generateMetadata({
@@ -24,19 +29,15 @@ export async function generateMetadata({
   const page = await getPage(slug).catch(() => null);
   if (!page) return {};
 
-  const { title, description, image } = pageMetaFromCms(page);
+  const { title, description, images } = pageMetaFromCms(page);
+  const path = movedTo("page", slug, page) ?? pathOf("page", page);
+  const image = pickShareImage(images, await siteDefaultShareImage(), SITE_URL);
 
   return {
     title,
     description,
-    alternates: { canonical: `/pages/${page.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      url: `/pages/${page.slug}`,
-      ...(image ? { images: [{ url: image }] } : {}),
-    },
+    alternates: { canonical: path },
+    ...shareMetadata({ title, description, url: path, image }),
   };
 }
 
@@ -56,9 +57,12 @@ export default async function CmsPage({
     throw error;
   });
 
+  const moved = movedTo("page", slug, page);
+  if (moved !== null) return <MovedNotice to={moved} />;
+
   const breadcrumbs = breadcrumbJsonLd([
     { name: "Home", path: "/" },
-    { name: page.title, path: `/pages/${page.slug}` },
+    { name: page.title, path: pathOf("page", page) },
   ]);
 
   return (

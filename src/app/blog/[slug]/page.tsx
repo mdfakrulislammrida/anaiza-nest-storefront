@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { ApiError, getAllArticles, getArticle } from "@/lib/api";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import BlogDetailClient from "@/components/BlogDetailClient";
+import { siteDefaultShareImage } from "@/lib/defaultShare";
+import { SITE_URL } from "@/lib/config";
+import { pickShareImage, shareMetadata } from "@/lib/shareImage";
 import NotFound from "@/app/not-found";
 import { PLACEHOLDER_METADATA, PLACEHOLDER_SLUG, staticParamsOrPlaceholder } from "@/lib/placeholder";
 
@@ -27,21 +30,13 @@ export async function generateMetadata({
 
   const title = article.seo?.meta_title || article.title;
   const description = article.seo?.meta_description ?? undefined;
-  const image = article.seo?.og_image || article.featured_image || undefined;
+  const image = pickShareImage([article.seo?.image, article.seo?.og_image, article.featured_image], await siteDefaultShareImage(), SITE_URL);
 
   return {
     title,
     description,
     alternates: { canonical: `/blog/${article.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      url: `/blog/${article.slug}`,
-      ...(article.published_at ? { publishedTime: article.published_at } : {}),
-      ...(image ? { images: [{ url: image }] } : {}),
-    },
-    ...(image ? { twitter: { card: "summary_large_image", title, description, images: [image] } } : {}),
+    ...shareMetadata({ title, description, url: `/blog/${article.slug}`, type: "article", publishedTime: article.published_at, image }),
   };
 }
 

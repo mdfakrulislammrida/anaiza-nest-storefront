@@ -10,6 +10,8 @@ export interface CategorySummary {
   id: number;
   name: string;
   slug: string;
+  // The address on the shop, from the current slug (absent on an older API).
+  path?: string;
   // Whether the admin lists it in the header's Categories menu (absent on an older API = yes).
   show_in_menu?: boolean;
   menu_order?: number;
@@ -22,10 +24,22 @@ export interface CategoryFaq {
   answer: string;
 }
 
+// What the API says when a page was asked for by an address it used to have: where it lives now (always a 301 in the API's words).
+export interface SlugRedirectHint {
+  from: string;
+  to: string;
+  status: number;
+}
+
 export interface CategoryDetail {
   id: number;
   name: string;
   slug: string;
+  // The page's address on the shop, from its current slug, and the addresses it used to have. Absent on an older API.
+  path?: string;
+  previous_slugs?: string[];
+  // Present only when the address asked for was an old one (added by getCategory from the API's top-level `redirect`).
+  redirect?: SlugRedirectHint | null;
   description: string | null;
   intro_text: string | null;
   seo_description: string | null;
@@ -35,6 +49,10 @@ export interface CategoryDetail {
   seo: {
     meta_title: string;
     meta_description: string | null;
+    // The one shape every page answers with (title, description, image: a full https address or null). Absent on an older API.
+    title?: string | null;
+    description?: string | null;
+    image?: string | null;
   };
   faqs?: CategoryFaq[];
 }
@@ -109,6 +127,10 @@ export interface ProductSeo {
   meta_title: string;
   meta_description: string | null;
   og_image: string | null;
+  // The one shape every page answers with. Absent on an older API.
+  title?: string | null;
+  description?: string | null;
+  image?: string | null;
 }
 
 export interface Product {
@@ -274,6 +296,8 @@ export interface Order {
   // The courier's own tracking page (when the shop has set one up), and a plain sentence about where the parcel is.
   tracking_url?: string | null;
   delivery_update?: string | null;
+  // A signed link to this order's invoice PDF (valid for seven days). Absent on an older API.
+  invoice_url?: string | null;
   subtotal: number;
   delivery_fee: number;
   // What a coupon took off, and its code (absent on an older API, zero and null when none was used).
@@ -299,6 +323,10 @@ export interface Page {
   title: string;
   slug: string;
   content: string | null;
+  // The page's address, the addresses it used to have, and (only when asked for by an old one) where it lives now. Absent on an older API.
+  path?: string;
+  previous_slugs?: string[];
+  redirect?: SlugRedirectHint | null;
   seo?: ProductSeo;
 }
 
@@ -366,6 +394,10 @@ export interface OccasionTile {
   label: string;
   image: string | null;
   href: string;
+  // What the tile points at: category, page, gift_finder or custom. For a category or page, its current slug and its address (the same as href).
+  kind?: string;
+  slug?: string | null;
+  path?: string | null;
 }
 
 // Why Anaiza Nest: a line, with an optional short title. Up to five.
@@ -474,6 +506,9 @@ export interface SiteSetting {
   logo_navy?: string | null;
   logo_ivory?: string | null;
   monogram?: string | null;
+  logo_mono?: string | null;
+  // The picture shown when a page with none of its own is shared. Null until uploaded in the admin.
+  default_share_image?: string | null;
   // The line under the logo; null when the admin cleared it.
   tagline?: string | null;
   low_stock_threshold?: number;
@@ -579,7 +614,7 @@ export interface LandingPage {
   state: "live" | "ended" | "preview";
   layout: "focus" | "normal";
   publish_until: string | null;
-  seo: { title: string; description: string | null; og_image: string | null; noindex: boolean; canonical: string | null };
+  seo: { title: string; description: string | null; og_image: string | null; image?: string | null; noindex: boolean; canonical: string | null };
   blocks: LandingBlock[];
 }
 

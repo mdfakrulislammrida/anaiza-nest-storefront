@@ -1,3 +1,4 @@
+import { pathOf } from "@/lib/slugs";
 import { getCategories, getCategory, getPages, getProducts, getSiteSettings } from "@/lib/api";
 import { SITE_URL } from "@/lib/config";
 import { absoluteUrl } from "@/lib/jsonld";
@@ -39,7 +40,7 @@ export async function GET() {
     lines.push("## Categories", "");
     categories.forEach((category, index) => {
       const intro = categoryDetails[index]?.intro_text;
-      lines.push(`- [${category.name}](${absoluteUrl(`/category/${category.slug}`)})${intro ? `: ${intro}` : ""}`);
+      lines.push(`- [${category.name}](${absoluteUrl(pathOf("category", category))})${intro ? `: ${intro}` : ""}`);
     });
     lines.push("");
   }
@@ -56,7 +57,7 @@ export async function GET() {
   if (policyPages.length > 0) {
     lines.push("## Policies", "");
     policyPages.forEach((page) => {
-      lines.push(`- [${page.title}](${absoluteUrl(`/pages/${page.slug}`)})`);
+      lines.push(`- [${page.title}](${absoluteUrl(pathOf("page", page))})`);
     });
     lines.push("");
   }

@@ -13,6 +13,15 @@ export function staticParamsOrPlaceholder(items: { slug: string }[]): { slug: st
   return items.length > 0 ? items.map((item) => ({ slug: item.slug })) : [{ slug: PLACEHOLDER_SLUG }];
 }
 
+// The pages that exist at build time, plus a small stand-in page for each address a page used to have (see MovedNotice), so an old link still
+// leads to the new one. An old slug never replaces a current one.
+export function staticParamsWithOld(items: { slug: string }[], oldSlugs: string[]): { slug: string }[] {
+  const current = new Set(items.map((item) => item.slug));
+  const extra = oldSlugs.filter((slug) => !current.has(slug));
+
+  return staticParamsOrPlaceholder(items).concat(extra.map((slug) => ({ slug })));
+}
+
 export const PLACEHOLDER_METADATA: Metadata = {
   title: "Page not found",
   robots: { index: false, follow: false },

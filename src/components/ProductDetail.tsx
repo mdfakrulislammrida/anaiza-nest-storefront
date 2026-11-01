@@ -14,6 +14,7 @@ import ProductSpecs from "@/components/ProductSpecs";
 import TrustBadges from "@/components/TrustBadges";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { formatDays, resolvePolicy } from "@/lib/policy";
+import { pathOf } from "@/lib/slugs";
 import { proseHtml } from "@/lib/prose";
 import { productWriting, specLine } from "@/lib/productDisplay";
 import { isPathHidden, resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
@@ -80,7 +81,7 @@ export default function ProductDetail({
           Anaiza Nest
         </Link>
         <span aria-hidden="true" className="mx-2">·</span>
-        <Link href={`/category/${product.category.slug}`} className="inline-flex min-h-11 items-center hover:text-navy">
+        <Link href={pathOf("category", product.category)} className="inline-flex min-h-11 items-center hover:text-navy">
           {product.category.name}
         </Link>
       </nav>

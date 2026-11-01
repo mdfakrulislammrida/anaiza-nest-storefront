@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { movedTo } from "@/lib/slugs";
 import { ApiError, getPage } from "@/lib/api";
 import type { Page } from "@/lib/types";
 import CmsPageContent from "@/components/CmsPageContent";
@@ -40,6 +41,13 @@ export default function CmsPage() {
     getPage(slug)
       .then((fetched) => {
         if (cancelled) return;
+        // An address the page used to have: the shop sends the visitor to the new one.
+        const moved = movedTo("page", slug, fetched);
+        if (moved !== null) {
+          window.location.replace(moved);
+          return;
+        }
+
         setPage(fetched);
         document.title = fetched.title;
       })

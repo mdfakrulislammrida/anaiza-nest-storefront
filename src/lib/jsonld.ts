@@ -302,16 +302,17 @@ export function faqPageJsonLd(faqs: Pick<Faq, "question" | "answer">[]) {
 export function categoryMetaFromApi(category: CategoryDetail) {
   return {
     title: category.seo.meta_title,
-    description: category.seo.meta_description || category.intro_text || undefined,
-    image: category.banner_desktop.url ?? undefined,
+    description: category.seo.description || category.seo.meta_description || category.intro_text || undefined,
+    // In order: what the API chose (its share image, thumbnail or banner, always a full https address), then the banner and thumbnail themselves.
+    images: [category.seo.image, category.banner_desktop.url, category.thumbnail?.url],
   };
 }
 
 export function pageMetaFromCms(page: Page) {
   return {
     title: page.seo?.meta_title || page.title,
-    description: page.seo?.meta_description ?? undefined,
-    image: page.seo?.og_image ?? undefined,
+    description: page.seo?.description || page.seo?.meta_description || undefined,
+    images: [page.seo?.image, page.seo?.og_image],
   };
 }
 

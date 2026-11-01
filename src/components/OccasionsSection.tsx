@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import GiftFrame from "./GiftFrame";
 import type { OccasionTile } from "@/lib/types";
+import { tileHref } from "@/lib/slugs";
 
 const tileClass =
   "group relative flex aspect-[4/5] items-end overflow-hidden bg-linen p-4 text-charcoal";
@@ -51,6 +52,8 @@ export default function OccasionsSection({
 
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {tiles.map((tile) => {
+          // The API's ready address (it follows a changed slug), else the link it sent.
+          const href = tileHref(tile);
           const content = (
             <>
               {tile.image && <TilePicture src={tile.image} />}
@@ -68,13 +71,13 @@ export default function OccasionsSection({
           );
 
           return (
-            <li key={`${tile.label}-${tile.href}`}>
-              {/^https?:\/\//.test(tile.href) ? (
-                <a href={tile.href} className={tileClass}>
+            <li key={`${tile.label}-${href}`}>
+              {/^https?:\/\//.test(href) ? (
+                <a href={href} className={tileClass}>
                   {content}
                 </a>
               ) : (
-                <Link href={tile.href} className={tileClass}>
+                <Link href={href} className={tileClass}>
                   {content}
                 </Link>
               )}

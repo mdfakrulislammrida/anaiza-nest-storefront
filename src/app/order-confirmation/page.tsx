@@ -11,6 +11,8 @@ import { trackPurchase } from "@/lib/tracking";
 import { resolveWhatsApp, whatsappLink } from "@/lib/whatsapp";
 import type { Order } from "@/lib/types";
 import PaymentStateNotice from "@/components/PaymentStateNotice";
+import InvoiceButton from "@/components/InvoiceButton";
+import { orderStatusLabel } from "@/lib/orderStatus";
 
 const TRACKED_ORDERS_KEY = "anaiza-purchase-tracked";
 
@@ -96,6 +98,9 @@ export default function OrderConfirmationPage() {
           </>
         )}
       </p>
+      <p className="mt-2 text-body text-stone">
+        Status: <span className="font-medium text-charcoal">{orderStatusLabel(order.status)}</span>
+      </p>
       {order.payment_status && order.payment_status !== "cod" && (
         <div className="mt-6">
           <PaymentStateNotice status={order.payment_status} />
@@ -142,6 +147,8 @@ export default function OrderConfirmationPage() {
           <span>{formatPrice(order.total)}</span>
         </div>
       </div>
+
+      <InvoiceButton orderId={order.id} invoiceUrl={order.invoice_url} className="mt-6" />
 
       {orderWhatsAppHref && (
         <a

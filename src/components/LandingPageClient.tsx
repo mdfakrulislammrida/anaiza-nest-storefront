@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ApiError, getLandingPage, getPaymentSettings, sendLandingEvent } from "@/lib/api";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { movedTo } from "@/lib/slugs";
 import { trackViewContentList } from "@/lib/tracking";
 import { dhakaTime, ENDED_TEXT, ENDED_TITLE, landingSlugFromPath, previewTokenFromSearch, viewedKey } from "@/lib/landing";
 import type { LandingBlock, LandingPage, PaymentSetting, Product } from "@/lib/types";
@@ -86,6 +87,13 @@ export default function LandingPageClient({
     Promise.all([getLandingPage(slug, preview), initialPaymentSettings ? Promise.resolve(initialPaymentSettings) : getPaymentSettings().catch(() => null)])
       .then(([fresh, payments]) => {
         if (cancelled) return;
+        // An address the page used to have: the shop sends the visitor to the new one (a preview link keeps its own address).
+        const moved = preview ? null : movedTo("landing_page", slug, fresh);
+        if (moved !== null) {
+          window.location.replace(moved);
+          return;
+        }
+
         setPage(fresh);
         setPaymentSettings(payments);
         setStatus("ready");

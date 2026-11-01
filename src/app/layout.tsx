@@ -17,6 +17,7 @@ import { BRAND } from "@/lib/brand";
 import { SITE_URL } from "@/lib/config";
 import { siteJsonLd } from "@/lib/jsonld";
 import { siteRobots } from "@/lib/seo";
+import { defaultShareImage, shareMetadata } from "@/lib/shareImage";
 import { MarketingBodyNoscript, MarketingHeadScripts } from "@/components/MarketingScripts";
 import RouteChangeTracker from "@/components/RouteChangeTracker";
 import TrackingEvents from "@/components/TrackingEvents";
@@ -80,7 +81,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const tagline = siteSettings ? siteSettings.tagline : BRAND.tagline;
   const description = siteSettings?.footer_about || BRAND.oneLine;
   const homeTitle = tagline ? `${SITE_NAME} | ${tagline}` : SITE_NAME;
-  const monogram = siteSettings?.monogram;
+
+  // Every page without a share picture of its own shows this one (a page that sets its own Open Graph block repeats it: see shareMetadata).
+  const share = shareMetadata({ title: homeTitle, description, image: defaultShareImage(siteSettings?.default_share_image, SITE_URL) });
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -90,19 +93,8 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${SITE_NAME}`,
     },
     description,
-    ...(monogram ? { icons: { icon: monogram, apple: monogram } } : {}),
-    openGraph: {
-      siteName: SITE_NAME,
-      type: "website",
-      locale: "en_US",
-      title: homeTitle,
-      description,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: homeTitle,
-      description,
-    },
+    openGraph: { siteName: SITE_NAME, locale: "en_US", ...share.openGraph },
+    twitter: share.twitter,
   };
 }
 

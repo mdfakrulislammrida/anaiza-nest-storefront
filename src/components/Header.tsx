@@ -11,6 +11,7 @@ import MainNav, { PhoneMenu, type MenuItem } from "./MainNav";
 import { resolveTagline } from "@/lib/brand";
 import { getCategories } from "@/lib/api";
 import { afterLoad } from "@/lib/afterLoad";
+import { pathOf } from "@/lib/slugs";
 import type { CategorySummary, NavLink } from "@/lib/types";
 
 const FALLBACK_NAV_LINKS: NavLink[] = [
@@ -74,7 +75,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
   if (menuCategories.length > 0 && !siteSettings?.nav_auto_categories) {
     const categoriesItem: MenuItem = {
       label: "Categories",
-      children: menuCategories.map((category) => ({ label: category.name, url: `/category/${category.slug}` })),
+      children: menuCategories.map((category) => ({ label: category.name, url: pathOf("category", category) })),
     };
     const shopIndex = items.findIndex((item) => item.url === "/shop");
     // No Shop link in the admin's menu: put it last instead.

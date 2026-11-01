@@ -7,6 +7,7 @@ import CategoryIntro from "@/components/CategoryIntro";
 import GiftFrame from "@/components/GiftFrame";
 import CategoryAbout from "@/components/CategoryAbout";
 import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
+import { pathOf } from "@/lib/slugs";
 
 // Pure presentational -- shared by the statically-rendered server page and
 // its client-side background-refresh wrapper, so both render identical
@@ -65,7 +66,7 @@ export default function CategoryDetail({
               result={initialProducts}
               breadcrumbLabel={category.name}
               showBreadcrumb={false}
-              basePath={`/category/${category.slug}`}
+              basePath={pathOf("category", category)}
               emptyTitle="Nothing in this category just yet"
               emptyText="We are still setting this category out. Please check back soon, or have a look at the rest of the collection."
               emptyLink={{ href: "/shop", label: "See all gifts" }}

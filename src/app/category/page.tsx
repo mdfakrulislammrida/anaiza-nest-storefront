@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ApiError, getCategory, getProducts } from "@/lib/api";
 import CategoryDetail from "@/components/CategoryDetail";
+import { movedTo } from "@/lib/slugs";
 import type { CategoryDetail as CategoryDetailType, ProductListResponse } from "@/lib/types";
 
 // Same fallback pattern as /product and /pages: /category/[slug] statically generates a real page
@@ -42,6 +43,13 @@ export default function CategoryShellPage() {
 
     getCategory(slug)
       .then(async (fetched) => {
+        // An address the category used to have: the shop sends the visitor to the new one.
+        const moved = movedTo("category", slug, fetched);
+        if (moved !== null) {
+          window.location.replace(moved);
+          return;
+        }
+
         const firstPage = await getProducts({ category: fetched.slug, page: 1, per_page: 24 }).catch(() => null);
         if (cancelled) return;
         setCategory(fetched);

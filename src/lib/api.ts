@@ -2,6 +2,7 @@ import { API_BASE_URL } from "./config";
 import { fetchJsonStrict } from "./buildFetch";
 import { withCheckedPrices } from "./pricing";
 import type { FormProof } from "./formGuard";
+import type { SlugRedirectEntry } from "./slugs";
 import type { RecoveredCart } from "./cartRecovery";
 import type { SessionPayload } from "./recovery";
 import type {
@@ -36,6 +37,7 @@ import type {
   ProductTag,
   RegisterPayload,
   SiteSetting,
+  SlugRedirectHint,
   Testimonial,
 } from "./types";
 
@@ -105,11 +107,12 @@ export async function getCategories(): Promise<CategorySummary[]> {
   return data;
 }
 
+// By the current address, or one the category used to have: the API then answers with the category and a `redirect` hint (where it lives now).
 export async function getCategory(slug: string): Promise<CategoryDetail> {
-  const { data } = await apiFetch<{ data: CategoryDetail }>(
+  const body = await apiFetch<{ data: CategoryDetail; redirect?: SlugRedirectHint | null }>(
     `/categories/${encodeURIComponent(slug)}`,
   );
-  return data;
+  return { ...body.data, redirect: body.redirect ?? null };
 }
 
 export async function getBrands(): Promise<Brand[]> {
@@ -355,9 +358,16 @@ export async function getPages(): Promise<Page[]> {
   return data;
 }
 
+// Same as getCategory: an old address answers with the page and a `redirect` hint.
 export async function getPage(slug: string): Promise<Page> {
-  const { data } = await apiFetch<{ data: Page }>(`/pages/${encodeURIComponent(slug)}`);
-  return data;
+  const body = await apiFetch<{ data: Page; redirect?: SlugRedirectHint | null }>(`/pages/${encodeURIComponent(slug)}`);
+  return { ...body.data, redirect: body.redirect ?? null };
+}
+
+// Every address a category, page or landing page used to have, and where it is now (the sitemap data's `redirects`).
+export async function getSlugRedirects(): Promise<SlugRedirectEntry[]> {
+  const body = await apiFetch<{ redirects?: SlugRedirectEntry[] }>("/sitemap");
+  return body.redirects ?? [];
 }
 
 export async function getBanners(): Promise<Banner[]> {

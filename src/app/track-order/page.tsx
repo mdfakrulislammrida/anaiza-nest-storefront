@@ -7,6 +7,8 @@ import { courierLink } from "@/lib/courier";
 import { formatPrice } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import PaymentStateNotice from "@/components/PaymentStateNotice";
+import InvoiceButton from "@/components/InvoiceButton";
+import { orderStatusLabel } from "@/lib/orderStatus";
 import { useHydrated } from "@/components/useFormGuard";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
@@ -14,12 +16,6 @@ import { useHydrated } from "@/components/useFormGuard";
 const inputClass =
   "mt-1 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none";
 const labelClass = "text-caption font-semibold text-stone";
-
-// Sentence case for the status the API sends in lower case (e.g. "in_transit" -> "In transit").
-function statusLabel(status: string): string {
-  const text = status.replace(/_/g, " ");
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 
 export default function TrackOrderPage() {
   const [order, setOrder] = useState<Order | null>(null);
@@ -91,7 +87,7 @@ export default function TrackOrderPage() {
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-charcoal text-h2">Order #{order.id}</h2>
             <span className="rounded-btn bg-linen px-4 py-1 text-caption font-medium text-navy">
-              {statusLabel(order.status)}
+              {orderStatusLabel(order.status)}
             </span>
           </div>
 
@@ -129,6 +125,8 @@ export default function TrackOrderPage() {
             <span>Total</span>
             <span>{formatPrice(order.total)}</span>
           </div>
+
+          <InvoiceButton orderId={order.id} invoiceUrl={order.invoice_url} className="mt-6" />
         </div>
       )}
     </div>
