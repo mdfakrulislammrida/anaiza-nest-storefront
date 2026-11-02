@@ -75,3 +75,33 @@ describe("the settings the bubble and links read", () => {
     assert.deepEqual(config.hiddenPaths, ["/checkout"]);
   });
 });
+
+describe("the shop's order-confirm sentence", () => {
+  const confirm = "Hello Rafi, this is Anaiza Nest. We have your order #42 (৳1,580). May we confirm the order Sir";
+
+  it("goes through a link whole, decodes to the same text and ends with the owner's words", () => {
+    const link = whatsappLink("01886004421", confirm);
+    const text = decodeURIComponent(new URL(link as string).searchParams.get("text") ?? "");
+
+    assert.equal(text, confirm);
+    assert.ok(text.endsWith("May we confirm the order Sir"));
+    assert.ok(!text.includes("May we confirm the address and a good time for delivery"));
+  });
+
+  it("is not written anywhere in the storefront: the confirm message is the shop's own, sent from the API", async () => {
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const found: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(ts|tsx)$/.test(name) && !name.endsWith("whatsapp.test.ts") && readFileSync(full, "utf8").includes("confirm the address and a good time for delivery")) found.push(full);
+      }
+    };
+    const { fileURLToPath } = await import("node:url");
+    walk(fileURLToPath(new URL("..", import.meta.url)));
+
+    assert.deepEqual(found, []);
+  });
+});

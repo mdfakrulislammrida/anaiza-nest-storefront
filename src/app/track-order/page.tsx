@@ -8,7 +8,7 @@ import { formatPrice } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import PaymentStateNotice from "@/components/PaymentStateNotice";
 import InvoiceButton from "@/components/InvoiceButton";
-import { orderStatusLabel } from "@/lib/orderStatus";
+import { orderStatusLabel, orderStatusNote } from "@/lib/orderStatus";
 import { useHydrated } from "@/components/useFormGuard";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
@@ -90,6 +90,7 @@ export default function TrackOrderPage() {
               {orderStatusLabel(order.status)}
             </span>
           </div>
+          {orderStatusNote(order.status) && <p className="mt-3 text-body text-stone">{orderStatusNote(order.status)}</p>}
 
           {order.payment_status && order.payment_status !== "cod" && (
             <div className="mt-4">
