@@ -34,9 +34,14 @@ export default function SearchableSelect({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const listId = useId();
   const triggerId = useId();
   const errorId = useId();
+
+  // A short list (the eight divisions, most districts) needs no search box: opening the keyboard for it would only hide half of the list. A long one (the
+  // thanas of a big district) gets the box, focused.
+  const searchable = options.length > 10;
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -50,12 +55,12 @@ export default function SearchableSelect({
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    searchInputRef.current?.focus();
+    if (searchable) searchInputRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [open]);
+  }, [open, searchable]);
 
   // Escape closes, and so does the device/browser back button: pushing a
   // history entry on open means back navigation fires popstate here first,
@@ -92,6 +97,8 @@ export default function SearchableSelect({
     // Consume the history entry pushed on open, so back navigation from the
     // page itself still works normally afterward.
     if (window.history.state?.searchableSelect) window.history.back();
+    // Back to the button that opened the list, so a keyboard or screen-reader user does not lose their place.
+    requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
   function select(option: string) {
@@ -100,7 +107,7 @@ export default function SearchableSelect({
   }
 
   const triggerClass =
-    "mt-1 flex w-full items-center justify-between rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-left text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
+    "mt-1 flex w-full items-center justify-between rounded-btn border border-stone/80 bg-ivory min-h-11 px-4 py-2 text-left text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
   const labelClass = "text-caption font-semibold text-stone";
 
   return (
@@ -109,6 +116,7 @@ export default function SearchableSelect({
         {label}
       </label>
       <button
+        ref={triggerRef}
         id={triggerId}
         type="button"
         onClick={openSheet}
@@ -137,7 +145,7 @@ export default function SearchableSelect({
             <div className="absolute inset-0 bg-deepink/40" onClick={close} />
 
             <div
-              className="absolute inset-x-0 bottom-0 flex max-h-[70vh] flex-col rounded-t-btn border border-linen bg-ivory sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-btn"
+              className="absolute inset-x-0 bottom-0 flex max-h-[70dvh] flex-col rounded-t-btn border border-linen bg-ivory sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-btn"
             >
               <div className="flex items-center justify-between border-b border-linen px-4 py-4">
                 <p className="font-serif text-body text-charcoal">{label}</p>
@@ -153,18 +161,20 @@ export default function SearchableSelect({
                 </button>
               </div>
 
-              <div className="border-b border-linen px-4 py-4">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  inputMode="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  aria-controls={listId}
-                  className="w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
-                />
-              </div>
+              {searchable && (
+                <div className="border-b border-linen px-4 py-4">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    inputMode="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={searchPlaceholder}
+                    aria-controls={listId}
+                    className="min-h-11 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
+                  />
+                </div>
+              )}
 
               <ul id={listId} className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
                 {filtered.length === 0 ? (

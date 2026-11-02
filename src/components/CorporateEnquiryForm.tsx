@@ -8,7 +8,7 @@ import { useHydrated } from "./useFormGuard";
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
 const inputClass =
-  "mt-1 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none";
+  "mt-1 w-full rounded-btn border border-stone/80 bg-ivory min-h-11 px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none";
 const labelClass = "text-caption font-semibold text-stone";
 
 export default function CorporateEnquiryForm() {

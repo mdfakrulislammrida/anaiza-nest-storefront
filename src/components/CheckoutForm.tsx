@@ -539,7 +539,7 @@ export default function CheckoutForm({
   // text-base (not text-body): iOS Safari auto-zooms the page when a focused
   // input's font is under 16px, which text-body's 14px would trigger.
   const inputClass =
-    "mt-1 w-full rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
+    "mt-1 w-full rounded-btn border border-stone/80 bg-ivory min-h-11 px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none disabled:cursor-not-allowed disabled:bg-linen disabled:text-stone";
   const labelClass = "text-caption font-medium text-stone";
 
   function chooseZone(next: "inside" | "outside") {
@@ -793,14 +793,19 @@ export default function CheckoutForm({
             <label htmlFor={`${uid}-address`} className={labelClass}>
               Street address
             </label>
-            <input
+            <textarea
               id={`${uid}-address`}
               name="customer_address"
+              rows={3}
               autoComplete="street-address"
               required
               aria-invalid={fieldErrors.customer_address ? true : undefined}
+              aria-describedby={`${uid}-address-hint`}
               className={inputClass}
             />
+            <p id={`${uid}-address-hint`} className="mt-1 text-caption text-stone">
+              House, road, block and a landmark help the rider find you.
+            </p>
             {errorFor("customer_address")}
           </div>
         )}
@@ -1028,7 +1033,7 @@ export default function CheckoutForm({
           autoCapitalize="characters"
           spellCheck={false}
           aria-invalid={couponError ? true : undefined}
-          className="w-full min-w-0 rounded-btn border border-stone/80 bg-ivory px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
+          className="w-full min-w-0 rounded-btn border border-stone/80 bg-ivory min-h-11 px-4 py-2 text-base text-charcoal focus:border-navy focus:outline-none"
         />
         <button
           type="button"

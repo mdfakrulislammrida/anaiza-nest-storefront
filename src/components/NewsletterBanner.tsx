@@ -53,7 +53,7 @@ export default function NewsletterBanner({
               name="email"
               required
               placeholder="you@example.com"
-              className="min-w-0 flex-1 rounded-btn border border-ivory/20 bg-ivory/10 px-4 py-2 text-base text-ivory placeholder:text-ivory/50 focus:border-ivory focus:outline-none"
+              className="min-h-11 min-w-0 flex-1 rounded-btn border border-ivory/20 bg-ivory/10 px-4 py-2 text-base text-ivory placeholder:text-ivory/50 focus:border-ivory focus:outline-none"
             />
             <button
               type="submit"
