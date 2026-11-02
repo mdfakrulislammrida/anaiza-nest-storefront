@@ -65,12 +65,12 @@ export default function TrackOrderPage() {
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" data-clarity-mask="true">
         <div>
-          <label className={labelClass}>Order number</label>
-          <input name="order_id" required className={inputClass} />
+          <label htmlFor="track-1" className={labelClass}>Order number</label>
+          <input id="track-1" name="order_id" required className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Phone number</label>
-          <input name="phone" type="tel" required className={inputClass} />
+          <label htmlFor="track-2" className={labelClass}>Phone number</label>
+          <input id="track-2" name="phone" type="tel" required className={inputClass} />
         </div>
         {error && <p className="text-body text-burgundy">{error}</p>}
         <button

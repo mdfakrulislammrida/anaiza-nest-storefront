@@ -36,7 +36,7 @@ export default function ProductCard({
   const dark = theme === "dark";
 
   // 40 px squares, a 1 px border, a thin navy line icon (ivory on a dark section).
-  const squareButton = `flex h-10 w-10 shrink-0 items-center justify-center rounded-btn border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+  const squareButton = `flex h-11 w-11 shrink-0 items-center justify-center rounded-btn border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
     dark ? "border-ivory/40 text-ivory hover:border-champagne" : "border-linen bg-ivory text-navy hover:bg-linen"
   }`;
 

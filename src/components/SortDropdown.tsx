@@ -30,7 +30,7 @@ export default function SortDropdown() {
       <select
         defaultValue={searchParams.get("sort") ?? ""}
         onChange={(event) => handleChange(event.target.value)}
-        className="border-0 bg-transparent text-body font-medium text-charcoal focus:outline-none"
+        className="min-h-11 border-0 bg-transparent text-body font-medium text-charcoal focus:outline-none"
       >
         {OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

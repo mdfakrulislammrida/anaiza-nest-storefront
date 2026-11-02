@@ -52,16 +52,16 @@ export default function ContactForm() {
     <form onSubmit={handleSubmit} className="relative space-y-4" data-clarity-mask="true">
       {guard.trap}
       <div>
-        <label className={labelClass}>Name</label>
-        <input name="name" required className={inputClass} />
+        <label htmlFor="contact-1" className={labelClass}>Name</label>
+        <input id="contact-1" name="name" required className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Phone</label>
-        <input name="phone" type="tel" required className={inputClass} />
+        <label htmlFor="contact-2" className={labelClass}>Phone</label>
+        <input id="contact-2" name="phone" type="tel" required className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Message</label>
-        <textarea name="message" rows={5} required className={inputClass} />
+        <label htmlFor="contact-3" className={labelClass}>Message</label>
+        <textarea id="contact-3" name="message" rows={5} required className={inputClass} />
       </div>
       {error && <p className="text-body text-burgundy">{error}</p>}
       <button

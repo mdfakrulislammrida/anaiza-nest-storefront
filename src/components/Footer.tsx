@@ -148,7 +148,7 @@ export default function Footer({ cookieBanner = false }: { cookieBanner?: boolea
                 <li key={link.url}>
                   {/* A plain <a>, not next/link: these URLs are admin-editable
                       (site-settings) rather than known at build time. */}
-                  <a href={link.url} className="inline-flex min-h-9 items-center transition-colors hover:text-champagne">
+                  <a href={link.url} className="inline-flex min-h-11 items-center transition-colors hover:text-champagne">
                     {link.label}
                   </a>
                 </li>

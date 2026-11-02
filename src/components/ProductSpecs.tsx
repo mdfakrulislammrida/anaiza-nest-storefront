@@ -62,7 +62,7 @@ export default function ProductSpecs({
             <li key={tag.id ?? tag.slug}>
               <Link
                 href={`/shop?tag=${encodeURIComponent(tag.slug)}`}
-                className="inline-flex min-h-9 items-center rounded-btn border border-linen px-3 text-card-tag text-navy transition-colors hover:border-gold"
+                className="inline-flex min-h-11 items-center rounded-btn border border-linen px-3 text-card-tag text-navy transition-colors hover:border-gold"
               >
                 {tag.name}
               </Link>

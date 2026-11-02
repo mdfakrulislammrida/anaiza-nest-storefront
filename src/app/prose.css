@@ -306,8 +306,10 @@
   }
 }
 .an-readmore {
-  display: inline-block;
-  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
   padding: 0;
   border: 0;
   background: none;

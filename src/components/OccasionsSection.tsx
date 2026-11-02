@@ -21,6 +21,8 @@ function TilePicture({ src }: { src: string }) {
     <img
       src={src}
       alt=""
+      width={600}
+      height={750}
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}

@@ -16,7 +16,7 @@ export default function Accordion({
 }) {
   return (
     <details className="group border-b border-linen py-4" open={defaultOpen}>
-      <summary className="flex cursor-pointer list-none items-center justify-between text-body font-medium text-charcoal">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-body font-medium text-charcoal">
         {asHeading ? <h3 className="font-medium text-body">{title}</h3> : title}
         <span className="text-body text-stone transition-transform group-open:rotate-45">+</span>
       </summary>

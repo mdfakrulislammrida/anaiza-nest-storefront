@@ -154,7 +154,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
 
   const labels = settings.labels;
   const buttonClass =
-    "min-h-10 rounded-btn px-2 text-button transition-colors sm:min-h-11 sm:px-4";
+    "min-h-11 rounded-btn px-2 text-button transition-colors sm:min-h-11 sm:px-4";
 
   return (
     <section
@@ -206,7 +206,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
               </li>
             </ul>
             {settings.privacy_url && (
-              <a href={settings.privacy_url} className="inline-flex min-h-10 items-center text-caption text-navy underline">
+              <a href={settings.privacy_url} className="inline-flex min-h-11 items-center text-caption text-navy underline">
                 {settings.privacy_label}
               </a>
             )}
@@ -238,12 +238,12 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
                   setMarketing(current?.m ?? false);
                   setCustomizing(true);
                 }}
-                className="inline-flex min-h-8 items-center text-caption font-medium text-navy underline sm:min-h-10"
+                className="inline-flex min-h-11 items-center text-caption font-medium text-navy underline"
               >
                 {labels.customize}
               </button>
               {settings.privacy_url && (
-                <a href={settings.privacy_url} className="inline-flex min-h-8 items-center text-caption text-navy underline sm:min-h-10">
+                <a href={settings.privacy_url} className="inline-flex min-h-11 items-center text-caption text-navy underline sm:min-h-11">
                   {settings.privacy_label}
                 </a>
               )}

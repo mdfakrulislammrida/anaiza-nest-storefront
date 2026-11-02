@@ -26,7 +26,7 @@ export default function Logo({
   if (src) {
     // Screen minimum 120px wide; height-bound otherwise so the master is never stretched.
     // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL
-    return <img src={src} alt={siteName} loading={lazy ? "lazy" : undefined} decoding="async" className={`block h-7 w-auto min-w-[120px] max-w-full object-contain object-left ${className}`} />;
+    return <img src={src} alt={siteName} width={197} height={28} loading={lazy ? "lazy" : undefined} decoding="async" className={`block h-7 w-auto min-w-[120px] max-w-full object-contain object-left ${className}`} />;
   }
 
   return (

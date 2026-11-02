@@ -46,3 +46,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local audit output (scripts/journey-audit.cjs)
+/docs/cro-screenshots/

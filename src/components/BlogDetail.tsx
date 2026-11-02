@@ -61,7 +61,7 @@ export default function BlogDetail({ article }: { article: Article }) {
 
       {body && body.toc.length >= 2 && (
         <nav aria-label="Table of contents" className="mt-8 rounded-btn border border-linen bg-linen p-6">
-          <p className="text-caption font-semibold text-stone">In this article</p>
+          <p className="text-caption font-semibold text-charcoal">In this article</p>
           <ol className="mt-4 list-decimal space-y-1.5 pl-6 text-body">
             {body.toc.map((item) => (
               <li key={item.id}>

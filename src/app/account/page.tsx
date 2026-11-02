@@ -255,12 +255,12 @@ export default function AccountPage() {
         <>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div>
-              <label className={labelClass}>Email or Phone</label>
-              <input name="email" type="text" required className={inputClass} />
+              <label htmlFor="acct-1" className={labelClass}>Email or Phone</label>
+              <input id="acct-1" name="email" type="text" required className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Password</label>
-              <input name="password" type="password" required className={inputClass} />
+              <label htmlFor="acct-2" className={labelClass}>Password</label>
+              <input id="acct-2" name="password" type="password" required className={inputClass} />
             </div>
             {error && <p className="text-body text-burgundy">{error}</p>}
             <p className="text-body">
@@ -296,34 +296,34 @@ export default function AccountPage() {
           <form onSubmit={handleRegister} className="relative mt-6 space-y-4">
             {guard.trap}
             <div>
-              <label className={labelClass}>Full name</label>
-              <input name="name" required className={inputClass} />
+              <label htmlFor="acct-3" className={labelClass}>Full name</label>
+              <input id="acct-3" name="name" required className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Email</label>
-              <input name="email" type="email" required className={inputClass} />
+              <label htmlFor="acct-4" className={labelClass}>Email</label>
+              <input id="acct-4" name="email" type="email" required className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Phone</label>
-              <input name="phone" type="tel" required className={inputClass} />
+              <label htmlFor="acct-5" className={labelClass}>Phone</label>
+              <input id="acct-5" name="phone" type="tel" required className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Address</label>
-              <input name="address" required className={inputClass} />
+              <label htmlFor="acct-6" className={labelClass}>Address</label>
+              <input id="acct-6" name="address" required className={inputClass} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>City</label>
-                <input name="city" required className={inputClass} />
+                <label htmlFor="acct-7" className={labelClass}>City</label>
+                <input id="acct-7" name="city" required className={inputClass} />
               </div>
               <div>
-                <label className={labelClass}>Postal code</label>
-                <input name="postal_code" required className={inputClass} />
+                <label htmlFor="acct-8" className={labelClass}>Postal code</label>
+                <input id="acct-8" name="postal_code" required className={inputClass} />
               </div>
             </div>
             <div>
-              <label className={labelClass}>Password</label>
-              <input name="password" type="password" required minLength={8} className={inputClass} />
+              <label htmlFor="acct-9" className={labelClass}>Password</label>
+              <input id="acct-9" name="password" type="password" required minLength={8} className={inputClass} />
             </div>
             {error && <p className="text-body text-burgundy">{error}</p>}
             <button

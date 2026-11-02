@@ -99,7 +99,7 @@ export default function ProductGallery({
                   onClick={() => goTo(index)}
                   aria-label={slide.kind === "video" ? "Show the video" : `Show photo ${index + 1}`}
                   aria-current={index === active}
-                  className="flex h-6 w-6 items-center justify-center"
+                  className="flex h-11 w-11 items-center justify-center"
                 >
                   <span className={`h-2 w-2 rounded-btn ${index === active ? "bg-navy" : "bg-stone/50"}`} />
                 </button>

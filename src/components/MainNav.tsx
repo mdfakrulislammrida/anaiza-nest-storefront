@@ -68,7 +68,7 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
                 <li key={`${item.label}-${index}`}>
                   {/* A plain <a>, not next/link: these URLs are admin-editable (site settings) rather than
                       known at build time, and may be relative paths or full external URLs. */}
-                  <a href={item.url} className="flex min-h-9 items-center whitespace-nowrap transition-colors hover:text-navy">
+                  <a href={item.url} className="flex min-h-11 items-center whitespace-nowrap transition-colors hover:text-navy">
                     {item.label}
                   </a>
                 </li>
@@ -81,7 +81,7 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
               <li key={`${item.label}-${index}`} className="group relative">
                 <div className="flex items-center gap-1">
                   {item.url ? (
-                    <a href={item.url} className="flex min-h-9 items-center whitespace-nowrap transition-colors hover:text-navy">
+                    <a href={item.url} className="flex min-h-11 items-center whitespace-nowrap transition-colors hover:text-navy">
                       {item.label}
                     </a>
                   ) : (
@@ -89,7 +89,7 @@ export default function MainNav({ items }: { items: MenuItem[] }) {
                       type="button"
                       onClick={() => setOpenDesktop(open ? null : index)}
                       aria-expanded={open}
-                      className="flex min-h-9 items-center whitespace-nowrap transition-colors hover:text-navy"
+                      className="flex min-h-11 items-center whitespace-nowrap transition-colors hover:text-navy"
                     >
                       {item.label}
                     </button>

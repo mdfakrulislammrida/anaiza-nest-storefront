@@ -110,7 +110,7 @@ export default function Header({ categories: initialCategories = [] }: { categor
 
           {/* Clear space around the logo is the header's own padding on top, bottom and left, plus
               the right margin here; the tagline sits under it on desktop only. */}
-          <Link href="/" prefetch={false} className="flex min-w-0 flex-col items-center justify-center md:mr-4 md:shrink-0 md:items-start" aria-label={`${siteName} home`}>
+          <Link href="/" prefetch={false} className="flex min-h-11 min-w-0 flex-col items-center justify-center md:mr-4 md:shrink-0 md:items-start" aria-label={`${siteName} home`}>
             <Logo variant="navy" className="max-md:object-center" />
             {tagline && <span className="mt-1 hidden text-caption text-stone md:block">{tagline}</span>}
           </Link>
