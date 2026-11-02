@@ -132,8 +132,8 @@ export default function ProductDetail({
                 <path d="M3 7h11v8H3zM14 10h4l3 3v2h-7zM6.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
               </LineIcon>
               <span>
-                {formatDays(policy.delivery_days_dhaka)} business days inside Dhaka, {formatDays(policy.delivery_days_outside_dhaka)} outside.
-                Free inside Dhaka over {formatPrice(policy.free_delivery_threshold)}.
+                {formatDays(policy.delivery_days_dhaka)} business days inside Dhaka city, {formatDays(policy.delivery_days_outside_dhaka)} outside Dhaka city.
+                Free inside Dhaka city over {formatPrice(policy.free_delivery_threshold)}.
               </span>
             </li>
             <li className="flex gap-2">
@@ -167,8 +167,8 @@ export default function ProductDetail({
 
           <div className="order-[96]">
             <Accordion title="Delivery info">
-              We deliver across Bangladesh: {formatDays(policy.delivery_days_dhaka)} business days inside Dhaka,{" "}
-              {formatDays(policy.delivery_days_outside_dhaka)} outside. Delivery is free inside Dhaka on orders over{" "}
+              We deliver across Bangladesh: {formatDays(policy.delivery_days_dhaka)} business days inside Dhaka city,{" "}
+              {formatDays(policy.delivery_days_outside_dhaka)} outside Dhaka city. Delivery is free inside Dhaka city on orders over{" "}
               {formatPrice(policy.free_delivery_threshold)}. You can follow any order on the Track order page with
               your order number and phone number.
             </Accordion>

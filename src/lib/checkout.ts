@@ -1,5 +1,6 @@
 // The numbers and words of the checkout page that are decided in one place, so they can be tested without a browser.
 // Nothing here makes up a figure: every amount comes from the shop's own settings.
+import { isDhakaCity, resolveDhakaCity, type DhakaCityRule } from "./dhakaCity.ts";
 
 /** Where the parcel goes, as the visitor chose it: null until they have chosen. */
 export type DeliveryZone = "inside" | "outside" | null;
@@ -8,6 +9,8 @@ export interface DeliveryRules {
   free_delivery_threshold: number;
   delivery_fee_dhaka: number;
   delivery_fee_outside_dhaka: number;
+  /** Which addresses are Dhaka city (from the API); the local lists are used when it is absent. */
+  dhaka_city?: Partial<DhakaCityRule> | null;
 }
 
 export function isCheckoutPath(pathname: string | null | undefined): boolean {
@@ -15,23 +18,27 @@ export function isCheckoutPath(pathname: string | null | undefined): boolean {
 }
 
 /**
- * The delivery charge the order summary shows, or null while no zone is chosen (a charge is never shown before that).
- * It follows the shop's own rule, which the server applies by division: Dhaka division pays the Dhaka fee (free over the
- * threshold), every other division the outside fee. Before a division is picked under "Outside Dhaka" it is the outside fee.
+ * The delivery charge the order summary shows, or null until the area (thana) is chosen: the fee depends on it, so no final charge
+ * is ever shown before. Inside Dhaka city (division Dhaka, district Dhaka, a city thana) it is the Dhaka fee, free only over the
+ * threshold; everywhere else, Gazipur, Narayanganj and Savar included, the outside fee, never waived. The server applies the same
+ * rule when the order is placed.
  */
-export function deliveryChargeFor(rules: DeliveryRules, zone: DeliveryZone, division: string, subtotal: number): number | null {
-  if (zone === null) return null;
+export function deliveryChargeFor(rules: DeliveryRules, division: string, district: string, thana: string, subtotal: number): number | null {
+  if (!division || !district || !thana) return null;
 
-  if (zone === "outside" && division === "") return rules.delivery_fee_outside_dhaka;
+  if (!isDhakaCity(resolveDhakaCity(rules.dhaka_city), division, district, thana)) return rules.delivery_fee_outside_dhaka;
 
-  const dhaka = zone === "inside" || division === "Dhaka";
+  return subtotal > rules.free_delivery_threshold ? 0 : rules.delivery_fee_dhaka;
+}
 
-  return dhaka ? (subtotal > rules.free_delivery_threshold ? 0 : rules.delivery_fee_dhaka) : rules.delivery_fee_outside_dhaka;
+/** The calm line shown until the area is chosen: both fees, and when the exact one will be known. */
+export function deliveryHintText(rules: DeliveryRules, format: (amount: number) => string): string {
+  return `Delivery ${format(rules.delivery_fee_dhaka)} in Dhaka city, ${format(rules.delivery_fee_outside_dhaka)} elsewhere. We will confirm once you choose your area.`;
 }
 
 /**
  * The line that nudges towards free delivery. Only when the shop has a threshold (read from its settings, never assumed),
- * the parcel goes inside Dhaka, and the order is not over it yet: free delivery needs MORE than the threshold, so the
+ * the parcel goes inside Dhaka city, and the order is not over it yet: free delivery needs MORE than the threshold, so the
  * amount still to add is one taka more than the gap. Null otherwise.
  */
 export function freeDeliveryRemaining(threshold: number | null | undefined, zone: DeliveryZone, subtotal: number): number | null {

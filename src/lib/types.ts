@@ -469,6 +469,13 @@ export interface StorePolicy {
   delivery_days_dhaka: DayRange;
   delivery_days_outside_dhaka: DayRange;
   return_window_days: number;
+  // Which addresses count as Dhaka city (the lower fee, free delivery over the threshold, the shorter time); absent on an older API.
+  dhaka_city?: {
+    division: string;
+    district: string;
+    thanas: string[];
+    outside_upazilas: string[];
+  };
 }
 
 // One picture of the homepage hero (Site Settings > Homepage pictures): the largest copy, a srcset of all of them, and the size

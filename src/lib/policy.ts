@@ -24,19 +24,12 @@ export function formatDays(range: DayRange): string {
   return range.min === range.max ? String(range.min) : `${range.min}–${range.max}`;
 }
 
-// Mirrors the backend DeliveryFeeCalculator so the checkout summary can show a
-// live estimate; the server always recomputes the fee it actually charges.
-export function estimateDeliveryFee(policy: StorePolicy, division: string, subtotal: number): number {
-  if (division !== "Dhaka") return policy.delivery_fee_outside_dhaka;
-  return subtotal > policy.free_delivery_threshold ? 0 : policy.delivery_fee_dhaka;
-}
-
 export function freeDeliveryText(policy: StorePolicy): string {
-  return `Free delivery inside Dhaka on orders over ${formatPrice(policy.free_delivery_threshold)}`;
+  return `Free delivery inside Dhaka city on orders over ${formatPrice(policy.free_delivery_threshold)}`;
 }
 
 export function deliveryTimeText(policy: StorePolicy): string {
-  return `${formatDays(policy.delivery_days_dhaka)} days in Dhaka, ${formatDays(policy.delivery_days_outside_dhaka)} outside`;
+  return `${formatDays(policy.delivery_days_dhaka)} days in Dhaka city, ${formatDays(policy.delivery_days_outside_dhaka)} outside`;
 }
 
 export function returnWindowText(policy: StorePolicy): string {

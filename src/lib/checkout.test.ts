@@ -1,29 +1,70 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { mobileProblem } from "./formGuard.ts";
-import { beginCheckoutDue, deliveryChargeFor, freeDeliveryRemaining, isCheckoutPath, itemsLabel, totalCaption } from "./checkout.ts";
+import { beginCheckoutDue, deliveryChargeFor, deliveryHintText, freeDeliveryRemaining, isCheckoutPath, itemsLabel, totalCaption } from "./checkout.ts";
 
-// The live shop's own settings: free over ৳10,000, ৳80 inside Dhaka, ৳150 outside.
+// The live shop's own settings: free over ৳10,000, ৳80 inside Dhaka city, ৳150 outside.
 const rules = { free_delivery_threshold: 10000, delivery_fee_dhaka: 80, delivery_fee_outside_dhaka: 150 };
 
 describe("the delivery charge", () => {
-  it("is never shown before a zone is chosen", () => {
-    assert.equal(deliveryChargeFor(rules, null, "", 2800), null);
-    assert.equal(deliveryChargeFor(rules, null, "Dhaka", 99999), null);
+  it("is never shown before the area is chosen, however far the form has got", () => {
+    assert.equal(deliveryChargeFor(rules, "", "", "", 2800), null);
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "", "", 99999), null);
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Dhaka", "", 2800), null);
+    assert.equal(deliveryChargeFor(rules, "Sylhet", "Sylhet", "", 2800), null);
   });
 
-  it("is the Dhaka fee inside Dhaka, free only over the threshold", () => {
-    assert.equal(deliveryChargeFor(rules, "inside", "Dhaka", 2800), 80);
-    assert.equal(deliveryChargeFor(rules, "inside", "Dhaka", 10000), 80, "exactly the threshold is not over it");
-    assert.equal(deliveryChargeFor(rules, "inside", "Dhaka", 10001), 0);
+  it("is the Dhaka fee for a Dhaka city thana, free only over the threshold", () => {
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Dhaka", "Banani", 2800), 80);
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Dhaka", "Uttara East", 10000), 80, "exactly the threshold is not over it");
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Dhaka", "Mirpur", 10001), 0);
   });
 
-  it("is the outside fee outside Dhaka, at once, and then follows the division as the server does", () => {
-    assert.equal(deliveryChargeFor(rules, "outside", "", 2800), 150, "shown the moment the zone is chosen");
-    assert.equal(deliveryChargeFor(rules, "outside", "Sylhet", 2800), 150);
-    assert.equal(deliveryChargeFor(rules, "outside", "Sylhet", 50000), 150, "the outside fee is never waived");
-    // Gazipur is in Dhaka division: the server charges the Dhaka rule, so the page shows it.
-    assert.equal(deliveryChargeFor(rules, "outside", "Dhaka", 2800), 80);
+  it("is the outside fee for Savar, Keraniganj and the other upazilas of Dhaka district, never free", () => {
+    for (const thana of ["Savar", "Keraniganj", "Dhamrai", "Dohar", "Nawabganj"]) {
+      assert.equal(deliveryChargeFor(rules, "Dhaka", "Dhaka", thana, 2800), 150, thana);
+      assert.equal(deliveryChargeFor(rules, "Dhaka", "Dhaka", thana, 50000), 150, thana + " over the threshold");
+    }
+  });
+
+  it("is the outside fee for Gazipur, Narayanganj and the rest of the Dhaka division, never free", () => {
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Gazipur", "Gazipur Sadar", 2800), 150);
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Gazipur", "Gazipur Sadar", 10001), 150);
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Narayanganj", "Narayanganj Sadar", 50000), 150);
+    assert.equal(deliveryChargeFor(rules, "Dhaka", "Tangail", "Tangail Sadar", 10001), 150);
+  });
+
+  it("is the outside fee for every other division, never free", () => {
+    assert.equal(deliveryChargeFor(rules, "Sylhet", "Sylhet", "Sylhet Sadar", 2800), 150);
+    assert.equal(deliveryChargeFor(rules, "Sylhet", "Sylhet", "Sylhet Sadar", 50000), 150);
+  });
+
+  it("follows the address as it changes, so going back and forth never leaves an old fee", () => {
+    const walk: [string, string, string, number | null][] = [
+      ["Dhaka", "Dhaka", "Banani", 80],
+      ["Dhaka", "Dhaka", "", null],
+      ["Dhaka", "Dhaka", "Savar", 150],
+      ["Dhaka", "Gazipur", "", null],
+      ["Dhaka", "Gazipur", "Gazipur Sadar", 150],
+      ["Dhaka", "Dhaka", "", null],
+      ["Dhaka", "Dhaka", "Wari", 80],
+    ];
+
+    for (const [division, district, thana, wanted] of walk) assert.equal(deliveryChargeFor(rules, division, district, thana, 2800), wanted, `${district} / ${thana}`);
+  });
+
+  it("uses the city list the API sends when it has one", () => {
+    const withApi = { ...rules, dhaka_city: { division: "Dhaka", district: "Dhaka", thanas: ["Banani"], outside_upazilas: ["Savar"] } };
+
+    assert.equal(deliveryChargeFor(withApi, "Dhaka", "Dhaka", "Banani", 2800), 80);
+    assert.equal(deliveryChargeFor(withApi, "Dhaka", "Dhaka", "Gulshan", 2800), 150);
+  });
+
+  it("says both fees, calmly, until the area is chosen", () => {
+    assert.equal(
+      deliveryHintText(rules, (amount) => `৳${amount}`),
+      "Delivery ৳80 in Dhaka city, ৳150 elsewhere. We will confirm once you choose your area.",
+    );
   });
 });
 

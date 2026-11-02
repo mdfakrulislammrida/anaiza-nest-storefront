@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { paymentMethodLabel } from "@/lib/payment";
+import { isDhakaCity, resolveDhakaCity } from "@/lib/dhakaCity";
 import { formatDays, resolvePolicy } from "@/lib/policy";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { loadLastOrder, parseNumberList } from "@/lib/storedState";
@@ -74,6 +75,9 @@ export default function OrderConfirmationPage() {
 
   // A link to the shop's WhatsApp about this order, only when the shop has a number saved in its settings.
   const orderWhatsAppHref = whatsappLink(whatsapp.number, `Hello, I placed order #${order.id}.`);
+
+  // Whether the parcel went inside Dhaka city (the same rule the server charged by): sets the delivery time quoted below.
+  const insideDhakaCity = isDhakaCity(resolveDhakaCity(policy.dhaka_city), order.customer.division, order.customer.district, order.customer.thana);
 
   // A wallet order is not confirmed until its payment has been checked.
   const waitingOnPayment = order.payment_status === "awaiting_verification" || order.payment_status === "failed";
@@ -196,10 +200,8 @@ export default function OrderConfirmationPage() {
           </li>
           <li>
             <span className="font-medium text-charcoal">Delivery.</span> Orders to{" "}
-            {order.customer.division === "Dhaka" ? "addresses inside Dhaka" : "addresses outside Dhaka"} usually take{" "}
-            {formatDays(
-              order.customer.division === "Dhaka" ? policy.delivery_days_dhaka : policy.delivery_days_outside_dhaka,
-            )}{" "}
+            {insideDhakaCity ? "addresses inside Dhaka city" : "addresses outside Dhaka city"} usually take{" "}
+            {formatDays(insideDhakaCity ? policy.delivery_days_dhaka : policy.delivery_days_outside_dhaka)}{" "}
             business days.
           </li>
           <li>

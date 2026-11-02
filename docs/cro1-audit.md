@@ -23,8 +23,8 @@ Output and screenshots go to `docs/cro-screenshots/` (not committed). Run them a
   There is no saved checkout draft to restore.
 * **Fixed:** the dropdown button and every text input on the site were 42 px tall: now at least 44 px; a short list (the divisions, small districts) opens without a search box
   and keyboard (the keyboard hid half of it); the sheet height uses the visible screen; focus returns to the button on close; the street address is a textarea with a hint.
-* **Needs a decision:** the rule uses the *division*: Gazipur, Narayanganj, Tangail and the rest of Dhaka division pay ৳80 and get free delivery over ৳10,000. If "inside Dhaka"
-  should mean the city only, that is a rule change for the owner and the backend. The street-address box appears only after a thana is chosen; showing it from the start is a layout choice.
+* **Decided (Batch FEE1, see dhaka-city-delivery.md): "inside Dhaka" is now Dhaka city only.** Before that the rule used the *division*: Gazipur, Narayanganj, Tangail and the rest of Dhaka division pay ৳80 and get free delivery over ৳10,000. The street-address box
+  used to appear only after a thana was chosen; it now appears as soon as Inside or Outside is chosen.
 
 ## Phase 2 and 3: findings
 

@@ -4,9 +4,9 @@ import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { freeDeliveryRemaining, type DeliveryZone } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 
-// "Add ৳X more for free delivery inside Dhaka." with a thin gold line that fills as the cart grows. The threshold is the
+// "Add ৳X more for free delivery inside Dhaka city." with a thin gold line that fills as the cart grows. The threshold is the
 // shop's own setting and nothing else: with none set, or once the cart is over it, nothing is shown. In the checkout it
-// follows the same rule as the delivery row (only when the parcel goes inside Dhaka), so it is given the chosen zone.
+// follows the same rule as the delivery row (only when the parcel goes inside Dhaka city), so it is given the chosen zone.
 export default function FreeDeliveryProgress({
   subtotal,
   zone = "inside",
@@ -25,7 +25,7 @@ export default function FreeDeliveryProgress({
 
   return (
     <div className={className}>
-      <p className="text-caption text-stone">Add {formatPrice(left)} more for free delivery inside Dhaka.</p>
+      <p className="text-caption text-stone">Add {formatPrice(left)} more for free delivery inside Dhaka city.</p>
       <div
         role="progressbar"
         aria-label="Progress towards free delivery"

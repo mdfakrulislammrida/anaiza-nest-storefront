@@ -18,14 +18,14 @@ import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { formatPrice } from "@/lib/format";
 import { resolvePolicy } from "@/lib/policy";
-import { beginCheckoutDue, deliveryChargeFor, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
+import { beginCheckoutDue, deliveryChargeFor, deliveryHintText, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
+import { areasFor, resolveDhakaCity } from "@/lib/dhakaCity";
 import FreeDeliveryProgress from "@/components/FreeDeliveryProgress";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
 import {
   BD_DISTRICTS_BY_DIVISION,
   BD_DIVISIONS,
-  BD_UPAZILAS_BY_DISTRICT,
   type BdDivision,
 } from "@/lib/bangladesh-geography";
 import SearchableSelect from "./SearchableSelect";
@@ -128,8 +128,9 @@ export default function CheckoutForm({
     [paymentSettings],
   );
 
-  // Where the parcel goes: nothing is chosen for the visitor, and no delivery charge is shown until they choose. Inside Dhaka
-  // means Dhaka division and district; Outside Dhaka asks for the division, district and area.
+  // Where the parcel goes: nothing is chosen for the visitor, and no delivery charge is shown until the area is chosen. Inside
+  // Dhaka city is Dhaka division and district and a city thana; Outside Dhaka city asks for the division, district and area
+  // (Dhaka district then offers only its upazilas outside the city, so the choice and the fee never disagree).
   const [zone, setZone] = useState<DeliveryZone>(null);
   const [division, setDivision] = useState<BdDivision | "">("");
   const [district, setDistrict] = useState("");
@@ -190,9 +191,11 @@ export default function CheckoutForm({
   const districts = division ? BD_DISTRICTS_BY_DIVISION[division] : [];
   // Falls back to free-text whenever a district's upazila list is missing or
   // empty, so a data gap never blocks checkout.
-  const upazilas = district ? (BD_UPAZILAS_BY_DISTRICT[district] ?? []) : [];
-  // Null until a zone is chosen: a charge is never shown before that. The server charges by division, and so does this.
-  const deliveryFee = deliveryChargeFor(policy, zone, division, subtotal);
+  const dhakaCity = resolveDhakaCity(policy.dhaka_city);
+  const upazilas = district ? areasFor(dhakaCity, zone, division, district) : [];
+  // Null until the area is chosen: the fee depends on it, so a charge is never shown before that. It is worked out from the
+  // address as it stands on every render, so a change of zone, division, district or area can never leave an old fee on screen.
+  const deliveryFee = deliveryChargeFor(policy, division, district, thana, subtotal);
   const discounted = Math.max(0, subtotal - (coupon?.discount ?? 0));
   const total = discounted + (deliveryFee ?? 0);
   // The nudge needs the shop's own threshold: with the settings not loaded there is none, and none is assumed.
@@ -376,7 +379,7 @@ export default function CheckoutForm({
     setFieldErrors({});
 
     if (zone === null) {
-      setFormError("Please choose Inside Dhaka or Outside Dhaka, so we can work out delivery.");
+      setFormError("Please choose Inside Dhaka city or Outside Dhaka city, so we can work out delivery.");
       setRevealCount((count) => count + 1);
       return;
     }
@@ -749,12 +752,17 @@ export default function CheckoutForm({
         <legend className="font-serif text-h2 text-charcoal">Where should we deliver?</legend>
 
         <div role="radiogroup" aria-label="Delivery area" className="flex gap-3">
-          {zoneButton("inside", "Inside Dhaka")}
-          {zoneButton("outside", "Outside Dhaka")}
+          {zoneButton("inside", "Inside Dhaka city")}
+          {zoneButton("outside", "Outside Dhaka city")}
         </div>
         {errorFor("division")}
 
-        {zone === null && <p className="text-caption text-stone">Choose one to see the delivery charge and add your address.</p>}
+        {deliveryFee === null && (
+          <p className="text-caption text-stone" aria-live="polite">
+            {deliveryHintText(policy, formatPrice)}
+            {zone === null && " Choose one above to add your address."}
+          </p>
+        )}
 
         {zone === "outside" && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -788,7 +796,7 @@ export default function CheckoutForm({
 
         {zone !== null && areaField}
 
-        {thana !== "" && (
+        {zone !== null && (
           <div>
             <label htmlFor={`${uid}-address`} className={labelClass}>
               Street address
@@ -798,7 +806,7 @@ export default function CheckoutForm({
               name="customer_address"
               rows={3}
               autoComplete="street-address"
-              required
+              required={thana !== ""}
               aria-invalid={fieldErrors.customer_address ? true : undefined}
               aria-describedby={`${uid}-address-hint`}
               className={inputClass}
@@ -987,7 +995,7 @@ export default function CheckoutForm({
         )}
         <div className="flex justify-between">
           <span>Delivery</span>
-          <span className="font-medium text-charcoal">{deliveryFee === null ? "Choose where we deliver" : deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}</span>
+          <span className="font-medium text-charcoal">{deliveryFee === null ? "Choose your area" : deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}</span>
         </div>
         <FreeDeliveryProgress subtotal={subtotal} zone={zone} />
       </div>

@@ -101,7 +101,11 @@ export const BD_DISTRICTS_BY_DIVISION: Record<BdDivision, string[]> = {
 // (Mirpur, Ramna, Paltan) where nothing else collides with the shorter
 // form; kept "Tejgaon Industrial Area" distinct from "Tejgaon" since both
 // are real, separate thanas.
-const DHAKA_METRO_THANAS = [
+// Delivery: THESE 50 are "Dhaka city" (inside Dhaka: the low fee and free delivery over the threshold); the 5 upazilas after them are
+// in Dhaka district but OUTSIDE the city. The two lists are the only place the split lives (src/lib/dhakaCity.ts reads them, and
+// the API's policy.dhaka_city overrides them when it is there). To move a thana, move it between the two lists; neither list may
+// lose a name, because the Dhaka district list below is built from both.
+export const DHAKA_CITY_THANAS = [
   "Adabor", "Airport", "Badda", "Banani", "Bangshal", "Bhashantek", "Cantonment",
   "Chackbazar", "Dakshin Khan", "Darus-Salam", "Demra", "Dhanmondi", "Gandaria",
   "Gulshan", "Hatirjheel", "Hazaribagh", "Jatrabari", "Kadamtoli", "Kafrul",
@@ -112,6 +116,8 @@ const DHAKA_METRO_THANAS = [
   "Tejgaon Industrial Area", "Turag", "Uttar Khan", "Uttara East",
   "Uttara West", "Vatara", "Wari",
 ];
+
+export const DHAKA_OUTSIDE_UPAZILAS = ["Dhamrai", "Dohar", "Keraniganj", "Nawabganj", "Savar"];
 
 export const BD_UPAZILAS_BY_DISTRICT: Record<string, string[]> = {
   "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
@@ -128,8 +134,8 @@ export const BD_UPAZILAS_BY_DISTRICT: Record<string, string[]> = {
   "Cox's Bazar": ["Chakaria", "Coxsbazar Sadar", "Eidgaon", "Kutubdia", "Moheshkhali", "Pekua", "Ramu", "Teknaf", "Ukhiya"],
   "Cumilla": ["Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Comilla Sadar", "Daudkandi", "Debidwar", "Homna", "Laksam", "Lalmai", "Meghna", "Monohargonj", "Muradnagar", "Nangalkot", "Sadarsouth", "Titas"],
   // City thanas plus the district's genuinely rural upazilas -- see
-  // DHAKA_METRO_THANAS above for why Dhaka needs both.
-  "Dhaka": [...DHAKA_METRO_THANAS, "Dhamrai", "Dohar", "Keraniganj", "Nawabganj", "Savar"].sort(),
+  // DHAKA_CITY_THANAS above for why Dhaka needs both.
+  "Dhaka": [...DHAKA_CITY_THANAS, ...DHAKA_OUTSIDE_UPAZILAS].sort(),
   "Dinajpur": ["Birampur", "Birganj", "Birol", "Bochaganj", "Chirirbandar", "Dinajpur Sadar", "Fulbari", "Ghoraghat", "Hakimpur", "Kaharol", "Khansama", "Nawabganj", "Parbatipur"],
   "Faridpur": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
   "Feni": ["Chhagalnaiya", "Daganbhuiyan", "Feni Sadar", "Fulgazi", "Parshuram", "Sonagazi"],
