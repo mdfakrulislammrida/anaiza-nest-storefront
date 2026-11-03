@@ -1,17 +1,31 @@
 // Run with `npm test` (Node's built-in test runner; no extra dependency).
 // Runs the real inline consent script against a stand-in browser, to check what loads and what Consent Mode says.
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { describe, it } from "node:test";
 import { consentBootstrapSource, type ConsentConfig } from "./consentBootstrap.ts";
+import { STAPE_LOADER, STAPE_LOADER_SOURCE, stapeNoscriptSrc } from "./stapeLoader.ts";
 
 // Direct mode: no GTM container, so the site loads GA4, the Meta pixel and the TikTok pixel itself.
 const IDS = { gtm: null, ga4: "G-TESTGA4", meta: "1234567890", tiktok: "TTPIXEL" };
 // GTM mode: a container is set, so GTM owns every browser tag and the site loads none of the others (whatever other IDs are saved).
 const GTM_IDS = { gtm: "GTM-TEST", ga4: "G-TESTGA4", meta: "1234567890", tiktok: "TTPIXEL" };
 
-function run(config: Partial<ConsentConfig>, savedCookie = "") {
+// A script element put into the page is run at once, as a browser does it: the stand-in runs its text in the same page. (Stape's loader arrives that way.)
+function pageHead(sandbox: Record<string, unknown>) {
+  return {
+    appendChild: (element: { text?: string }) => {
+      if (element.text) vm.runInContext(element.text, sandbox);
+    },
+  };
+}
+
+const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+const SAFARI_17_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
+
+function run(config: Partial<ConsentConfig>, savedCookie = "", userAgent = CHROME_UA) {
   const scripts: string[] = [];
   let cookie = savedCookie;
   const document = {
@@ -22,6 +36,9 @@ function run(config: Partial<ConsentConfig>, savedCookie = "") {
       cookie = value;
     },
     createElement: () => ({}) as Record<string, unknown>,
+    get head() {
+      return pageHead(sandbox);
+    },
     getElementsByTagName: () => [
       { parentNode: { insertBefore: (element: { src?: string }) => scripts.push(String(element.src)) } },
     ],
@@ -29,6 +46,7 @@ function run(config: Partial<ConsentConfig>, savedCookie = "") {
   const events: unknown[] = [];
   const sandbox: Record<string, unknown> = {
     document,
+    navigator: { userAgent },
     location: { protocol: "https:" },
     CustomEvent: class {
       detail: unknown;
@@ -176,7 +194,7 @@ describe("consent script, the other tags", () => {
 
     const alone = run({ gtm: null, ga4: "G-ABC123" });
     assert.ok(loaded(alone.scripts, "gtag/js?id=G-ABC123"));
-    assert.ok(!loaded(alone.scripts, "gtm.js"));
+    assert.ok(!loaded(alone.scripts, "gtm.js") && !loaded(alone.scripts, STAPE_LOADER.host));
   });
 
   it("does nothing, and sets no signals, when no tag is configured", () => {
@@ -202,10 +220,14 @@ function runDeferred(config: Partial<ConsentConfig>, path = "/", readyState = "l
     cookie: "",
     readyState,
     createElement: () => ({}) as Record<string, unknown>,
+    get head() {
+      return pageHead(sandbox);
+    },
     getElementsByTagName: () => [{ parentNode: { insertBefore: (element: { src?: string }) => scripts.push(String(element.src)) } }],
   };
   const sandbox: Record<string, unknown> = {
     document,
+    navigator: { userAgent: CHROME_UA },
     location: { protocol: "https:", pathname: path },
     CustomEvent: class {},
     dispatchEvent: () => true,
@@ -314,13 +336,57 @@ describe("consent script, tags fetched late", () => {
 // One owner for the browser tags. With a GTM container saved, GTM loads GA4, the Meta pixel and the TikTok pixel as tags inside the
 // container; the site loads only GTM itself and never starts gtag, fbq or ttq, so no event can be counted by two copies of a tag.
 describe("consent script, GTM mode (a container is set)", () => {
-  it("loads Google Tag Manager and nothing else, even with GA4, Meta and TikTok IDs saved", () => {
+  it("loads the container from the shop's own tagging domain and nothing else, even with GA4, Meta and TikTok IDs saved", () => {
     const page = run(GTM_IDS);
 
-    assert.deepEqual(page.scripts.map((src) => src.replace(/\?.*/, "")), ["https://www.googletagmanager.com/gtm.js"]);
-    assert.ok(loaded(page.scripts, "gtm.js?id=GTM-TEST"));
+    assert.deepEqual(page.scripts, [`${STAPE_LOADER.host}/${STAPE_LOADER.id}.js?${STAPE_LOADER.query}`]);
+    assert.ok(!loaded(page.scripts, "googletagmanager.com"), "nothing from Google's own address");
     assert.ok(!loaded(page.scripts, "gtag/js") && !loaded(page.scripts, "fbevents.js") && !loaded(page.scripts, "analytics.tiktok.com"));
     assert.equal((page.dataLayer[1] as { event?: string }).event, "gtm.js");
+  });
+
+  it("pushes gtm.start once, straight after Consent Mode and ahead of the page's own events, though the loader pushes its own", () => {
+    const late = runDeferred(GTM_IDS);
+    const layer = late.sandbox.dataLayer as { push: (item: unknown) => number };
+    layer.push({ event: "page_view" });
+    layer.push({ event: "view_item" });
+    late.fire("pointerdown");
+    assert.equal(late.scripts.length, 1, "the loader ran");
+
+    const names = Array.from(late.sandbox.dataLayer as ArrayLike<unknown>, (item) => {
+      const entry = item as { event?: string };
+      return entry.event ?? String(Array.from(item as ArrayLike<string>)[0]);
+    });
+    assert.deepEqual(names, ["consent", "gtm.js", "page_view", "view_item"]);
+  });
+
+  it("puts the data layer's own push back after the loader has run", () => {
+    const late = runDeferred(GTM_IDS);
+    const layer = late.sandbox.dataLayer as { push: unknown };
+    const before = layer.push;
+    late.fire("pointerdown");
+
+    assert.equal(layer.push, before);
+  });
+
+  it("runs the loader once, however many touches there are", () => {
+    const late = runDeferred(GTM_IDS);
+    late.fire("pointerdown");
+    late.fire("keydown");
+    late.fire("scroll");
+
+    assert.equal(late.scripts.length, 1);
+  });
+
+  it("asks for the Safari file (a kp inside the id) on Safari 16.4 and newer, the plain one elsewhere", () => {
+    const safari = run(GTM_IDS, "", SAFARI_17_UA);
+    const withKp = STAPE_LOADER.id.replace(/([a-z]{8})$/, "kp$1");
+    const plain = [`${STAPE_LOADER.host}/${STAPE_LOADER.id}.js?${STAPE_LOADER.query}`];
+
+    assert.deepEqual(safari.scripts, [`${STAPE_LOADER.host}/${withKp}.js?${STAPE_LOADER.query}`]);
+    assert.notEqual(withKp, STAPE_LOADER.id);
+    assert.deepEqual(run(GTM_IDS).scripts, plain);
+    assert.deepEqual(run(GTM_IDS, "", SAFARI_17_UA.replace("Version/17.0", "Version/16.3")).scripts, plain);
   });
 
   it("starts no fbq or ttq, so a tag inside the container is the only one", () => {
@@ -358,7 +424,7 @@ describe("consent script, GTM mode (a container is set)", () => {
     assert.deepEqual(late.scripts, []);
     late.fire("pointerdown");
     assert.equal(late.scripts.length, 1);
-    assert.ok(loaded(late.scripts, "gtm.js?id=GTM-TEST"));
+    assert.ok(loaded(late.scripts, `${STAPE_LOADER.host}/${STAPE_LOADER.id}.js`));
 
     assert.equal(runDeferred(GTM_IDS, "/checkout").scripts.length, 1);
     assert.equal(runDeferred(GTM_IDS, "/order-confirmation").scripts.length, 1);
@@ -378,7 +444,7 @@ describe("consent script, direct mode (no container)", () => {
     const page = run({ ...IDS, gtm: null });
 
     assert.ok(loaded(page.scripts, "gtag/js?id=G-TESTGA4") && loaded(page.scripts, "fbevents.js") && loaded(page.scripts, "analytics.tiktok.com"));
-    assert.ok(!loaded(page.scripts, "gtm.js"));
+    assert.ok(!loaded(page.scripts, "gtm.js") && !loaded(page.scripts, STAPE_LOADER.host));
   });
 
   it("starts the Meta queue and the TikTok queue, and puts the pixel id in the page's config", () => {
@@ -387,5 +453,29 @@ describe("consent script, direct mode (no container)", () => {
     assert.equal(typeof sandbox.fbq, "function");
     assert.ok(sandbox.ttq);
     assert.equal((sandbox.anaizaConsent as { config: { meta: string } }).config.meta, "1234567890");
+  });
+});
+
+// The loader is Stape's code, kept untouched in one module. This is the fingerprint of the text pasted from Stape; if it fails, the text was edited (or a new
+// one was pasted on purpose: then update the length and the hash here and in docs/tracking-custom-loader.md together).
+describe("Stape's loader text", () => {
+  it("is exactly what was pasted, and its values are read back out of it", () => {
+    assert.equal(STAPE_LOADER_SOURCE.length, 1337);
+    assert.equal(createHash("sha256").update(STAPE_LOADER_SOURCE).digest("hex"), "d18e52e15b82f4c2a52dd5083a7152f8452ceb2a25962b81c83c54d1042c492b");
+    assert.equal(STAPE_LOADER.host, "https://metrics.anaizanest.com");
+    assert.equal(STAPE_LOADER.id, "d877ecfdyons");
+    assert.match(STAPE_LOADER.query, /^ax11=[A-Za-z0-9]+$/);
+  });
+
+  it("never mentions Google's own loader address", () => {
+    assert.ok(!STAPE_LOADER_SOURCE.includes("googletagmanager.com"));
+  });
+
+  it("is in the page source once, and the no-script frame names the same host", () => {
+    const source = consentBootstrapSource({ enabled: true, mode: "notice", ...GTM_IDS, defer: true } as ConsentConfig);
+
+    assert.ok(!source.includes("googletagmanager.com/gtm.js"));
+    assert.equal(source.split("metrics.anaizanest.com").length - 1, 1);
+    assert.equal(stapeNoscriptSrc(), "https://metrics.anaizanest.com/ns.html?id=GTM-MS2HWSWF");
   });
 });

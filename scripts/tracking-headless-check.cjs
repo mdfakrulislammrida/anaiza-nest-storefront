@@ -3,8 +3,9 @@
 //   home -> a product (client-side navigation, as a visitor does it) -> the cart.
 //
 //   npm run build                              (the check reads out/)
-//   node scripts/tracking-headless-check.cjs            stub mode: GTM's script is replaced by an empty one
+//   node scripts/tracking-headless-check.cjs            stub mode: the container file (Stape's loader, from the tagging domain) is replaced by a small stand-in
 //   node scripts/tracking-headless-check.cjs --real     the real published container loads (needs internet)
+//   add --safari-ua to pretend to be Safari 17 (the loader asks for its Safari file), --cookies to list the cookies and storage keys of the first visit
 //   add --accept to click "Accept" on the cookie banner first (a new visit, as Tajin's test)
 //
 // Nothing is ever sent out: every request to Google Analytics, Meta and the like is recorded and answered with an empty picture by this script, and every
@@ -22,6 +23,12 @@ const { spawn } = require("node:child_process");
 const args = process.argv.slice(2);
 const REAL = args.includes("--real");
 const ACCEPT = args.includes("--accept");
+// --safari-ua: the browser says it is Safari 17, so the Stape loader asks for its Safari file (a "kp" inside the file name): the URL is reported and asserted.
+const SAFARI = args.includes("--safari-ua");
+const SAFARI_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
+// --cookies: after the first visit, lists every cookie (name, who set it, lifetime) and every localStorage / sessionStorage key. Meaningful with --real, where
+// the container's tags and the tagging server run; in stub mode only the page's own are there.
+const COOKIES = args.includes("--cookies");
 // --as-live-host: Chrome calls the local copy anaizanest.com, so a pixel or tag that only accepts traffic from the shop's own domain still runs.
 // Nothing reaches the real site (the name is mapped to this computer) and nothing is sent anywhere (see above).
 const LIVE_HOST = args.includes("--as-live-host") ? "anaizanest.com" : null;
@@ -206,6 +213,20 @@ async function main() {
   const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--disable-blink-features=AutomationControlled", ...(LIVE_HOST ? [`--host-resolver-rules=MAP ${LIVE_HOST} 127.0.0.1`] : []), `--user-data-dir=${profile}`, `--remote-debugging-port=${debugPort}`, "--window-size=1280,900", "about:blank"], { stdio: "ignore" });
   const hits = [];
   let failed = false;
+  // Stape's loader (src/lib/stapeLoader.ts): the file is asked for on the shop's own tagging domain; every request to it, and every request to Google's own
+  // gtm.js (there must be none), is recorded.
+  const { STAPE_LOADER } = await import("../src/lib/stapeLoader.ts");
+  const loaderUrl = new URL(STAPE_LOADER.host);
+  const isLoaderUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname === loaderUrl.hostname && /\.js$/.test(parsed.pathname);
+    } catch {
+      return false;
+    }
+  };
+  const loaderUrls = [];
+  const googleGtmUrls = [];
 
   try {
     const cdp = await connect(debugPort);
@@ -219,6 +240,8 @@ async function main() {
       if (message.method !== "Fetch.requestPaused") return;
       const { requestId, request } = message.params;
       const local = request.url.startsWith(base) || request.url.startsWith("data:");
+      if (isLoaderUrl(request.url)) loaderUrls.push(request.url);
+      if (/googletagmanager\.com\/gtm\.js/.test(request.url)) googleGtmUrls.push(request.url);
       if (!local) { try { const host = new URL(request.url).hostname; seenHosts[host] = (seenHosts[host] || 0) + 1; if (/metrics|facebook|googletagmanager|google-analytics/.test(host)) seenUrls.push(`${request.method} ${host}${new URL(request.url).pathname.slice(0, 40)}`); } catch {} }
 
       if (SENDS_TO_ANALYTICS.test(request.url)) {
@@ -228,6 +251,9 @@ async function main() {
       } else if (!local && request.method !== "GET" && request.method !== "HEAD" && request.method !== "OPTIONS") {
         hits.push({ kind: "blocked POST", event: new URL(request.url).hostname, event_id: "", page: "" });
         cdp.send("Fetch.failRequest", { requestId, errorReason: "BlockedByClient" }).catch(() => {});
+      } else if (!REAL && isLoaderUrl(request.url)) {
+        // Stape's loader file (the container, from the shop's own tagging domain): in stub mode the small stand-in takes its place, as Google's did before.
+        cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [{ name: "content-type", value: "text/javascript" }], body: Buffer.from(miniGtmSource()).toString("base64") }).catch(() => {});
       } else if (!REAL && /googletagmanager\.com\/gtm\.js/.test(request.url)) {
         cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [{ name: "content-type", value: "text/javascript" }], body: Buffer.from(miniGtmSource()).toString("base64") }).catch(() => {});
       } else if (!REAL && productsFixture && /api\.anaizanest\.com\/api\/products\?/.test(request.url)) {
@@ -247,6 +273,7 @@ async function main() {
     await cdp.send("Runtime.addBinding", { name: "__record" });
     await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*" }] });
     await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: RECORD_DATA_LAYER });
+    if (SAFARI) await cdp.send("Emulation.setUserAgentOverride", { userAgent: SAFARI_UA });
 
     const run = async (expression) => {
       const { result, exceptionDetails } = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
@@ -264,6 +291,20 @@ async function main() {
     await sleep(2500);
     await touch();
     await sleep(REAL ? 4000 : 1000);
+
+    // What the first load of the home page did, before anything else happens: the events in the data layer, the loader's script tags in the page, the loader's requests.
+    const homeEvents = pushes.map((push) => push.event);
+    // Only the loader's own file counts (its plain name, or the Safari one with kp in it): in the real container other scripts may also come from the tagging domain.
+    const scriptsFromTaggingDomain = await run(`[].slice.call(document.querySelectorAll('script[src]')).map(function (s) { return s.src.split('?')[0]; }).filter(function (src) { return src.indexOf(${JSON.stringify(`${STAPE_LOADER.host}/`)}) === 0; })`);
+    const loaderFiles = new Set([`${STAPE_LOADER.host}/${STAPE_LOADER.id}.js`, `${STAPE_LOADER.host}/${STAPE_LOADER.id.replace(/([a-z]{8})$/, "kp$1")}.js`]);
+    const loaderTags = scriptsFromTaggingDomain.filter((src) => loaderFiles.has(src)).length;
+    const loaderRequestsAtHome = loaderUrls.slice();
+    const storageAtHome = COOKIES
+      ? {
+          cookies: (await cdp.send("Network.getAllCookies")).cookies,
+          storage: await run("JSON.stringify({ localStorage: Object.keys(localStorage), sessionStorage: Object.keys(sessionStorage) })"),
+        }
+      : null;
 
     if (ACCEPT) {
       const clicked = await run(`(function(){var b=[].slice.call(document.querySelectorAll('button')).find(function(x){return /^(accept|allow)/i.test(x.textContent.trim());});if(b){b.click();return b.textContent.trim();}return null;})()`);
@@ -312,6 +353,25 @@ async function main() {
       console.log(`${ok ? "PASS" : "FAIL"}  ${text}`);
       failed = failed || !ok;
     };
+
+    // ---- The loader (Batch TRK6): the container comes from the shop's own tagging domain, once, and nothing asks Google's own address for gtm.js.
+    const withKp = STAPE_LOADER.id.replace(/([a-z]{8})$/, "kp$1");
+    const wantedFile = `${STAPE_LOADER.host}/${SAFARI ? withKp : STAPE_LOADER.id}.js?${STAPE_LOADER.query}`;
+    console.log(`\nLoader requests on the first load of the home page: ${loaderRequestsAtHome.join(" | ") || "(none)"}`);
+    check(googleGtmUrls.length === 0, `no request to googletagmanager.com/gtm.js in the whole visit (found ${googleGtmUrls.length})`);
+    check(loaderRequestsAtHome.length === 1 && loaderRequestsAtHome[0] === wantedFile, `the loader is asked for once, as ${wantedFile.replace(STAPE_LOADER.query, "ax11=…")}${SAFARI ? " (the Safari file)" : ""}`);
+    if (scriptsFromTaggingDomain.length !== loaderTags) console.log(`Other scripts from the tagging domain (not the loader): ${scriptsFromTaggingDomain.filter((src) => !loaderFiles.has(src)).join(" | ")}`);
+    check(loaderTags === 1, `exactly one loader script tag in the page (found ${loaderTags})`);
+    check(homeEvents.filter((name) => name === "gtm.js").length === 1, `gtm.start is pushed once on the first load (found ${homeEvents.filter((name) => name === "gtm.js").length})`);
+    check(homeEvents.indexOf("gtm.js") !== -1 && homeEvents.indexOf("gtm.js") < homeEvents.indexOf("page_view"), "gtm.start comes before page_view, as before");
+
+    if (COOKIES && storageAtHome) {
+      const day = 24 * 60 * 60;
+      const by = (cookie) => (/^(anaiza_|an_)/.test(cookie.name) ? "the shop's page" : /^(_ga|FPID|_gcl|_gid)/.test(cookie.name) ? "Google tag (GA4)" : /^_fb/.test(cookie.name) ? "Meta tag" : /^_tt|ttclid/.test(cookie.name) ? "TikTok tag" : /stape|STAPE/.test(cookie.name) || cookie.domain.includes("metrics") ? "Stape (tagging server)" : "other");
+      console.log("\nCookies after the first visit:");
+      console.table(storageAtHome.cookies.map((cookie) => ({ name: cookie.name, domain: cookie.domain, set_by: by(cookie), lifetime: cookie.session ? "session" : `${Math.round((cookie.expires - Date.now() / 1000) / day)} days`, secure: cookie.secure, httpOnly: cookie.httpOnly, sameSite: cookie.sameSite || "" })));
+      console.log("Browser storage keys after the first visit:", storageAtHome.storage);
+    }
 
     // ---- Landing straight on a page (an ad click): the page's own event must come AFTER its page_view. GTM is the small stand-in above (stub mode only), so
     // ---- this also shows whether the Meta ViewContent tag finds the pixel that the page_view tag creates. Not modelled: consent, GA4, the real GTM script.

@@ -1,5 +1,6 @@
 import type { CookieConsentSettings, MarketingSetting } from "@/lib/types";
 import { consentBootstrapSource } from "@/lib/consentBootstrap";
+import { stapeNoscriptSrc } from "@/lib/stapeLoader";
 
 // Renders nothing for any ID that isn't actually set in the admin -- each tag is entirely optional and
 // independent of the others. The tags themselves are loaded by one small inline script (see
@@ -72,7 +73,7 @@ export function MarketingBodyNoscript({
       {gtmId && (
         <noscript>
           <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(gtmId)}`}
+            src={stapeNoscriptSrc()}
             height="0"
             width="0"
             style={{ display: "none", visibility: "hidden" }}

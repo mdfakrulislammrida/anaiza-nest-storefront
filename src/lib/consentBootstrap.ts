@@ -19,7 +19,15 @@
 // still honoured. In opt-in mode analytics and marketing are denied until the visitor chooses.
 // The choice is a first-party cookie, "a1m0" style (analytics, marketing), kept for 12 months.
 //
+// GTM is loaded by Stape's Custom Loader (src/lib/stapeLoader.ts, its text untouched), from the shop's own tagging domain, not by Google's gtm.js
+// snippet. It is run at the moment the tags are due (the deferral above applies to it as before), by putting its text into a script element,
+// which the browser runs at once. The loader pushes "gtm.start" itself; this script has already pushed that entry, up here at the top of the
+// page and ahead of every event of the page, as it always did, so the one the loader would push is held back (once, only while the loader runs).
+// The data layer therefore carries exactly one gtm.start, in the same place as before.
+//
 // Kept as plain ES5 text so it is tiny, runs before React, and can be tested in isolation (consent.test.ts).
+
+import { STAPE_LOADER_SOURCE } from "./stapeLoader.ts";
 
 export const CONSENT_COOKIE = "anaiza_consent";
 export const CONSENT_MAX_AGE_SECONDS = 365 * 24 * 60 * 60; // 12 months
@@ -74,10 +82,18 @@ if(d.readyState==="complete")timer();else w.addEventListener("load",timer);
 }else{idle=true;}
 }
 function inject(src){later(function(){var s=d.createElement("script");s.async=true;s.src=src;var f=d.getElementsByTagName("script")[0];f.parentNode.insertBefore(s,f);});}
+var LOADER=${JSON.stringify(STAPE_LOADER_SOURCE).replace(/</g, "\\u003c")};
+function loadGtm(){
+var dl=w.dataLayer,own=Object.prototype.hasOwnProperty.call(dl,"push"),prev=dl.push,dropped=false;
+dl.push=function(item){if(!dropped&&item&&item.event==="gtm.js"&&item["gtm.start"]){dropped=true;return dl.length;}return prev.apply(dl,arguments);};
+var s=d.createElement("script");s.text=LOADER;
+try{(d.head||d.documentElement).appendChild(s);}finally{if(own)dl.push=prev;else delete dl.push;}
+if(s.parentNode)s.parentNode.removeChild(s);
+}
 function gtm(){
 if(!cfg.gtm||L.gtm)return;L.gtm=1;
 w.dataLayer.push({"gtm.start":new Date().getTime(),event:"gtm.js"});
-inject("https://www.googletagmanager.com/gtm.js?id="+encodeURIComponent(cfg.gtm));
+later(loadGtm);
 }
 function ga4(){
 if(cfg.gtm||!cfg.ga4||L.ga4)return;L.ga4=1;

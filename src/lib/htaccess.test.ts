@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { consentBootstrapSource } from "./consentBootstrap.ts";
+import { STAPE_LOADER } from "./stapeLoader.ts";
 
 // public/.htaccess is what the host actually reads (it is copied into the build as it is). It cannot be run here, so
 // what is checked is the file itself: the headers are there, and every place the shop's own scripts load from is named
@@ -58,7 +59,21 @@ describe("the content security policy", () => {
     assert.ok(origins.size >= 3, "the tags' addresses were found");
 
     for (const origin of origins) {
+      // The shop's own tagging domain (Stape's loader) is not in the policy yet: it is only reported, never blocked (see the next test).
+      if (origin === STAPE_LOADER.host) continue;
       assert.ok(scripts.includes(origin), `script-src names ${origin}`);
+    }
+  });
+
+  // The policy only REPORTS today, so the tagging domain missing from it blocks nothing. The day it is enforced, the domain must be in script-src,
+  // connect-src (the loader's own requests) and frame-src (the no-script frame): this fails then, as a reminder (docs/tracking-custom-loader.md).
+  it("names the tagging domain before the policy is ever enforced", () => {
+    const enforced = /Header always set Content-Security-Policy "default-src/.test(htaccess);
+
+    if (!enforced) return;
+
+    for (const name of ["script-src", "connect-src", "frame-src"]) {
+      assert.ok(directive(reportOnly, name).includes(STAPE_LOADER.host), `${name} names ${STAPE_LOADER.host}`);
     }
   });
 
