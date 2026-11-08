@@ -2,6 +2,7 @@ import type { CartAddableProduct } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import type { Order, PaymentMethod, Product } from "./types";
 import { externalIdHash, externalIdSource, hashOf, knownHash, signedInCustomerId } from "./identity.ts";
+import { isTrackableSearch, trackedUrl } from "./trackingPrivacy.ts";
 import { buildContactHashes, buildUserData, type Buyer, type ContactUserData, type MetaUserData } from "./userData.ts";
 
 export { signedInCustomerId };
@@ -173,10 +174,12 @@ export function trackPageView(referrer = "", first = false) {
 
   const eventId = pushDataLayer({
     event: "page_view",
-    page_location: window.location?.href ?? "",
+    // Without the query and hash on the pages whose address is a key or a receipt (a password-reset token must never reach GA4 or Meta); every other
+    // address as it is, so UTM tags and click ids still arrive. See trackingPrivacy.ts.
+    page_location: trackedUrl(window.location?.href),
     page_path: window.location?.pathname ?? "",
     page_title: typeof document === "undefined" ? "" : document.title,
-    page_referrer: referrer,
+    page_referrer: trackedUrl(referrer),
   });
 
   if (gtmOwnsBrowserTags() || first) return;
@@ -327,7 +330,8 @@ export function trackViewCart(items: CartItem[], value: number) {
 // A search on the shop page (the term as typed, trimmed). GA4's `search` and Meta's `Search`, with one event_id.
 export function trackSearch(term: string) {
   const clean = term.trim();
-  if (clean === "") return;
+  // An empty term, or one that looks like an email or a phone number, is not tracked (the search itself still runs): see trackingPrivacy.ts.
+  if (clean === "" || !isTrackableSearch(clean)) return;
   const eventId = pushDataLayer({ event: "search", search_term: clean });
   fbqTrack("Search", { search_string: clean, content_type: "product" }, eventId);
 }

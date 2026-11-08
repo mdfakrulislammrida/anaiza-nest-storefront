@@ -16,6 +16,7 @@ import { orderMatchData } from "@/lib/identity";
 import { calmMessage, mobileProblem } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
+import { pickBuyer } from "@/lib/userData";
 import { formatPrice } from "@/lib/format";
 import { resolvePolicy } from "@/lib/policy";
 import { beginCheckoutDue, deliveryChargeFor, deliveryHintText, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
@@ -265,7 +266,8 @@ export default function CheckoutForm({
   function buyerNow() {
     const typed = contactFromForm();
 
-    return { email: signedIn?.email || typed.email, phone: signedIn?.phone || typed.phone, customerId: signedIn?.id ?? null };
+    // Each of email and phone is the first VALID one of (typed, saved on the account): an invalid saved number never hides a valid typed one.
+    return { ...pickBuyer(typed, signedIn), customerId: signedIn?.id ?? null };
   }
 
   function contactFromForm() {

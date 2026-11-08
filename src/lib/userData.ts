@@ -164,6 +164,24 @@ export function cleanEmail(email: string | null | undefined): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean) ? clean : null;
 }
 
+/**
+ * Who is buying, from two sources: what was typed in the form and what a signed-in customer has saved. The email and the phone are judged one by one
+ * and each is the first VALID one of (typed, saved), so a saved number that is not a Bangladeshi mobile can never hide a valid typed one (and the other
+ * way round). A value that is valid in neither is passed on as it is (typed first), and is dropped when it is hashed. Nothing is changed or hashed here.
+ */
+export function pickBuyer(typed: Buyer | null | undefined, saved: Buyer | null | undefined): Buyer {
+  const firstValid = (values: (string | null | undefined)[], valid: (value: string | null | undefined) => string | null): string => {
+    const found = values.find((value) => valid(value) !== null);
+
+    return found ?? values.find((value) => (value ?? "").trim() !== "") ?? "";
+  };
+
+  return {
+    email: firstValid([typed?.email, saved?.email], cleanEmail),
+    phone: firstValid([typed?.phone, saved?.phone], internationalDigits),
+  };
+}
+
 /** The hashed email and phone, or null when there is nothing usable (or the browser cannot hash). */
 export async function buildContactHashes(buyer: Buyer | null | undefined): Promise<ContactUserData | null> {
   if (!buyer || typeof crypto === "undefined" || !crypto.subtle) return null;
