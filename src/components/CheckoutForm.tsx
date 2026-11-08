@@ -21,6 +21,7 @@ import { formatPrice } from "@/lib/format";
 import { resolvePolicy } from "@/lib/policy";
 import { beginCheckoutDue, deliveryChargeFor, deliveryHintText, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
 import { areasFor, resolveDhakaCity } from "@/lib/dhakaCity";
+import { AREA_HELP, AREA_MAX_LENGTH, AREA_MISSING_MESSAGE, AREA_OTHER_MISSING_MESSAGE, OTHER_AREA, areaProblem, effectiveArea, filterDistricts, filterThanas } from "@/lib/locationSearch";
 import FreeDeliveryProgress from "@/components/FreeDeliveryProgress";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
@@ -135,7 +136,16 @@ export default function CheckoutForm({
   const [zone, setZone] = useState<DeliveryZone>(null);
   const [division, setDivision] = useState<BdDivision | "">("");
   const [district, setDistrict] = useState("");
-  const [thana, setThana] = useState("");
+  // The area is a thana picked from the list or, after choosing "Other / not listed", what the customer wrote: `thana` is what is sent (and what the fee is
+  // worked out from, so an area that is not in Dhaka city's list is charged as the server charges it).
+  const [thanaChoice, setThanaChoice] = useState("");
+  const [otherArea, setOtherArea] = useState("");
+  const thana = effectiveArea(thanaChoice, otherArea);
+
+  function clearThana() {
+    setThanaChoice("");
+    setOtherArea("");
+  }
   // What is shown on a phone: the folded summary, the coupon field and the optional note.
   const phone = useMediaQuery("(max-width: 639px)");
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -386,8 +396,11 @@ export default function CheckoutForm({
       return;
     }
 
-    if (!division || !district || !thana) {
-      setFormError("Please select your division, district and thana/area.");
+    const areaIssue = !division || !district ? AREA_MISSING_MESSAGE : areaProblem(thanaChoice, otherArea);
+
+    if (areaIssue) {
+      setFormError(areaIssue);
+      if (areaIssue === AREA_OTHER_MISSING_MESSAGE) setFieldErrors({ thana: [areaIssue] });
       setRevealCount((count) => count + 1);
       return;
     }
@@ -551,7 +564,7 @@ export default function CheckoutForm({
     if (zone === next) return;
 
     setZone(next);
-    setThana("");
+    clearThana();
 
     if (next === "inside") {
       setDivision("Dhaka");
@@ -584,14 +597,21 @@ export default function CheckoutForm({
     upazilas.length > 0 ? (
       <SearchableSelect
         label="Area (thana)"
-        value={thana}
-        options={upazilas}
+        value={thanaChoice}
+        options={[...upazilas, OTHER_AREA]}
         disabled={!district}
         disabledHint="Select district first"
         placeholder="Select your area"
-        searchPlaceholder="Search your area..."
-        error={errorFor("thana") ? fieldErrors.thana?.[0] : null}
-        onChange={setThana}
+        searchPlaceholder="Search your area, or type sadar or city..."
+        error={errorFor("thana") && thanaChoice !== OTHER_AREA ? fieldErrors.thana?.[0] : null}
+        // The search box is always there (the district's thanas by name, old spelling, "sadar" or "city"), and "Other / not listed" is always the last entry.
+        alwaysSearch
+        filter={(options, query) => filterThanas(options, query, district)}
+        pinnedLast={OTHER_AREA}
+        onChange={(next) => {
+          setThanaChoice(next);
+          if (next !== OTHER_AREA) setOtherArea("");
+        }}
       />
     ) : (
       <div>
@@ -602,8 +622,8 @@ export default function CheckoutForm({
           id={`${uid}-thana`}
           autoComplete="off"
           aria-invalid={fieldErrors.thana ? true : undefined}
-          value={thana}
-          onChange={(event) => setThana(event.target.value)}
+          value={thanaChoice}
+          onChange={(event) => setThanaChoice(event.target.value)}
           disabled={!district}
           required
           placeholder={district ? "e.g. Banani, Gulshan" : "Select district first"}
@@ -630,7 +650,19 @@ export default function CheckoutForm({
           tabIndex={-1}
           className="rounded-btn border border-burgundy/30 bg-linen p-4 text-body text-burgundy focus:outline-none"
         >
-          <p className="font-medium">{formError}</p>
+          <p className="font-medium">
+            {formError}
+            {(formError === AREA_MISSING_MESSAGE || formError === AREA_OTHER_MISSING_MESSAGE) && whatsappHref && (
+              <>
+                {" "}
+                Can&apos;t find it?{" "}
+                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="underline">
+                  Message us on WhatsApp
+                </a>
+                .
+              </>
+            )}
+          </p>
           {orderProblems.length > 0 && (
             <>
               <ul className="mt-2 list-disc space-y-1 pl-6">
@@ -777,7 +809,7 @@ export default function CheckoutForm({
               onChange={(next) => {
                 setDivision(next as BdDivision);
                 setDistrict("");
-                setThana("");
+                clearThana();
               }}
             />
             <SearchableSelect
@@ -788,15 +820,41 @@ export default function CheckoutForm({
               disabledHint="Select division first"
               placeholder="Select district"
               error={errorFor("district") ? fieldErrors.district?.[0] : null}
+              // The old spellings (Chittagong, Comilla ...) find their district; the list shows the current ones.
+              alwaysSearch
+              searchPlaceholder="Search your district..."
+              filter={filterDistricts}
               onChange={(next) => {
                 setDistrict(next);
-                setThana("");
+                clearThana();
               }}
             />
           </div>
         )}
 
         {zone !== null && areaField}
+
+        {zone !== null && thanaChoice === OTHER_AREA && (
+          <div>
+            <label htmlFor={`${uid}-other-area`} className={labelClass}>
+              Your area / thana
+            </label>
+            <input
+              id={`${uid}-other-area`}
+              autoComplete="off"
+              required
+              maxLength={AREA_MAX_LENGTH}
+              value={otherArea}
+              onChange={(event) => setOtherArea(event.target.value)}
+              aria-invalid={fieldErrors.thana ? true : undefined}
+              placeholder="e.g. your area or the nearest thana"
+              className={inputClass}
+            />
+            {errorFor("thana")}
+          </div>
+        )}
+
+        {zone !== null && <p className="text-caption text-stone">{AREA_HELP}</p>}
 
         {zone !== null && (
           <div>

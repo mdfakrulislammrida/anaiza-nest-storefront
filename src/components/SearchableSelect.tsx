@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { showsSearch } from "@/lib/locationSearch";
 
 interface SearchableSelectProps {
   label: string;
@@ -13,6 +14,12 @@ interface SearchableSelectProps {
   placeholder?: string;
   searchPlaceholder?: string;
   error?: string | null;
+  // The search box is always there (a district's thanas are searched by name, old spelling or "sadar", however short the list); without this it appears for a list of more than 10.
+  alwaysSearch?: boolean;
+  // How a typed text picks entries (default: the text anywhere in the name). The list is never changed, only what is shown.
+  filter?: (options: string[], query: string) => string[];
+  // An entry that stays at the bottom whatever is typed ("Other / not listed"): the way on when what the person looks for is not there.
+  pinnedLast?: string;
 }
 
 // A single implementation for every screen size, not separate mobile/desktop
@@ -30,6 +37,9 @@ export default function SearchableSelect({
   placeholder = "Select an option",
   searchPlaceholder = "Search...",
   error,
+  alwaysSearch = false,
+  filter,
+  pinnedLast,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -41,13 +51,15 @@ export default function SearchableSelect({
 
   // A short list (the eight divisions, most districts) needs no search box: opening the keyboard for it would only hide half of the list. A long one (the
   // thanas of a big district) gets the box, focused.
-  const searchable = options.length > 10;
+  const searchable = showsSearch(options.length, alwaysSearch);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return options;
-    return options.filter((option) => option.toLowerCase().includes(query));
-  }, [options, search]);
+    const own = pinnedLast ? options.filter((option) => option !== pinnedLast) : options;
+    const shown = !query ? own : filter ? filter(own, query) : own.filter((option) => option.toLowerCase().includes(query));
+
+    return pinnedLast && options.includes(pinnedLast) ? [...shown, pinnedLast] : shown;
+  }, [options, search, filter, pinnedLast]);
 
   // Body-scroll lock + focus the search box the moment the sheet mounts.
   useEffect(() => {
@@ -177,9 +189,10 @@ export default function SearchableSelect({
               )}
 
               <ul id={listId} className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
-                {filtered.length === 0 ? (
+                {filtered.filter((option) => option !== pinnedLast).length === 0 && (
                   <li className="px-4 py-6 text-center text-body text-stone">No matches found.</li>
-                ) : (
+                )}
+                {(
                   filtered.map((option) => {
                     const selected = option === value;
                     return (

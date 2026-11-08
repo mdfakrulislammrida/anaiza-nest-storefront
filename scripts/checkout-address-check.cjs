@@ -229,7 +229,7 @@ async function main() {
         // Outside Dhaka city, Dhaka district offers only its upazilas outside the city; every other district its whole list.
         const expected = areasFor(city, "outside", division, district);
         const t = await choose("Area (thana)", expected[0]);
-        check(t.clicked && t.count === expected.length, `${district}: ${expected.length} thanas offered (got ${t.count})`);
+        check(t.clicked && t.count === expected.length + 1, `${district}: ${expected.length} thanas and the Other / not listed entry offered (got ${t.count})`);
 
         const fee = money(await deliveryText());
         check(fee === feeOutside, `${division} > ${district} > ${expected[0]}: outside Dhaka city pays ৳${feeOutside} (page says ${fee})`);
@@ -259,7 +259,7 @@ async function main() {
     check((await readTrigger("Area (thana)"))?.text === "Select your area", "switching to Inside Dhaka city clears the thana");
     const cityAreas = areasFor(city, "inside", "Dhaka", "Dhaka");
     const first = await choose("Area (thana)", "Banani");
-    check(first.count === cityAreas.length && cityAreas.length > 0, `Inside Dhaka city offers the ${cityAreas.length} city thanas, no Savar (got ${first.count})`);
+    check(first.count === cityAreas.length + 1 && cityAreas.length > 0, `Inside Dhaka city offers the ${cityAreas.length} city thanas and Other / not listed, no Savar (got ${first.count})`);
     check(money(await deliveryText()) === feeDhaka, `Dhaka city, Banani: a small order pays ৳${feeDhaka} (page says ${await deliveryText()})`);
     check(!(await hintShown()), "with the area chosen the calm line is gone and the exact fee is shown");
 
@@ -272,7 +272,7 @@ async function main() {
     check(money(await deliveryText()) === null, "Outside, Dhaka > Dhaka, before an area: no fee");
     const outsideAreas = areasFor(city, "outside", "Dhaka", "Dhaka");
     const savar = await choose("Area (thana)", "Savar");
-    check(savar.count === outsideAreas.length && outsideAreas.length === geo.BD_UPAZILAS_BY_DISTRICT.Dhaka.length - cityAreas.length, `Outside, Dhaka > Dhaka offers only the ${outsideAreas.length} upazilas outside the city (got ${savar.count})`);
+    check(savar.count === outsideAreas.length + 1 && outsideAreas.length === geo.BD_UPAZILAS_BY_DISTRICT.Dhaka.length - cityAreas.length, `Outside, Dhaka > Dhaka offers only the ${outsideAreas.length} upazilas outside the city (got ${savar.count})`);
     check(money(await deliveryText()) === feeOutside, `Savar pays ৳${feeOutside}, not the Dhaka fee (page says ${await deliveryText()})`);
     await area("Dhaka", "Dhaka", "Keraniganj", small, "Keraniganj");
     for (const name of ["Dhamrai", "Dohar", "Nawabganj"]) await area("Dhaka", "Dhaka", name, small, name);
@@ -318,6 +318,59 @@ async function main() {
     await sleep(400);
     await area("Dhaka", "Dhaka", "Mirpur", threshold + 500, "free");
     check(money(await deliveryText()) === 0, "back to Dhaka city over the threshold: free again");
+
+    // ---- Batch LOC2: the search (old spellings, "sadar", "city"), the search box on a short list, and "Other / not listed" as the way on
+    await openCheckout(line(1450, 1));
+    await clickZone(OUTSIDE);
+    await sleep(400);
+    const openList = async (label) => {
+      await run(`${triggerFor(label)}.click()`);
+      await sleep(300);
+    };
+    const searchBox = () => run(`!!document.querySelector('[role=dialog] input[type=text]')`);
+    const typeInSearch = async (text) => {
+      await run(`(() => { const i = document.querySelector('[role=dialog] input[type=text]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, ${JSON.stringify(text)}); i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+      await sleep(250);
+    };
+    const listTexts = () => run(`[...document.querySelectorAll('[role=dialog] ul li button')].map((b) => b.innerText.trim())`);
+    const pickText = async (text) => {
+      await run(`[...document.querySelectorAll('[role=dialog] ul li button')].find((b) => b.innerText.trim() === ${JSON.stringify(text)}).click()`);
+      await sleep(300);
+    };
+    const OTHER = "Other / not listed";
+
+    await choose("Division", "Chattogram");
+    await openList("District");
+    check(await searchBox(), "the district list has a search box");
+    await typeInSearch("Chittagong");
+    const oldSpelling = await listTexts();
+    check(oldSpelling.length === 1 && oldSpelling[0] === "Chattogram", `searching the old spelling 'Chittagong' shows the current one (got ${oldSpelling.join(", ")})`);
+    await pickText("Chattogram");
+
+    await openList("Area (thana)");
+    check(await searchBox(), "the thana list has a search box");
+    await typeInSearch("chittagong sadar");
+    const cityList = await listTexts();
+    check(["Kotwali", "Panchlaish", "Khulshi", "Pahartali"].every((name) => cityList.includes(name)), `'chittagong sadar' lists Chattogram's city thanas (got ${cityList.slice(0, 6).join(", ")}...)`);
+    check(cityList.at(-1) === OTHER, "Other / not listed is the last entry while searching");
+    await typeInSearch("zzzz");
+    const nothing = await listTexts();
+    check(nothing.length === 1 && nothing[0] === OTHER, "with nothing found, Other / not listed is still there as the way on");
+    await pickText(OTHER);
+    const otherField = await readTrigger("Your area / thana");
+    check(otherField !== null, "choosing Other / not listed shows the 'Your area / thana' field");
+    await run(`(() => { const l = [...document.querySelectorAll('label')].find((x) => x.textContent.trim() === 'Your area / thana'); const i = document.getElementById(l.htmlFor); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, 'Near the old bridge'); i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+    await sleep(300);
+    check(money((await summary()).delivery) === feeOutside, `a written area in Chattogram pays ৳${feeOutside} (page says ${(await summary()).delivery})`);
+    check(await run(`document.body.innerText.includes('Not sure? Pick the nearest thana and write your full address.')`), "the helper text is under the area field");
+
+    await choose("Division", "Khulna");
+    await choose("District", "Meherpur");
+    await openList("Area (thana)");
+    check(await searchBox(), "a short thana list (Meherpur, 3 areas) also has the search box");
+    const short = await listTexts();
+    check(short.length === 4 && short.at(-1) === OTHER, `Meherpur offers its 3 areas and Other / not listed (got ${short.length})`);
+    await pickText(short[0]);
 
     // ---- no saved checkout draft: a reload starts empty (nothing of the address is kept, so nothing stale can be restored)
     await openCheckout(line(small, 1));
