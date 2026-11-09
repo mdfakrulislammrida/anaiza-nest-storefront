@@ -18,6 +18,14 @@ export interface CategorySummary {
   thumbnail: ImageMeta;
 }
 
+// One of the categories a product is listed in (Product.categories): the primary first. The API lists a product in a category as primary OR extra.
+export interface ProductCategoryRef {
+  id: number;
+  slug: string;
+  name: string;
+  is_primary: boolean;
+}
+
 export interface CategoryFaq {
   id: number;
   question: string;
@@ -161,7 +169,11 @@ export interface Product {
   is_new: boolean;
   is_featured: boolean;
   is_active: boolean;
+  // The PRIMARY category: breadcrumb, structured data, the card, and item_category in the data layer. Never replaced by `categories`.
   category: CategorySummary;
+  // Every category the product is listed in, primary first (absent on an older API: then the product is in `category` only). Category pages and counts come
+  // from the API (/products?category=), which already counts a product once in each; nothing here is filtered by it in the browser.
+  categories?: ProductCategoryRef[];
   brand: Brand | null;
   images: ProductImage[];
   video?: ProductVideo;

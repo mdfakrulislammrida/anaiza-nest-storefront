@@ -386,6 +386,35 @@ describe("the item shape: item_id (SKU), item_name, price, quantity, item_catego
     assert.deepEqual(remove.ecommerce.items, [{ item_id: "MUG-RED", item_name: "Mug", price: 600, quantity: 2, item_category: "Mugs" }]);
   });
 
+  it("keeps item_category the PRIMARY category when the product is also listed in other categories, and sends no other category", async () => {
+    // The API's `categories` (primary first) must change nothing the data layer says: item_category stays `category.name`.
+    const listed = {
+      ...product,
+      categories: [
+        { id: 1, slug: "mugs", name: "Mugs", is_primary: true },
+        { id: 2, slug: "gifts", name: "Gifts", is_primary: false },
+        { id: 3, slug: "ceramic", name: "Ceramic", is_primary: false },
+      ],
+    };
+
+    trackViewItemList([listed as never], "Shop");
+    trackViewItem(listed as never);
+    trackAddToCart(listed, 2);
+    await settle();
+
+    const events = layer() as { ecommerce: { items: Record<string, unknown>[] } }[];
+    assert.ok(events.length >= 3);
+
+    for (const event of events) {
+      for (const item of event.ecommerce.items) {
+        assert.equal(item.item_category, "Mugs");
+        assert.deepEqual(Object.keys(item).sort(), ["item_category", "item_id", "item_name", "price", "quantity"]);
+      }
+    }
+
+    assert.doesNotMatch(JSON.stringify(layer()), /Gifts|Ceramic|categories/);
+  });
+
   it("leaves item_category out for a cart saved before it was kept", () => {
     trackViewCart([{ ...cartLine, category: undefined }], 1200);
 
