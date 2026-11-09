@@ -7,6 +7,9 @@ import type { ProductImage, ProductVideo } from "@/lib/types";
 
 type Slide = { kind: "image"; image: ProductImage } | { kind: "video"; video: ProductVideo };
 
+// How many photos still get one dot each (24 px apiece, centred): wide enough to clear the WhatsApp button at the right edge of a 360 px screen.
+const MAX_DOTS = 8;
+
 // The product's photos (and its video, as the last tile) in one row that scrolls and snaps: a swipe on a phone, a
 // trackpad or the thumbnails from 768 px. 4:5 on a phone, square from 768 px, where the whole column also stays in view
 // under the header (see ProductDetail). The first photo loads at once, the rest when they come near.
@@ -88,23 +91,32 @@ export default function ProductGallery({
           </div>
         )}
 
-        {/* Dots on a phone, over the foot of the photo so they take no room of their own. */}
+        {/* Dots on a phone, inside the photo near its bottom edge and centred, taking no room of their own and with no band across the picture: only a
+            small dark, lightly blurred pill around the dots themselves, so they read on a light photo as well as a dark one. Round 8 px dots in white at
+            60%, the current one a solid white pill; each is a 24 px target. With more photos than fit between the edge and the WhatsApp button (9 or more),
+            a "3 / 9" counter takes their place. */}
         {count > 1 && (
-          <div className="absolute inset-x-0 bottom-2 flex justify-center md:hidden">
-            <div className="flex items-center rounded-btn bg-ivory/90 px-1">
-              {slides.map((slide, index) => (
-                <button
-                  key={slide.kind === "image" ? slide.image.id : "video"}
-                  type="button"
-                  onClick={() => goTo(index)}
-                  aria-label={slide.kind === "video" ? "Show the video" : `Show photo ${index + 1}`}
-                  aria-current={index === active}
-                  className="flex h-11 w-11 items-center justify-center"
-                >
-                  <span className={`h-2 w-2 rounded-btn ${index === active ? "bg-navy" : "bg-stone/50"}`} />
-                </button>
-              ))}
-            </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-2.5 flex justify-center md:hidden">
+            {count > MAX_DOTS ? (
+              <p className="rounded-btn bg-black/25 px-3 py-1 text-xs font-medium leading-4 text-white backdrop-blur-sm" aria-hidden="true">
+                {active + 1} / {count}
+              </p>
+            ) : (
+              <div data-round className="pointer-events-auto flex items-center rounded-full bg-black/25 px-1 backdrop-blur-sm">
+                {slides.map((slide, index) => (
+                  <button
+                    key={slide.kind === "image" ? slide.image.id : "video"}
+                    type="button"
+                    onClick={() => goTo(index)}
+                    aria-label={slide.kind === "video" ? "Show the video" : `Show photo ${index + 1}`}
+                    aria-current={index === active}
+                    className="flex h-6 w-6 items-center justify-center"
+                  >
+                    <span className={`h-2 rounded-full transition-all motion-reduce:transition-none ${index === active ? "w-4 bg-white" : "w-2 bg-white/60"}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

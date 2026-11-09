@@ -33,7 +33,7 @@ What it checks, per page:
 | Seal | at most one, and never on a product photograph (the empty states carry it; the product page has none) |
 | Burgundy | once: fills plus italic lines together |
 | Shadow | only the product-photo shadow (`shadow-warm`), which is now only on a landing page's product photograph: none on a product card or the product gallery |
-| Radius | 2px on everything; a photograph has none. The seal is the one round thing. Tailwind's named radius steps are all set to 2px in `globals.css` |
+| Radius | 2px on everything; a photograph has none. The seal is the one round thing, apart from the product gallery's photo dots on a phone (round by the owner's choice, marked `data-round`). Tailwind's named radius steps are all set to 2px in `globals.css` |
 | Gradient | only an element marked `data-scrim` (a text scrim over a photo; see the list below) |
 | Fixed items | none overlapping (a dialog covers the page by design) |
 | Fixed bars at the bottom | the order bar and the cookie banner together take at most 38% of the screen height, or 320 px if that is more (the bars are as tall on a short phone as on a tall one) |

@@ -291,3 +291,37 @@ h4 {
     margin-bottom: 0;
   }
 }
+
+/* The phone's Filter sheet slides up and its overlay fades in; with "reduce motion" it simply appears. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet-up {
+  animation: sheet-up 220ms ease-out;
+}
+
+.sheet-fade {
+  animation: sheet-fade 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-up,
+  .sheet-fade {
+    animation: none;
+  }
+}

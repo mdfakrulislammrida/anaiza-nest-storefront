@@ -153,18 +153,21 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
   if (!enabled || !visible || !settings) return null;
 
   const labels = settings.labels;
+  // On a phone the two choices are 40 px tall and equal; from 640 px they are as they were.
   const buttonClass =
-    "min-h-11 rounded-btn px-2 text-button transition-colors sm:min-h-11 sm:px-4";
+    "h-10 rounded-btn px-2 text-[0.8125rem] font-semibold leading-5 transition-colors sm:h-auto sm:min-h-11 sm:px-4 sm:text-button";
 
   return (
+    // A phone: a slim band across the foot of the screen (a thin top border sets it off from the page), with the home-indicator area
+    // added under it -- unless it sits on the Add to Cart bar, which already includes that area. From 640 px: the small floating box it always was.
     <section
       ref={bannerRef}
       aria-label="Cookie settings"
-      style={{ bottom: barHeight }}
-      className="fixed inset-x-0 z-[35] mx-auto w-full max-w-3xl px-2 pb-2 sm:px-4 sm:pb-4"
+      style={{ bottom: barHeight, ["--safe" as string]: barHeight > 0 ? "0px" : "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 z-[35] mx-auto w-full max-w-3xl sm:px-4 sm:pb-4"
     >
-      <div className="max-h-[70vh] overflow-y-auto rounded-btn border border-linen bg-ivory p-2 sm:p-4">
-        <p className="text-caption leading-snug text-charcoal">{settings.banner_text}</p>
+      <div className="max-h-[70vh] overflow-y-auto border-t border-stone/40 bg-ivory px-3 pt-2 pb-[calc(0.375rem+var(--safe))] sm:rounded-btn sm:border sm:border-linen sm:p-4">
+        <p className="text-[0.78125rem] leading-[1.25] text-charcoal sm:text-caption sm:leading-snug">{settings.banner_text}</p>
 
         {customizing ? (
           <div className="mt-2 space-y-1">
@@ -220,7 +223,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
             </div>
           </div>
         ) : (
-          <div className="mt-2">
+          <div className="mt-1.5 sm:mt-2">
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => choose(true, true)} className={`${buttonClass} bg-navy text-ivory hover:opacity-90`}>
                 {labels.accept}
@@ -229,7 +232,7 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
                 {labels.reject}
               </button>
             </div>
-            <div className="mt-1 flex items-center justify-center gap-6">
+            <div className="mt-0.5 flex items-center justify-center gap-5 sm:mt-1 sm:gap-6">
               <button
                 type="button"
                 onClick={() => {
@@ -238,12 +241,12 @@ export default function CookieConsent({ initial }: { initial: CookieConsentSetti
                   setMarketing(current?.m ?? false);
                   setCustomizing(true);
                 }}
-                className="inline-flex min-h-11 items-center text-caption font-medium text-navy underline"
+                className="inline-flex min-h-6 items-center px-1 text-xs font-medium text-navy underline sm:min-h-11 sm:text-caption"
               >
                 {labels.customize}
               </button>
               {settings.privacy_url && (
-                <a href={settings.privacy_url} className="inline-flex min-h-11 items-center text-caption text-navy underline sm:min-h-11">
+                <a href={settings.privacy_url} className="inline-flex min-h-6 items-center px-1 text-xs text-navy underline sm:min-h-11 sm:text-caption">
                   {settings.privacy_label}
                 </a>
               )}

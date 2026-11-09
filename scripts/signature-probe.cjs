@@ -14,7 +14,7 @@
   var PRODUCT_SHADOW = "rgba(42, 38, 34, 0.35) 0px 12px 28px -14px";
   var BURGUNDY = "rgb(102, 30, 41)";
   // One radius for the whole shop: 2px. Photographs have none. Only the seal (and the pour line's drop, a pseudo-element)
-  // is round.
+  // is round, and the product gallery's dots on a phone (marked data-round).
   var MAX_RADIUS = 2;
   // The fixed order bar and the cookie banner together may take this much of a phone's height, but never less than
   // MIN_STACK_ALLOWED px: the bars are as tall as they are (a 166 px order bar and a 145 px banner) on a 640 px phone
@@ -194,7 +194,7 @@
       var radius = style.borderTopLeftRadius || "0px";
       var rounded = radius.indexOf("%") >= 0 ? parseFloat(radius) > 0 : parseFloat(radius) > MAX_RADIUS;
       var photo = element.tagName === "IMG" && parseFloat(radius) > 0;
-      if ((rounded || photo) && !element.closest("[data-seal]") && !element.classList.contains("sr-only")) snapshot.radii.push({ label: label(element), value: radius, photo: photo });
+      if ((rounded || photo) && !element.closest("[data-seal]") && !element.closest("[data-round]") && !element.classList.contains("sr-only")) snapshot.radii.push({ label: label(element), value: radius, photo: photo });
 
       if (style.backgroundImage && style.backgroundImage.indexOf("gradient") >= 0) {
         snapshot.gradients.push({ label: label(element), allowed: element.hasAttribute("data-scrim") });

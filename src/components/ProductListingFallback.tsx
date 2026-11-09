@@ -1,10 +1,14 @@
+import FilterSheet from "./FilterSheet";
 import ListBreadcrumb from "./ListBreadcrumb";
 import PhoneListBar from "./PhoneListBar";
 import PriceFilterPanel from "./PriceFilterPanel";
 import ProductGrid from "./ProductGrid";
+import SortLabel from "./SortLabel";
 import EmptyState from "./EmptyState";
 import type { ProductListResponse } from "@/lib/types";
 import { countOf } from "@/lib/cardTag";
+import { listBarButton } from "@/lib/listBar";
+import { PRICE_RANGES } from "@/lib/priceRanges";
 
 // Rendered as the <Suspense fallback> around ProductListing. ProductListing
 // reads useSearchParams(), which makes a statically built page skip rendering
@@ -12,7 +16,7 @@ import { countOf } from "@/lib/cardTag";
 // only place content can live if it's to be in the HTML crawlers (and
 // no-JS visitors) get. It mirrors ProductListing's layout so the real thing
 // replaces it without shifting; the sort control is left out because it needs
-// the URL, and shows up once JS runs.
+// the URL, and shows up once JS runs (on a phone a same-looking Sort button stands in for it, so the bar does not change when the real one arrives).
 export default function ProductListingFallback({
   result,
   breadcrumbLabel,
@@ -57,7 +61,15 @@ export default function ProductListingFallback({
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
         <PhoneListBar>
-          <PriceFilterPanel buildHref={buildHref} bar />
+          <FilterSheet
+            options={PRICE_RANGES.map((range) => ({ label: range.label, href: buildHref({ min_price: range.min, max_price: range.max }), active: false }))}
+            clearHref={buildHref({})}
+            count={0}
+            priceActive={false}
+          />
+          <span aria-hidden="true" className={`${listBarButton} pointer-events-none justify-between`}>
+            <SortLabel value="Most relevant" />
+          </span>
         </PhoneListBar>
         <p className="my-4 text-body text-stone sm:hidden">{countOf(result.meta.total, "product")}</p>
 

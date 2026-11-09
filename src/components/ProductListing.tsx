@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/api";
 import { trackSearch, trackViewItemList } from "@/lib/tracking";
+import ActiveFilterChips from "./ActiveFilterChips";
+import FilterSheet from "./FilterSheet";
 import ListBreadcrumb from "./ListBreadcrumb";
 import PhoneListBar from "./PhoneListBar";
 import ProductGrid from "./ProductGrid";
@@ -13,6 +15,8 @@ import SortDropdown from "./SortDropdown";
 import EmptyState from "./EmptyState";
 import type { ProductListParams, ProductListResponse, ProductSort } from "@/lib/types";
 import { countOf } from "@/lib/cardTag";
+import { activeFilterChips } from "@/lib/listFilters";
+import { PRICE_RANGES } from "@/lib/priceRanges";
 
 const VALID_SORTS: ProductSort[] = ["newest", "price_asc", "price_desc"];
 
@@ -133,6 +137,15 @@ export default function ProductListing({
   // The tag's name as the products carry it, else its slug read as words ("eid-gift" is "eid gift").
   const tagName = tag ? (products.flatMap((product) => product.tags ?? []).find((item) => item.slug === tag)?.name ?? tag.replace(/-/g, " ")) : null;
 
+  // The phone's Filter button and the chips under the bar: the same filters and the same addresses as the links in the column beside the list.
+  const chips = activeFilterChips({ search, tag, tagName, minPrice, maxPrice });
+  const priceActive = chips.some((chip) => chip.key === "price");
+  const filterOptions = PRICE_RANGES.map((range) => ({
+    label: range.label,
+    href: buildHref({ min_price: range.min, max_price: range.max }),
+    active: minPrice === range.min && maxPrice === range.max,
+  }));
+
   // Nothing to filter or sort: say so calmly instead of showing a toolbar over an empty grid.
   if (!showSkeleton && !result && failed) {
     return (
@@ -165,15 +178,16 @@ export default function ProductListing({
       {showBreadcrumb && <ListBreadcrumb label={breadcrumbLabel} />}
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
-        {/* Phone: Filter and Sort in one row that stays under the header; the count sits under it. */}
+        {/* Phone: Filter and Sort in one row that stays under the header; the filters that are on sit under it as chips, then the count. */}
         <PhoneListBar>
-          <PriceFilterPanel buildHref={buildHref} activeMin={minPrice} activeMax={maxPrice} bar />
-          <SortDropdown />
+          <FilterSheet options={filterOptions} clearHref={buildHref({ min_price: undefined, max_price: undefined })} count={chips.length} priceActive={priceActive} />
+          <SortDropdown variant="bar" />
         </PhoneListBar>
+        <ActiveFilterChips chips={chips.map((chip) => ({ key: chip.key, label: chip.label, href: buildHref(chip.remove) }))} />
         <p className="my-4 text-body text-stone sm:hidden">{showSkeleton ? "Loading…" : countOf(meta?.total ?? 0, "product")}</p>
 
         {tag && (
-          <p className="mb-6 text-body text-stone">
+          <p className="mb-6 hidden text-body text-stone sm:block">
             Tagged: <span className="text-charcoal">{tagName}</span>.{" "}
             <Link href={buildHref({ tag: undefined })} className="text-navy underline">
               Show all

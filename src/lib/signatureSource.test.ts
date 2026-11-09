@@ -66,8 +66,12 @@ describe("signature visuals in the source", () => {
     assert.match(mentions[0], /omit=/);
   });
 
-  it("writes one radius, 2px: no pill, circle or arbitrary radius (the seal is the one round thing)", () => {
-    assert.deepEqual(filesWith(/\brounded-(full|sm|md|lg|xl|2xl|3xl)\b/).filter((name) => name !== "components/Seal.tsx"), []);
+  it("writes one radius, 2px: no pill, circle or arbitrary radius (the seal is the one round thing, and the product gallery's photo dots, round by the owner's choice)", () => {
+    // ProductGallery: the small round dots and their pill over the foot of a photograph on a phone (marked data-round, which the page probe also reads).
+    assert.deepEqual(filesWith(/\brounded-(full|sm|md|lg|xl|2xl|3xl)\b/).filter((name) => name !== "components/Seal.tsx" && name !== "components/ProductGallery.tsx"), []);
+    const gallery = files.find((file) => file.name === "components/ProductGallery.tsx")?.text ?? "";
+    const round = gallery.split("\n").filter((line) => /\brounded-(full|sm|md|lg|xl|2xl|3xl)\b/.test(line));
+    assert.ok(round.length > 0 && round.every((line) => line.includes("data-round") || /h-2 rounded-full/.test(line)), "only the dots and their pill are round in the gallery");
     assert.deepEqual(filesWith(/\brounded-\[/), []);
   });
 
