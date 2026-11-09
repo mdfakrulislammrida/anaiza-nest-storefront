@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ApiError, submitContactForm } from "@/lib/api";
 import { calmMessage } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
+import PhoneField from "@/components/PhoneField";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -55,10 +56,7 @@ export default function ContactForm() {
         <label htmlFor="contact-1" className={labelClass}>Name</label>
         <input id="contact-1" name="name" required className={inputClass} />
       </div>
-      <div>
-        <label htmlFor="contact-2" className={labelClass}>Phone</label>
-        <input id="contact-2" name="phone" type="tel" required className={inputClass} />
-      </div>
+      <PhoneField id="contact-2" name="phone" label="Phone" labelClassName={labelClass} />
       <div>
         <label htmlFor="contact-3" className={labelClass}>Message</label>
         <textarea id="contact-3" name="message" rows={5} required className={inputClass} />

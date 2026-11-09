@@ -4,6 +4,7 @@ import { useId, useState, type FormEvent } from "react";
 import { ApiError, submitCorporateEnquiry } from "@/lib/api";
 import { CTA } from "@/lib/brand";
 import { useHydrated } from "./useFormGuard";
+import PhoneField from "@/components/PhoneField";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -87,10 +88,7 @@ export default function CorporateEnquiryForm() {
           {errorFor("company")}
         </div>
         <div>
-          <label htmlFor={`${uid}-phone`} className={labelClass}>
-            Phone
-          </label>
-          <input id={`${uid}-phone`} name="phone" type="tel" required autoComplete="tel" className={inputClass} />
+          <PhoneField id={`${uid}-phone`} name="phone" label="Phone" labelClassName={labelClass} />
           {errorFor("phone")}
         </div>
         <div>

@@ -17,6 +17,7 @@ import { calmMessage, mobileProblem } from "@/lib/formGuard";
 import { useFormGuard } from "./useFormGuard";
 import { trackAddPaymentInfo, trackAddShippingInfo, trackBeginCheckout } from "@/lib/tracking";
 import { pickBuyer } from "@/lib/userData";
+import PhoneField from "@/components/PhoneField";
 import { formatPrice } from "@/lib/format";
 import { resolvePolicy } from "@/lib/policy";
 import { beginCheckoutDue, deliveryChargeFor, deliveryHintText, itemsLabel, totalCaption, type DeliveryZone } from "@/lib/checkout";
@@ -245,7 +246,11 @@ export default function CheckoutForm({
         const form = document.getElementById("checkout-form") as HTMLFormElement | null;
         const fill = (field: string, value: string | null | undefined) => {
           const input = form?.elements.namedItem(field) as HTMLInputElement | null;
-          if (input && value && input.value === "") input.value = value;
+          if (input && value && input.value === "") {
+            input.value = value;
+            // The phone field turns what it is given into the local number when it hears an "input" event (a reminder's number may be +880...).
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          }
         };
         fill("customer_name", saved.name);
         fill("customer_email", saved.email);
@@ -725,31 +730,18 @@ export default function CheckoutForm({
             />
             {errorFor("customer_name")}
           </div>
-          <div>
-            <label htmlFor={`${uid}-phone`} className={labelClass}>
-              Phone number
-            </label>
-            <input
-              id={`${uid}-phone`}
-              name="customer_phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              required
-              aria-invalid={phoneProblemText ? true : undefined}
-              aria-describedby={phoneProblemText ? `${uid}-phone-note` : undefined}
-              onChange={(event) => {
-                if (phoneNote && mobileProblem(event.target.value) === null) setPhoneNote(null);
-              }}
-              onBlur={(event) => setPhoneNote(event.target.value.trim() === "" ? null : mobileProblem(event.target.value))}
-              className={inputClass}
-            />
-            {phoneProblemText && (
-              <p id={`${uid}-phone-note`} className="mt-1 text-caption text-burgundy">
-                {phoneProblemText}
-              </p>
-            )}
-          </div>
+          {/* A fixed +88, then the number; typed, pasted or autofilled it ends as 01XXXXXXXXX, which is what is sent (see PhoneField). The problem shown here is the
+              form's own (its check at submit) or the server's; the field judges the number itself as the person leaves it. */}
+          <PhoneField
+            id={`${uid}-phone`}
+            name="customer_phone"
+            label="Phone number"
+            labelClassName={labelClass}
+            externalError={phoneProblemText}
+            onValueChange={(value) => {
+              if (phoneNote && mobileProblem(value) === null) setPhoneNote(null);
+            }}
+          />
         </div>
 
         {/* The email is optional but always open, right under the name and the phone number: empty is fine, and one that is

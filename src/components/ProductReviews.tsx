@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { readAuthToken } from "@/lib/storedState";
 import type { Review, ReviewsPage } from "@/lib/types";
 import Stars from "./Stars";
+import PhoneField from "@/components/PhoneField";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -226,12 +227,7 @@ function ReviewForm({ slug, onDone, reviewToken = null, startName = "" }: { slug
             <input id={`${uid}-order`} name="order_number" inputMode="numeric" autoComplete="off" required className={inputClass} />
             {error("order_number")}
           </div>
-          <div>
-            <label htmlFor={`${uid}-phone`} className={labelClass}>
-              Phone number on the order
-            </label>
-            <input id={`${uid}-phone`} name="phone" type="tel" inputMode="tel" autoComplete="tel" required className={inputClass} />
-          </div>
+          <PhoneField id={`${uid}-phone`} name="phone" label="Phone number on the order" labelClassName={labelClass} />
         </div>
       )}
 

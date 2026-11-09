@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { calmMessage } from "@/lib/formGuard";
 import { useFormGuard } from "@/components/useFormGuard";
 import { enabledProviders, showSocialDivider } from "@/lib/socialLogin";
+import PhoneField from "@/components/PhoneField";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -303,10 +304,7 @@ export default function AccountPage() {
               <label htmlFor="acct-4" className={labelClass}>Email</label>
               <input id="acct-4" name="email" type="email" required className={inputClass} />
             </div>
-            <div>
-              <label htmlFor="acct-5" className={labelClass}>Phone</label>
-              <input id="acct-5" name="phone" type="tel" required className={inputClass} />
-            </div>
+            <PhoneField id="acct-5" name="phone" label="Phone" labelClassName={labelClass} />
             <div>
               <label htmlFor="acct-6" className={labelClass}>Address</label>
               <input id="acct-6" name="address" required className={inputClass} />

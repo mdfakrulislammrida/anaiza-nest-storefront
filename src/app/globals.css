@@ -12,6 +12,8 @@
   --burgundy: #661e29;
   --charcoal: #2a2622;
   --stone: #6f675c;
+  /* The one addition to the kit, asked for by the owner: the quiet green of a phone number that is valid (PhoneField). Used for nothing else. */
+  --success: #2f6b4f;
 }
 
 /* The taka sign (U+09F3) lives in the Bengali block, so without this every page that shows a price
@@ -35,6 +37,7 @@
   --color-burgundy: var(--burgundy);
   --color-charcoal: var(--charcoal);
   --color-stone: var(--stone);
+  --color-success: var(--success);
 
   /* Latin first; the Bangla families only have Bangla glyphs (unicode-range), so a Bangla
      character falls through to them and nothing else ever loads them. */

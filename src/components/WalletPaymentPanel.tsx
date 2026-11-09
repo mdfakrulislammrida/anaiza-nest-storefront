@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { fillInstructions, type WalletMethod } from "@/lib/payment";
+import PhoneField from "@/components/PhoneField";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -87,23 +88,7 @@ export default function WalletPaymentPanel({
         dangerouslySetInnerHTML={{ __html: fillInstructions(instructionsHtml, amountText, number) }}
       />
 
-      <div>
-        <label htmlFor={`${uid}-sender`} className={labelClass}>
-          The number you paid from
-        </label>
-        <input
-          id={`${uid}-sender`}
-          name="payment_sender_number"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="01XXXXXXXXX"
-          required
-          aria-invalid={senderError ? true : undefined}
-          className={inputClass}
-        />
-        {senderError && <p className="mt-1 text-caption text-burgundy">{senderError}</p>}
-      </div>
+      <PhoneField id={`${uid}-sender`} name="payment_sender_number" label="The number you paid from" labelClassName={labelClass} externalError={senderError ?? null} />
 
       <div>
         <label htmlFor={`${uid}-trx`} className={labelClass}>

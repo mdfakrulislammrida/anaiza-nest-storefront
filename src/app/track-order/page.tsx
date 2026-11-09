@@ -10,6 +10,7 @@ import PaymentStateNotice from "@/components/PaymentStateNotice";
 import InvoiceButton from "@/components/InvoiceButton";
 import { orderStatusLabel, orderStatusNote } from "@/lib/orderStatus";
 import { useHydrated } from "@/components/useFormGuard";
+import PhoneField from "@/components/PhoneField";
 
 // text-base (not text-body): iOS Safari auto-zooms the page when a focused
 // input's font is under 16px, which text-body's 14px would trigger.
@@ -68,10 +69,7 @@ export default function TrackOrderPage() {
           <label htmlFor="track-1" className={labelClass}>Order number</label>
           <input id="track-1" name="order_id" required className={inputClass} />
         </div>
-        <div>
-          <label htmlFor="track-2" className={labelClass}>Phone number</label>
-          <input id="track-2" name="phone" type="tel" required className={inputClass} />
-        </div>
+        <PhoneField id="track-2" name="phone" label="Phone number" labelClassName={labelClass} />
         {error && <p className="text-body text-burgundy">{error}</p>}
         <button
           type="submit"
